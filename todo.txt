@@ -1,0 +1,30 @@
+
+In the VM:
+   * Byte versions!
+   * ADD3/and friends
+   * offset instructions. (we are really going to care about this once we have push and pop)
+
+   * consider a hardware increment on RSP? Just like RIP, has to be INC BY 2!!!
+
+
+For control board:
+  * Remember, BUS_A and BUS_B should both be pulled low.
+
+
+
+
+Bugs in current revisions:
+* ALU: the high bits of the switch connecting BUS_B
+       to the ALU flags register float!!!!
+  ALU: It also has two floating gates!!!
+
+
+
+
+Improvements future revisions:
+* mod_mem: allow 1-clock word reads and writes. -> If you have this, you can't write into RA using the address in RA---so forget it?
+
+Minor:
+* mod_alu: OR and AND are swapper physically vs the mode signal numbers
+
+

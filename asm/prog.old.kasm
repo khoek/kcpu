@@ -1,0 +1,11 @@
+FAR STPFX $0x80
+LDW $0x136 rc
+FAR LDW $0x138 rd
+MOV rc rb
+MOV rd ra
+MOV $1 rc
+MOV $2 rd
+ADD rc rd
+MOV rd ra
+XOR rc ra
+HLT

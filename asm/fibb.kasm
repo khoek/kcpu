@@ -1,0 +1,23 @@
+MOV $10 ra
+
+MOV $1 rb
+MOV $1 rc
+
+loop:
+TST ra
+JZ exit
+
+SUB $1 ra
+
+MOV rc rd
+ADD rb rc
+MOV rd rb
+
+JMP loop
+
+exit:
+MOV $0xE317 rsp
+MOV $0xE317 rbp
+XOR rbp rbp
+
+HLT
