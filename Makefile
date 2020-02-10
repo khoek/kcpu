@@ -25,11 +25,13 @@ test: all
 	@./bin/run_test_suite
 	
 clean:
-	rm -f $(OBJS) $(TOOLLIBOBJS)
+	rm -f $(OBJS) $(TOOLLIBOBJS) $(KASMOBJS)
 	rm -rf bin
     
 run: all
-	./bin/kasm && ./bin/main
+	bin/kasm asm/bios.kasm bin/bios.bin
+	bin/kasm asm/prog.kasm bin/prog.bin
+	bin/main -v
 
 $(OBJS): %.o: %.cpp $(HDRS) Makefile
 	g++ $(CXXFLAGS) -c $< -o $@

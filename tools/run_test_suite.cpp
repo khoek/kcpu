@@ -11,6 +11,8 @@
 #include "src/gen/arch.h"
 #include "src/vm/kcpu.h"
 
+#define MAX_USTEPS 1000000
+
 static std::filesystem::path suite_path("test");
 
 bool load_binary_try(const char *name, std::filesystem::path file, size_t max_len, void *buff) {
@@ -40,16 +42,22 @@ bool run_test(bool verbose, uint32_t num, const std::filesystem::directory_entry
   load_binary_maybedefault("PROG", entry.path(), "prog.bin", PROG_SIZE, cpu.mem.prog.raw);
 
   if(verbose) printf("CPU Start\n");
-  kcpu::STATE s = cpu.run();
+  kcpu::STATE s = cpu.run(MAX_USTEPS);
   if(verbose) printf("\nCPU %s, %d uinstructions executed\n", cpu.ctl.cbits[CBIT_ABORTED] ? "Aborted" : "Halted", cpu.get_total_clocks());
+
+  std::cout << "Test " << num << ": '" << entry.path().filename().string() << "' ";
 
   switch(s) {
     case kcpu::STATE_HALTED: {
-      std::cout << "Test " << num << ": '" << entry.path().filename().string() << "' PASS" << std::endl;
+      std::cout << "PASS" << std::endl;
       return true;
     }
     case kcpu::STATE_ABORTED: {
-      std::cout << "Test " << num << ": '" << entry.path().filename().string() << "' FAIL" << std::endl;
+      std::cout << "FAIL, ABORTED" << std::endl;
+      return false;
+    }
+    case kcpu::STATE_TIMEOUT: {
+      std::cout << "FAIL, TIMEOUT" << std::endl;
       return false;
     }
     default: {

@@ -67,12 +67,22 @@ kcpu::STATE kcpu::step() {
     return get_state();
 }
 
-kcpu::STATE kcpu::run() {
+kcpu::STATE kcpu::run(std::optional<uint32_t> max_clocks) {
+    uint32_t then = total_clocks;
+
     while(!ctl.cbits[CBIT_HALTED]) {
+        if(max_clocks && *max_clocks < (total_clocks - then)) {
+            return kcpu::STATE_TIMEOUT;
+        }
+        
         step();
     }
 
     return get_state();
+}
+
+kcpu::STATE kcpu::run() {
+    return run(std::nullopt);
 }
 
 void kcpu::resume() {

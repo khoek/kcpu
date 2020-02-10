@@ -3,7 +3,7 @@
 #include "../../spec/ucode.h"
 #include "ctl.h"
 
-mod_ctl::mod_ctl(vm_logger &logger) : logger(logger) {
+mod_ctl::mod_ctl(vm_logger logger) : logger(logger) {
     for(int i = 0; i < NUM_SREGS; i++) {
         reg[i] = 0;
     }
@@ -12,6 +12,9 @@ mod_ctl::mod_ctl(vm_logger &logger) : logger(logger) {
         cbits[i] = false;
     }
 
+    // I think it is not neccesary to implement this on real hardware, so long as
+    // all of the registers (in particular RIR) are initialized to zero. (Since then
+    // NOP will be the first instruction executed.)
     cbits[CBIT_INSTMASK] = true;
 }
 

@@ -8,7 +8,7 @@
 
 int main(int argc, char **argv) {
     if(argc != 3) {
-        std::cerr << "Need two arguments";
+        std::cerr << "Need two arguments" << std::endl;
         return 1;
     }
 

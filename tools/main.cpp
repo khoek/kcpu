@@ -24,13 +24,19 @@
   exit(1);
 }*/
 
-int main() {
+int main(int argc, char **argv) {
     printf("There are %u control bits.\n", UCODE_END);
+
+    bool verbose = false;
+    if(argc >= 2 && std::string(argv[1]) == "-v") {
+      verbose = true;
+    }
 
     try {
       init_arch(); // alternatively, load the microcode from somewhere.
 
-      kcpu cpu;
+      vm_logger logger(verbose);
+      kcpu cpu(logger);
       load_binary("BIOS", "bin/bios.bin", BIOS_SIZE, cpu.mem.bios.raw);
       load_binary("PROG", "bin/prog.bin", PROG_SIZE, cpu.mem.prog.raw);
 

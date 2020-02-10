@@ -1,6 +1,7 @@
 #ifndef VM_KCPU_H
 #define VM_KCPU_H
 
+#include <optional>
 #include "common.h"
 #include "mod/ctl.h"
 #include "mod/reg.h"
@@ -17,6 +18,9 @@ class kcpu {
         STATE_RUNNING,
         STATE_HALTED,
         STATE_ABORTED,
+
+        // Not a real state, just returned by run when it times out
+        STATE_TIMEOUT,
     };
 
     mod_ctl ctl;
@@ -31,6 +35,7 @@ class kcpu {
 
     STATE ustep();
     STATE step();
+    STATE run(std::optional<uint32_t> max_clocks);
     STATE run();
     void resume();
 };

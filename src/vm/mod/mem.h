@@ -21,8 +21,8 @@ class mem_bank {
 
 class mod_mem {
     private:
-    vm_logger &logger;
-    
+    vm_logger logger;
+
     regval_t prefix[2];
     regval_t fidd_adr;
     regval_t fidd_val;
@@ -33,7 +33,7 @@ class mod_mem {
     mem_bank bios;
     mem_bank prog;
 
-    mod_mem(vm_logger &logger);
+    mod_mem(vm_logger logger);
     void dump_registers();
     void clock_outputs(uinst_t ui, bus_state &s);
     void clock_connects(uinst_t ui, bus_state &s);

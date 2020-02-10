@@ -22,7 +22,7 @@ extern const char * BUS_NAMES[];
 
 class bus_state {
     private:
-    vm_logger &logger;
+    vm_logger logger;
 
     bool frozen;
     bool set[NUM_BUSES];
@@ -31,7 +31,7 @@ class bus_state {
     regval_t get_unset_value(bus_t b);
 
     public:
-    bus_state(vm_logger &logger);
+    bus_state(vm_logger logger);
     
     void freeze();
     void assign(bus_t b, regval_t val);

@@ -25,8 +25,9 @@ l3:
 MOV $1000 ra
 MOV l4 rb
 STW ra rb
-#STW ra l4
-LDJMP ra
+# FIXME, allow this in one go instead:
+# STW ra l4
+LDJMP $1000
 ABRT
 
 l4:

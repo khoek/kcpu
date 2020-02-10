@@ -2,7 +2,7 @@
 #include "../../spec/ucode.h"
 #include "alu.h"
 
-mod_alu::mod_alu(vm_logger &logger) : logger(logger) {
+mod_alu::mod_alu(vm_logger logger) : logger(logger) {
     result = {.val = 0, .flags = 0};
 }
 
