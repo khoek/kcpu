@@ -1,4 +1,7 @@
+#include <sstream>
 #include "kcpu.h"
+#include "../spec/inst.h"
+#include "../gen/disassembler.h"
 
 kcpu::kcpu() : total_clocks(0), ctl(logger), reg(logger), mem(logger), alu(logger) { }
 kcpu::kcpu(vm_logger l) : total_clocks(0), logger(l), ctl(logger), reg(logger), mem(logger), alu(logger) { }
@@ -15,6 +18,15 @@ kcpu::STATE kcpu::get_state() {
     return STATE_RUNNING;
 }
 
+void kcpu::dump_registers() {
+    logger.logf("---------------------\n");
+    ctl.dump_registers();
+    mem.dump_registers();
+    reg.dump_registers();
+    alu.dump_registers();
+    logger.logf("\n");
+}
+
 kcpu::STATE kcpu::ustep() {
     total_clocks++;
 
@@ -24,10 +36,14 @@ kcpu::STATE kcpu::ustep() {
 
     regval_t i = ctl.get_inst();
     uinst_t ui = ctl.get_uinst();
-    logger.logf("\nIP/UC @ I/UI: 0x%04X/0x%04X @ 0x%04X/0x%04lX\n", ctl.reg[REG_IP], ctl.reg[REG_UC], i, ui);
+    if(logger.dump_bus) logger.logf("IP/UC @ I/UI: 0x%04X/0x%04X @ 0x%04X/0x%04lX\n", ctl.reg[REG_IP], ctl.reg[REG_UC], i, ui);
 
     if(!ui) {
         throw "executing undefined microcode instruction!";
+    }
+
+    if(logger.dump_registers) {
+        dump_registers();
     }
 
     bus_state state(logger);
@@ -47,15 +63,28 @@ kcpu::STATE kcpu::ustep() {
     reg.clock_inputs(i, ui, state);
     ctl.clock_inputs(ui, state);
 
-    ctl.dump_registers();
-    mem.dump_registers();
-    reg.dump_registers();
-    alu.dump_registers();
-
     return get_state();
 }
 
+void kcpu::disassemble_current() {
+    regval_t ip = ctl.reg[REG_IP] - ((ctl.cbits[CBIT_INSTMASK] ? 0 : 1) * (INST_GET_LOADDATA(ctl.reg[REG_IR]) ? 4 : 2));
+    std::pair<inst_pieces, std::string> d = disassemble_peek(ip, mem.get_bank(false));
+
+    std::stringstream ss;
+    ss << "(0x" << std::hex << std::uppercase << ip << ")  ";
+    
+    logger.logf("---------------------\n");
+    logger.logf((ss.str() + d.second + "\n").c_str());
+    if(!logger.dump_registers) {
+        dump_registers();
+    }
+}
+
 kcpu::STATE kcpu::step() {
+    if(logger.disassemble && !ctl.cbits[CBIT_INSTMASK]) {
+        disassemble_current();
+    }
+
     if(ctl.cbits[CBIT_HALTED]) {
         throw "cpu already halted!";
     }

@@ -2,14 +2,10 @@
 #include <cstdarg>
 #include "common.h"
 
-vm_logger::vm_logger() : verbose(false) { }
-vm_logger::vm_logger(bool verbose) : verbose(verbose) { }
+vm_logger::vm_logger(bool disassemble, bool dump_registers, bool dump_bus)
+    : disassemble(disassemble), dump_registers(dump_registers), dump_bus(dump_bus) { }
 
 void vm_logger::logf(const char *fmt, ...) {
-    if(!verbose) {
-        return;
-    }
-
     va_list ap;
     va_start(ap, fmt);
     vprintf(fmt, ap);
@@ -56,7 +52,7 @@ void bus_state::assign(bus_t b, regval_t val) {
         throw "out bus collision";
     }
 
-    logger.logf("  %s <- %X\n", BUS_NAMES[b], val);
+    if(logger.dump_bus) logger.logf("  %s <- %X\n", BUS_NAMES[b], val);
 
     set[b] = true;
     bus[b] = val;
@@ -84,7 +80,7 @@ void bus_state::connect(bus_t b1, bus_t b2) {
 
 regval_t bus_state::early_read(bus_t b) {
     regval_t ret = set[b] ? bus[b] : get_unset_value(b);
-    logger.logf("  %s -> %X \n", BUS_NAMES[b], ret);
+    if(logger.dump_bus) logger.logf("  %s -> %X \n", BUS_NAMES[b], ret);
     return ret;
 }
 

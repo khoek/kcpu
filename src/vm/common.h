@@ -8,10 +8,11 @@
 
 class vm_logger {
     public:
-    const bool verbose;
+    bool disassemble;
+    bool dump_registers;
+    bool dump_bus;
 
-    vm_logger();
-    vm_logger(bool verbose);
+    vm_logger(bool disassemble = false, bool dump_registers = false, bool dump_bus = false);
     
     void logf(const char *fmt, ...);
 };

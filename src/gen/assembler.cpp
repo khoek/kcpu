@@ -149,7 +149,7 @@ void inst_assembler::bind_opcode(unbound_opcode uo, arg_info ai) {
         }
     }
 
-    buff.push_back(INST_MK(uo.raw, ius[0], ius[1], ius[2]) | (constval ? P_I_LOADDATA : 0));
+    buff.push_back(INST_MK(constval, uo.raw, ius[0], ius[1], ius[2]));
 
     if(constval) {
         buff.push_back(*constval);
@@ -157,7 +157,7 @@ void inst_assembler::bind_opcode(unbound_opcode uo, arg_info ai) {
 }
 
 void inst_assembler::handle_instruction(std::string &tk) {
-    std::optional<alias> a = inst_lookup(tk);
+    std::optional<alias> a = alias_lookup(tk);
     if(!a) {
         throw "no such instruction '" + tk + "'";
     }

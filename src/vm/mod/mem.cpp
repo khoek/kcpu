@@ -19,7 +19,7 @@ void mem_bank::store(regval_t addr, regval_t val) {
         throw "cannot write to ROM!";
     }
 
-    raw[addr] = val;
+    raw[addr >> 1] = val;
 }
 
 regval_t mem_bank::load(regval_t addr) {
@@ -27,7 +27,7 @@ regval_t mem_bank::load(regval_t addr) {
         throw "out of bounds memory load";
     }
 
-    return raw[addr];
+    return raw[addr >> 1];
 }
 
 mod_mem::mod_mem(vm_logger &logger) : logger(logger), bios(BIOS_SIZE, true), prog(PROG_SIZE, false) {
@@ -44,8 +44,8 @@ void mod_mem::dump_registers() {
     logger.logf("FIDV: %04X FIDA: %04X\n", fidd_val, fidd_adr);
 }
 
-mem_bank * mod_mem::get_bank(bool far) {
-    return (prefix[far ? 1 : 0] & F_BANK_SELECT) ? &prog : &bios;
+mem_bank & mod_mem::get_bank(bool far) {
+    return (prefix[far ? 1 : 0] & F_BANK_SELECT) ? prog : bios;
 }
 
 #define SHOULD_USE_PREFIX_FAR(ui) (!!(ui & MCTRL_USE_PREFIX_FAR))
@@ -64,7 +64,7 @@ void mod_mem::clock_outputs(uinst_t ui, bus_state &s) {
 
     if(!(ui & MCTRL_N_MAIN_OUT)) {
         assert(!(ui & MCTRL_MAIN_STORE));
-        s.assign(BUS_M, get_bank(SHOULD_USE_PREFIX_FAR(ui))->load(fidd_adr >> 1));
+        s.assign(BUS_M, get_bank(SHOULD_USE_PREFIX_FAR(ui)).load(fidd_adr));
     }
 }
 
@@ -159,6 +159,6 @@ void mod_mem::clock_inputs(uinst_t ui, bus_state &s) {
     }
 
     if(ui & MCTRL_MAIN_STORE) {
-        get_bank(SHOULD_USE_PREFIX_FAR(ui))->store(fidd_adr >> 1, s.read(BUS_M));
+        get_bank(SHOULD_USE_PREFIX_FAR(ui)).store(fidd_adr, s.read(BUS_M));
     }
 }

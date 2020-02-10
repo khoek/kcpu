@@ -35,7 +35,10 @@ bin/prog.bin: asm/prog.kasm
 	bin/kasm asm/prog.kasm bin/prog.bin
 
 run: all bin/bios.bin bin/prog.bin
-	bin/main -v
+	bin/main -d
+
+run-step: all bin/bios.bin bin/prog.bin
+	bin/main -s
     
 run-quiet: all bin/bios.bin bin/prog.bin
 	bin/main

@@ -13,8 +13,6 @@
 #define UCODE_LEN (1 << (ADDR_WIDTH - 1))
 #define OPCODE_LEN (1 << (INST_WIDTH - 1))
 
-#define INST_SHIFT (2 * IU_WIDTH)
-
 #define IU_MASK 0b111
 
 #define INST_MK_IU1(reg) (((reg) & IU_MASK) << (0 * IU_WIDTH))
@@ -24,8 +22,7 @@
 #define INST_GET_IU1(inst) ((preg_t) (((inst) & (IU_MASK << (0 * IU_WIDTH))) >> (0 * IU_WIDTH)))
 #define INST_GET_IU2(inst) ((preg_t) (((inst) & (IU_MASK << (1 * IU_WIDTH))) >> (1 * IU_WIDTH)))
 #define INST_GET_IU3(inst) ((preg_t) (((inst) & (IU_MASK << (2 * IU_WIDTH))) >> (2 * IU_WIDTH)))
-
-#define INST_MK(opcode, iu1, iu2, iu3) ((opcode << INST_SHIFT) | INST_MK_IU1(iu1) | INST_MK_IU2(iu2) | INST_MK_IU3(iu3))
+#define INST_GET_IUS(inst) { INST_GET_IU1(inst), INST_GET_IU2(inst), INST_GET_IU3(inst), }
 
 #define NUM_BUSES 4
 enum bus_t {

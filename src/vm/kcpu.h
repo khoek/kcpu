@@ -12,6 +12,9 @@ class kcpu {
     private:
     uint32_t total_clocks;
     vm_logger logger;
+    
+    void dump_registers();
+    void disassemble_current();
 
     public:
     enum STATE {

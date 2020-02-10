@@ -12,11 +12,12 @@
 #include "alias.h"
 
 static std::string ucode_name[UCODE_LEN];
-static std::optional<instruction> insts[OPCODE_LEN];
+static std::optional<instruction> ucode_inst[OPCODE_LEN];
 static uinst_t ucode[UCODE_LEN];
 
 static std::unordered_set<std::string> prefixes;
 static std::unordered_map<std::string, alias> aliases;
+static std::unordered_map<regval_t, instruction> insts;
 
 static uint16_t uaddr(regval_t inst, ucval_t uc) {
     if(uc > UCVAL_MAX) {
@@ -38,9 +39,14 @@ bool inst_is_prefix(std::string str) {
     return prefixes.find(str) != prefixes.end();
 }
 
-std::optional<alias> inst_lookup(std::string name) {
+std::optional<alias> alias_lookup(std::string name) {
     auto r = aliases.find(name);
     return r == aliases.end() ? std::nullopt : std::optional(r->second);
+}
+
+std::optional<instruction> inst_lookup(regval_t opcode) {
+    auto r = insts.find(opcode);
+    return r == insts.end() ? std::nullopt : std::optional(r->second);
 }
 
 slot slot_reg(preg_t reg) {
@@ -91,11 +97,16 @@ std::vector<std::string> split(const std::string &s, char delim) {
 }
 
 void arch::reg_inst(instruction i) {
-    if(insts[i.opcode]) {
-        throw "opcode collision: " + insts[i.opcode]->name + ", " + i.name;
+    if(i.opcode & P_I_LOADDATA) {
+        throw "instruction " + i.name + " has LOADDATA bit set!";
     }
 
-    insts[i.opcode] = i;
+    if(ucode_inst[i.opcode]) {
+        throw "opcode collision: " + ucode_inst[i.opcode]->name + ", " + i.name;
+    }
+
+    ucode_inst[i.opcode] = i;
+    insts.emplace(i.opcode, i);
 
     for(std::size_t uc = 0; uc < i.uis.size(); uc++) {
         uint16_t ua = uaddr(i.opcode, uc);
@@ -115,7 +126,7 @@ void arch::reg_inst(instruction i) {
 void arch::reg_alias(alias a) {
     // In this loop we just do some consistency checks.
     for(auto j = a.insts.begin(); j < a.insts.end(); j++) {
-        std::optional<instruction> i = insts[j->raw];
+        std::optional<instruction> i = ucode_inst[j->raw];
         if(!i) {
             throw "alias " + a.name + " registers an unknown opcode";
         }

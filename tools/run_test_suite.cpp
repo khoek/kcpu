@@ -64,7 +64,7 @@ static bool run_test(bool verbose, uint32_t num, const std::filesystem::path pat
       return false;
     }
     case kcpu::STATE_TIMEOUT: {
-      std::cout << colour_str("FAIL, TIMEOUT", false) << std::endl;
+      std::cout << colour_str("FAIL, DETERMINISTIC TIMEOUT", false) << std::endl;
       return false;
     }
   }

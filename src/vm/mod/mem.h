@@ -27,11 +27,11 @@ class mod_mem {
     regval_t fidd_adr;
     regval_t fidd_val;
 
-    mem_bank * get_bank(bool far);
-
     public:
     mem_bank bios;
     mem_bank prog;
+
+    mem_bank & get_bank(bool far);
 
     mod_mem(vm_logger &logger);
     void dump_registers();

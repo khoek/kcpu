@@ -1,6 +1,15 @@
 #ifndef SPEC_INST_H
 #define SPEC_INST_H
 
+// START PREAMBLE
+
+#define INST_SHIFT (2 * IU_WIDTH)
+#define INST_GET_LOADDATA(inst) ((inst) & P_I_LOADDATA)
+#define INST_GET_OPCODE(inst) (((inst) & ~P_I_LOADDATA) >> INST_SHIFT)
+#define INST_MK(loaddata, opcode, iu1, iu2, iu3) (((loaddata) ? P_I_LOADDATA : 0) | (opcode << INST_SHIFT) | INST_MK_IU1(iu1) | INST_MK_IU2(iu2) | INST_MK_IU3(iu3))
+
+// END PREAMBLE
+
 #define P_I_LOADDATA (1 << 15)
 
 // SYS

@@ -37,7 +37,7 @@ regval_t mod_reg::get(preg_t r) {
 
 void mod_reg::maybe_assign(bus_state &s, uinst_t ui, uint8_t iu, preg_t r) {
     if(RCTRL_IU_IS_EN(iu) && RCTRL_IU_IS_OUTPUT(iu)) {
-        logger.logf("  %s <- %s:", BUS_NAMES[RCTRL_IU_GET_BUS(iu)], PREG_NAMES[r]);
+        if(logger.dump_bus) logger.logf("  %s <- %s:", BUS_NAMES[RCTRL_IU_GET_BUS(iu)], PREG_NAMES[r]);
         s.assign(RCTRL_IU_GET_BUS(iu), reg[r]);
 
         if(r == REG_SP && (ui & RCTRL_RSP_INC)) {
@@ -48,7 +48,7 @@ void mod_reg::maybe_assign(bus_state &s, uinst_t ui, uint8_t iu, preg_t r) {
 
 void mod_reg::maybe_read(bus_state &s, uinst_t ui, uint8_t iu, preg_t r) {
     if(RCTRL_IU_IS_EN(iu) && RCTRL_IU_IS_INPUT(iu)) {
-        logger.logf("  %s -> %s:", BUS_NAMES[RCTRL_IU_GET_BUS(iu)], PREG_NAMES[r]);
+        if(logger.dump_bus) logger.logf("  %s -> %s:", BUS_NAMES[RCTRL_IU_GET_BUS(iu)], PREG_NAMES[r]);
         reg[r] = s.read(RCTRL_IU_GET_BUS(iu));
 
         if(r == REG_SP && (ui & RCTRL_RSP_INC)) {
