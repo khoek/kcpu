@@ -11,10 +11,4 @@ static regval_t byte_flip(regval_t v) {
     return ((v & 0x00FF) << 8) | ((v & 0xFF00) >> 8);
 }
 
-#ifdef DEBUG
-#define logf printf
-#else
-static void logf(const char *fmt, ...) { }
-#endif
-
 #endif

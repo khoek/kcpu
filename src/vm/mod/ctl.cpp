@@ -3,7 +3,7 @@
 #include "../../spec/ucode.h"
 #include "ctl.h"
 
-mod_ctl::mod_ctl() {
+mod_ctl::mod_ctl(vm_logger &logger) : logger(logger) {
     for(int i = 0; i < NUM_SREGS; i++) {
         reg[i] = 0;
     }
@@ -16,9 +16,9 @@ mod_ctl::mod_ctl() {
 }
 
 void mod_ctl::dump_registers() {
-    logf("RIP: %04X RUC: %04X\n", reg[REG_IP], reg[REG_UC]);
-    logf("RIR: %04X RFG: %04X\n", reg[REG_IR], reg[REG_FG]);
-    logf("CBITS: %c%c\n", cbits[CBIT_INSTMASK] ? 'M' : 'm', cbits[CBIT_HALTED] ? 'H' : 'h');
+    logger.logf("RIP: %04X RUC: %04X\n", reg[REG_IP], reg[REG_UC]);
+    logger.logf("RIR: %04X RFG: %04X\n", reg[REG_IR], reg[REG_FG]);
+    logger.logf("CBITS: %c%c\n", cbits[CBIT_INSTMASK] ? 'M' : 'm', cbits[CBIT_HALTED] ? 'H' : 'h');
 }
 
 #define LOAD_INSTVAL 0

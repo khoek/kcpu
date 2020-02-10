@@ -13,7 +13,7 @@ const char * PREG_NAMES[] = {
     "rbp",
 };
 
-mod_reg::mod_reg() {
+mod_reg::mod_reg(vm_logger &logger) : logger(logger) {
     for(int i = 0; i < NUM_PREGS; i++) {
         reg[i] = 0;
     }
@@ -21,10 +21,10 @@ mod_reg::mod_reg() {
 }
 
 void mod_reg::dump_registers() {
-    logf("RID: %04X\n", reg[REG_ID]);
-    logf("RA:  %04X RB:  %04X\n", reg[REG_A], reg[REG_B]);
-    logf("RC:  %04X RD:  %04X\n", reg[REG_C], reg[REG_D]);
-    logf("RSP: %04X RBP: %04X\n", reg[REG_SP], reg[REG_BP]);
+    logger.logf("RID: %04X\n", reg[REG_ID]);
+    logger.logf("RA:  %04X RB:  %04X\n", reg[REG_A], reg[REG_B]);
+    logger.logf("RC:  %04X RD:  %04X\n", reg[REG_C], reg[REG_D]);
+    logger.logf("RSP: %04X RBP: %04X\n", reg[REG_SP], reg[REG_BP]);
 }
 
 regval_t mod_reg::get(preg_t r) {
@@ -37,7 +37,7 @@ regval_t mod_reg::get(preg_t r) {
 
 void mod_reg::maybe_assign(bus_state &s, uinst_t ui, uint8_t iu, preg_t r) {
     if(RCTRL_IU_IS_EN(iu) && RCTRL_IU_IS_OUTPUT(iu)) {
-        logf("  %s <- %s:", BUS_NAMES[RCTRL_IU_GET_BUS(iu)], PREG_NAMES[r]);
+        logger.logf("  %s <- %s:", BUS_NAMES[RCTRL_IU_GET_BUS(iu)], PREG_NAMES[r]);
         s.assign(RCTRL_IU_GET_BUS(iu), reg[r]);
 
         if(r == REG_SP && (ui & RCTRL_RSP_INC)) {
@@ -48,7 +48,7 @@ void mod_reg::maybe_assign(bus_state &s, uinst_t ui, uint8_t iu, preg_t r) {
 
 void mod_reg::maybe_read(bus_state &s, uinst_t ui, uint8_t iu, preg_t r) {
     if(RCTRL_IU_IS_EN(iu) && RCTRL_IU_IS_INPUT(iu)) {
-        logf("  %s -> %s:", BUS_NAMES[RCTRL_IU_GET_BUS(iu)], PREG_NAMES[r]);
+        logger.logf("  %s -> %s:", BUS_NAMES[RCTRL_IU_GET_BUS(iu)], PREG_NAMES[r]);
         reg[r] = s.read(RCTRL_IU_GET_BUS(iu));
 
         if(r == REG_SP && (ui & RCTRL_RSP_INC)) {

@@ -123,8 +123,8 @@ static void gen_mem() {
 // for the direct jump/load jump.
 static instruction mk_loadable_instruction(regval_t ldbit, const char * const name, regval_t opcode,\
     bool second_arg, uinst_t jm_w_cond, std::vector<uinst_t> preamble) {
-    char * buff = (char *) malloc(strlen(FARPREFIX) + strlen(name) + 1);
-    sprintf(buff, "%s%s", ldbit ? FARPREFIX : "", name);
+    char * buff = (char *) malloc(strlen(LDJMPPREFIX) + strlen(name) + 1);
+    sprintf(buff, "%s%s", ldbit ? LDJMPPREFIX : "", name);
 
     if(ldbit) {
         preamble.push_back(MCTRL_FIDD_STORE | MCTRL_N_FIDD_OUT | MCTRL_BUSMODE_CONW_BUSM | (second_arg ? RCTRL_IU2_BUSA_O : RCTRL_IU1_BUSA_O));

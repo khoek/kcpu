@@ -2,7 +2,7 @@
 #include "../../spec/ucode.h"
 #include "alu.h"
 
-mod_alu::mod_alu() {
+mod_alu::mod_alu(vm_logger &logger) : logger(logger) {
     result = {.val = 0, .flags = 0};
 }
 
@@ -12,7 +12,7 @@ mod_alu::mod_alu() {
 #define FLAG_N_OVERFLOW (1 << 3)
 
 void mod_alu::dump_registers() {
-    logf("ADATA: %04X AFLAGS: %c%c%c%c\n", result.val,
+    logger.logf("ADATA: %04X AFLAGS: %c%c%c%c\n", result.val,
       (result.flags & FLAG_CARRY      ) ? 'C' : 'c',
       (result.flags & FLAG_N_ZERO     ) ? 'z' : 'Z',
       (result.flags & FLAG_SIGN       ) ? 'S' : 's',

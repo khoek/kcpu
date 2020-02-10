@@ -34,22 +34,22 @@ void load_binary_maybedefault(const char *name, std::filesystem::path p, std::st
   throw "error: could not find binary or default";
 }
 
-bool run_test(const std::filesystem::directory_entry & entry) {
-  kcpu cpu;
+bool run_test(bool verbose, uint32_t num, const std::filesystem::directory_entry & entry) {
+  kcpu cpu(vm_logger {verbose});
   load_binary_maybedefault("BIOS", entry.path(), "bios.bin", BIOS_SIZE, cpu.mem.bios.raw);
   load_binary_maybedefault("PROG", entry.path(), "prog.bin", PROG_SIZE, cpu.mem.prog.raw);
 
-  printf("CPU Start\n");
+  if(verbose) printf("CPU Start\n");
   kcpu::STATE s = cpu.run();
-  printf("\nCPU %s, %d uinstructions executed\n", cpu.ctl.cbits[CBIT_ABORTED] ? "Aborted" : "Halted", cpu.get_total_clocks());
+  if(verbose) printf("\nCPU %s, %d uinstructions executed\n", cpu.ctl.cbits[CBIT_ABORTED] ? "Aborted" : "Halted", cpu.get_total_clocks());
 
   switch(s) {
     case kcpu::STATE_HALTED: {
-      std::cout << "test '" << entry.path().filename() << "' PASS";
+      std::cout << "Test " << num << ": '" << entry.path().filename().string() << "' PASS" << std::endl;
       return true;
     }
     case kcpu::STATE_ABORTED: {
-      std::cout << "test '" << entry.path().filename() << "' FAIL";
+      std::cout << "Test " << num << ": '" << entry.path().filename().string() << "' FAIL" << std::endl;
       return false;
     }
     default: {
@@ -60,24 +60,31 @@ bool run_test(const std::filesystem::directory_entry & entry) {
 }
 
 int main() {
-    try {
-      init_arch();
+  bool verbose = false;
 
-      uint32_t test_count = 0;
-      uint32_t passes = 0;
-      for (const auto & entry : std::filesystem::directory_iterator(suite_path)) {
-        if(entry.is_directory()) {
-          test_count++;
-          passes += run_test(entry) ? 1 : 0;
-        }
+  try {
+    init_arch();
+
+    std::cout << "--------------------------------------------" << std::endl;
+
+    uint32_t test_count = 0;
+    uint32_t passes = 0;
+    for (const auto & entry : std::filesystem::directory_iterator(suite_path)) {
+      if(entry.is_directory()) {
+        test_count++;
+        passes += run_test(verbose, test_count, entry) ? 1 : 0;
       }
-
-      std::cout << ((test_count == passes) ? "SUCCESS" : "FAILED") << ", " << passes << "/" << test_count << " passes";
-    } catch(std::string msg) {
-        std::cerr << msg << "\n";
-    } catch(const char * msg) {
-        std::cerr << msg << "\n";
     }
 
-    return 0;
+    std::cout << "--------------------------------------------" << std::endl;
+    std::cout << "Test Result: " << ((test_count == passes) ? "SUCCESS" : "FAILED") << ", " << passes << "/" << test_count << " passes" << std::endl;
+
+    return !(test_count == passes);
+  } catch(std::string msg) {
+      std::cerr << msg << "\n";
+  } catch(const char * msg) {
+      std::cerr << msg << "\n";
+  }
+
+  return 1;
 }

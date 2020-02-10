@@ -1,10 +1,20 @@
-#ifndef COMMON_H
-#define COMMON_H
+#ifndef VM_COMMON_H
+#define VM_COMMON_H
 
 #include <cstdio>
 
 #include "../types.h"
 #include "../spec/hw.h"
+
+class vm_logger {
+    public:
+    const bool verbose;
+
+    vm_logger();
+    vm_logger(bool verbose);
+    
+    void logf(const char *fmt, ...);
+};
 
 extern const char * BUS_NAMES[];
 
@@ -12,6 +22,8 @@ extern const char * BUS_NAMES[];
 
 class bus_state {
     private:
+    vm_logger &logger;
+
     bool frozen;
     bool set[NUM_BUSES];
     regval_t bus[NUM_BUSES];
@@ -19,7 +31,7 @@ class bus_state {
     regval_t get_unset_value(bus_t b);
 
     public:
-    bus_state();
+    bus_state(vm_logger &logger);
     
     void freeze();
     void assign(bus_t b, regval_t val);

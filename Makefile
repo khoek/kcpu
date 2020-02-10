@@ -16,10 +16,10 @@ TOOLLIB := bin/lib/libtools.a
 KASMSRCS := $(shell find test -type f -name "*.kasm")
 KASMOBJS := $(patsubst %.kasm, %.bin, $(KASMSRCS))
 
-CXXFLAGS := -std=c++17 -O3 -DDEBUG
+CXXFLAGS := -std=c++17 -O3
 TOOLFLAGS := -I.
 
-all: $(TOOLBINS)
+all: $(LIB) $(TOOLLIB) $(KASMOBJS) $(TOOLBINS)
     
 test: all
 	@./bin/run_test_suite
@@ -34,7 +34,7 @@ run: all
 $(OBJS): %.o: %.cpp $(HDRS) Makefile
 	g++ $(CXXFLAGS) -c $< -o $@
 
-$(KASMSRCS): %.bin: %.o ./bin/kasm
+$(KASMOBJS): %.bin: %.kasm ./bin/kasm
 	./bin/kasm $< $@
 
 $(TOOLLIBOBJS): %.o: %.cpp $(HDRS) $(TOOLLIBHDRS) Makefile

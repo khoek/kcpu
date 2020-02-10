@@ -1,4 +1,20 @@
+#include <cstdio>
+#include <cstdarg>
 #include "common.h"
+
+vm_logger::vm_logger() : verbose(false) { }
+vm_logger::vm_logger(bool verbose) : verbose(verbose) { }
+
+void vm_logger::logf(const char *fmt, ...) {
+    if(!verbose) {
+        return;
+    }
+
+    va_list ap;
+    va_start(ap, fmt);
+    vprintf(fmt, ap);
+    va_end(ap);
+}
 
 const char * BUS_NAMES[] = {
     "BUS_A",
@@ -7,7 +23,7 @@ const char * BUS_NAMES[] = {
     "BUS_F",
 };
     
-bus_state::bus_state() {
+bus_state::bus_state(vm_logger &logger) : logger(logger) {
     frozen = false;
     for(int i = 0; i < NUM_BUSES; i++) {
         set[i] = false;
@@ -40,7 +56,7 @@ void bus_state::assign(bus_t b, regval_t val) {
         throw "out bus collision";
     }
 
-    logf("  %s <- %X\n", BUS_NAMES[b], val);
+    logger.logf("  %s <- %X\n", BUS_NAMES[b], val);
 
     set[b] = true;
     bus[b] = val;
@@ -68,7 +84,7 @@ void bus_state::connect(bus_t b1, bus_t b2) {
 
 regval_t bus_state::early_read(bus_t b) {
     regval_t ret = set[b] ? bus[b] : get_unset_value(b);
-    logf("  %s -> %X \n", BUS_NAMES[b], ret);
+    logger.logf("  %s -> %X \n", BUS_NAMES[b], ret);
     return ret;
 }
 

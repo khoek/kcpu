@@ -30,7 +30,7 @@ regval_t mem_bank::load(regval_t addr) {
     return raw[addr];
 }
 
-mod_mem::mod_mem() : bios(BIOS_SIZE, true), prog(PROG_SIZE, false) {
+mod_mem::mod_mem(vm_logger &logger) : logger(logger), bios(BIOS_SIZE, true), prog(PROG_SIZE, false) {
     prefix[0] = 0;
     prefix[1] = 0;
     fidd_adr = 0;
@@ -40,8 +40,8 @@ mod_mem::mod_mem() : bios(BIOS_SIZE, true), prog(PROG_SIZE, false) {
 #define F_BANK_SELECT (1 << 7)
 
 void mod_mem::dump_registers() {
-    logf("LPFX: %04X FPFX: %04X\n", prefix[0], prefix[1]);
-    logf("FIDV: %04X FIDA: %04X\n", fidd_val, fidd_adr);
+    logger.logf("LPFX: %04X FPFX: %04X\n", prefix[0], prefix[1]);
+    logger.logf("FIDV: %04X FIDA: %04X\n", fidd_val, fidd_adr);
 }
 
 mem_bank * mod_mem::get_bank(bool far) {

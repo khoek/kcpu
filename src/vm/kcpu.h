@@ -1,5 +1,5 @@
-#ifndef KCPU_H
-#define KCPU_H
+#ifndef VM_KCPU_H
+#define VM_KCPU_H
 
 #include "common.h"
 #include "mod/ctl.h"
@@ -10,6 +10,7 @@
 class kcpu {
     private:
     uint32_t total_clocks;
+    vm_logger logger;
 
     public:
     enum STATE {
@@ -24,6 +25,7 @@ class kcpu {
     mod_alu alu;
   
     kcpu();
+    kcpu(vm_logger logger);
     uint32_t get_total_clocks();
     STATE get_state();
 

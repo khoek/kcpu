@@ -14,7 +14,7 @@ JNZ l2
 ABRT
 
 l2:
-MOV $FFFF ra
+MOV $0xFFFF ra
 MOV ra rb
 ADD ra rb
 JNC fail

@@ -1,7 +1,7 @@
 #include "kcpu.h"
 
-kcpu::kcpu() : total_clocks(0) {
-}
+kcpu::kcpu() : total_clocks(0), ctl(logger), reg(logger), mem(logger), alu(logger) { }
+kcpu::kcpu(vm_logger logger) : total_clocks(0), logger(logger), ctl(logger), reg(logger), mem(logger), alu(logger) { }
 
 uint32_t kcpu::get_total_clocks() {
     return total_clocks;
@@ -24,13 +24,13 @@ kcpu::STATE kcpu::ustep() {
 
     regval_t i = ctl.get_inst();
     uinst_t ui = ctl.get_uinst();
-    logf("\nIP/UC @ I/UI: 0x%04X/0x%04X @ 0x%04X/0x%04lX\n", ctl.reg[REG_IP], ctl.reg[REG_UC], i, ui);
+    logger.logf("\nIP/UC @ I/UI: 0x%04X/0x%04X @ 0x%04X/0x%04lX\n", ctl.reg[REG_IP], ctl.reg[REG_UC], i, ui);
 
     if(!ui) {
         throw "executing undefined microcode instruction!";
     }
 
-    bus_state state;
+    bus_state state(logger);
 
     ctl.clock_outputs(ui, state);
     // `mod_reg` must appear before `mod_mem`
