@@ -1,4 +1,4 @@
-.PHONY: all test clean run
+.PHONY: all test clean cloc run run-step run-quiet
 
 SRCS := $(shell find src -type f -name "*.cpp")
 OBJS := $(SRCS:.cpp=.o)
@@ -28,11 +28,8 @@ clean:
 	rm -f $(OBJS) $(TOOLLIBOBJS) $(KASMOBJS)
 	rm -rf bin
 
-bin/bios.bin: asm/bios.kasm
-	bin/kasm asm/bios.kasm bin/bios.bin
-
-bin/prog.bin: asm/prog.kasm
-	bin/kasm asm/prog.kasm bin/prog.bin
+cloc:
+	cloc --read-lang-def=.cloc_lang_def.txt src asm test tools
 
 run: all bin/bios.bin bin/prog.bin
 	bin/main -d
@@ -42,6 +39,12 @@ run-step: all bin/bios.bin bin/prog.bin
     
 run-quiet: all bin/bios.bin bin/prog.bin
 	bin/main
+
+bin/bios.bin: asm/bios.kasm
+	bin/kasm asm/bios.kasm bin/bios.bin
+
+bin/prog.bin: asm/prog.kasm
+	bin/kasm asm/prog.kasm bin/prog.bin
 
 $(KASMOBJS): %.bin: %.kasm ./bin/kasm
 	bin/kasm $< $@
