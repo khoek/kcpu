@@ -25,7 +25,7 @@ static uinst_t ucode_memb_st_step2(bool lo_or_hi, bool zero) {
 static void gen_sys() {
     //FIXME handle N_XXXXX values....
 
-    reg_inst(instruction("NOP", I_NOP, ARGS_0, {
+    reg_inst(instruction("NOP" , I_NOP, ARGS_0, {
         MCTRL_FIDD_STORE | MCTRL_N_FIDD_OUT | MCTRL_BUSMODE_CONW_BUSM | GCTRL_ACTION_RIP_BUSA_O | GCTRL_FT_ENTER,
                            MCTRL_N_MAIN_OUT | MCTRL_BUSMODE_CONW_BUSB | GCTRL_FT_MAYBEEXIT,
         MCTRL_FIDD_STORE | MCTRL_N_FIDD_OUT | MCTRL_BUSMODE_CONW_BUSM | GCTRL_ACTION_RIP_BUSA_O,
@@ -33,8 +33,12 @@ static void gen_sys() {
                            MCTRL_N_MAIN_OUT | MCTRL_BUSMODE_CONW_BUSB | RCTRL_IU1_BUSB_I | GCTRL_FT_EXIT,
     }));
 
-    reg_inst(instruction("HLT", I_HLT, ARGS_0, {
-        MCTRL_N_FIDD_OUT | MCTRL_N_MAIN_OUT | GCTRL_ACTION_HALT | GCTRL_FT_ENTER,
+    reg_inst(instruction("HLT" , I_HLT, ARGS_0, {
+        MCTRL_N_FIDD_OUT | MCTRL_N_MAIN_OUT | GCTRL_ACTION_STOP,
+    }));
+
+    reg_inst(instruction("ABRT", I_ABRT, ARGS_0, {
+        MCTRL_N_FIDD_OUT | MCTRL_N_MAIN_OUT | GCTRL_ACTION_STOP | GCTRL_FT_ENTER,
     }));
 }
 
@@ -56,16 +60,6 @@ static instruction mk_distanced_instruction(regval_t farbit, const char * const 
 static void gen_mem_variants(regval_t farbit) {
     reg_inst(mk_distanced_instruction(farbit, "STPFX", I_STPFX, ARGS_1,
         MCTRL_PREFIX_STORE | MCTRL_N_MAIN_OUT | MCTRL_N_FIDD_OUT | RCTRL_IU1_BUSB_O | GCTRL_FT_ENTER));
-
-    // FIXME Note that right now bad things will happen if the first argument of STRIP is not a constant
-    // Probably we should make the assembler prohibit doing anything else.
-    reg_inst(mk_distanced_instruction(farbit, "STRIP", I_STRIP, ARGS_2_1CONST, {
-        // (1 - 2) Add IU1 to RIP and store in IU1, and (3 - 4) store the result in the address pointed to by IU2
-        MCTRL_N_FIDD_OUT | MCTRL_N_MAIN_OUT | ACTRL_INPUT_EN | ACTRL_MODE_ADD  | RCTRL_IU1_BUSA_O | GCTRL_JM_P_RIP_BUSB_O,
-        MCTRL_N_FIDD_OUT | MCTRL_N_MAIN_OUT | ACTRL_DATA_OUT | RCTRL_IU1_BUSA_I,
-        MCTRL_FIDD_STORE | MCTRL_N_FIDD_OUT | MCTRL_N_MAIN_OUT | MCTRL_BUSMODE_CONW_BUSB | RCTRL_IU1_BUSB_O | RCTRL_IU2_BUSA_O,
-        MCTRL_MAIN_STORE                    | MCTRL_N_MAIN_OUT | MCTRL_BUSMODE_CONW_BUSM | GCTRL_FT_ENTER
-    }));
     
     reg_inst(mk_distanced_instruction(farbit, "LDW", I_LDW, ARGS_2_1CONST, {
         MCTRL_FIDD_STORE | MCTRL_N_FIDD_OUT | MCTRL_BUSMODE_CONW_BUSM | RCTRL_IU1_BUSA_O,
@@ -120,56 +114,55 @@ static void gen_mem_variants(regval_t farbit) {
 
 static void gen_mem() {
     gen_mem_variants(0);
-    gen_mem_variants(0b00010000);
+    gen_mem_variants(P_I_FAR);
 }
 
 #define LDJMPPREFIX "LD"
 
-static instruction mk_loadable_instruction(regval_t ldbit, const char * const name, regval_t opcode, argtype args, uinst_t ui) {
+// `second_arg` means the instruction will take 2 arguments instead of 1, and we will use the value of the second arg
+// for the direct jump/load jump.
+static instruction mk_loadable_instruction(regval_t ldbit, const char * const name, regval_t opcode,\
+    bool second_arg, uinst_t jm_w_cond, std::vector<uinst_t> preamble) {
     char * buff = (char *) malloc(strlen(FARPREFIX) + strlen(name) + 1);
     sprintf(buff, "%s%s", ldbit ? FARPREFIX : "", name);
 
-    std::vector<uinst_t> uis;
     if(ldbit) {
-        uis.push_back(MCTRL_FIDD_STORE | MCTRL_N_FIDD_OUT | MCTRL_BUSMODE_CONW_BUSM | RCTRL_IU1_BUSA_O);
-        uis.push_back(MCTRL_N_MAIN_OUT | MCTRL_BUSMODE_CONW_BUSB | ui);
+        preamble.push_back(MCTRL_FIDD_STORE | MCTRL_N_FIDD_OUT | MCTRL_BUSMODE_CONW_BUSM | (second_arg ? RCTRL_IU2_BUSA_O : RCTRL_IU1_BUSA_O));
+        preamble.push_back(MCTRL_N_MAIN_OUT | MCTRL_BUSMODE_CONW_BUSB | jm_w_cond);
     } else {
-        uis.push_back(MCTRL_N_FIDD_OUT | MCTRL_N_MAIN_OUT | ui | RCTRL_IU1_BUSB_O);
+        preamble.push_back(MCTRL_N_FIDD_OUT | MCTRL_N_MAIN_OUT | jm_w_cond | (second_arg ? RCTRL_IU2_BUSB_O : RCTRL_IU1_BUSB_O));
     }
-    return instruction(buff, opcode | ldbit, args, uis);
+    return instruction(buff, opcode | ldbit, second_arg ? ARGS_2_1CONST : ARGS_1, preamble);
+}
+
+static instruction mk_loadable_instruction(regval_t ldbit, const char * const name, regval_t opcode,
+    bool second_arg, uinst_t jm_w_cond) {
+    return mk_loadable_instruction(ldbit, name, opcode, second_arg, jm_w_cond, {});
 }
 
 void gen_ctl_loadables(regval_t ldbit) {
-    reg_inst(mk_loadable_instruction(ldbit, "JMP", I_JMP  , ARGS_1,
-        GCTRL_JM_YES));
+    reg_inst(mk_loadable_instruction(ldbit, "JMP" , I_JMP , false, GCTRL_JM_YES));
 
-    reg_inst(mk_loadable_instruction(ldbit, "JC" , I_JC   , ARGS_1,
-        GCTRL_JM_ON_TRUE  | GCTRL_JCOND_CARRY   ));
-    reg_inst(mk_loadable_instruction(ldbit, "JNC", I_JNC  , ARGS_1,
-        GCTRL_JM_ON_FALSE | GCTRL_JCOND_CARRY ));
+    reg_inst(mk_loadable_instruction(ldbit, "JC"  , I_JC  , false, GCTRL_JM_ON_TRUE  | GCTRL_JCOND_CARRY  ));
+    reg_inst(mk_loadable_instruction(ldbit, "JNC" , I_JNC , false, GCTRL_JM_ON_FALSE | GCTRL_JCOND_CARRY  ));
 
-    reg_inst(mk_loadable_instruction(ldbit, "JZ" , I_JZ   , ARGS_1,
-        GCTRL_JM_ON_FALSE | GCTRL_JCOND_N_ZERO));
-    reg_inst(mk_loadable_instruction(ldbit, "JNZ", I_JNZ  , ARGS_1,
-        GCTRL_JM_ON_TRUE  | GCTRL_JCOND_N_ZERO));
+    reg_inst(mk_loadable_instruction(ldbit, "JZ"  , I_JZ  , false, GCTRL_JM_ON_FALSE | GCTRL_JCOND_N_ZERO ));
+    reg_inst(mk_loadable_instruction(ldbit, "JNZ" , I_JNZ , false, GCTRL_JM_ON_TRUE  | GCTRL_JCOND_N_ZERO ));
 
-    reg_inst(mk_loadable_instruction(ldbit, "JS" , I_JS   , ARGS_1,
-        GCTRL_JM_ON_TRUE  | GCTRL_JCOND_SIGN  ));
-    reg_inst(mk_loadable_instruction(ldbit, "JNS", I_JNS  , ARGS_1,
-        GCTRL_JM_ON_FALSE | GCTRL_JCOND_SIGN  ));
+    reg_inst(mk_loadable_instruction(ldbit, "JS"  , I_JS  , false, GCTRL_JM_ON_TRUE  | GCTRL_JCOND_SIGN   ));
+    reg_inst(mk_loadable_instruction(ldbit, "JNS" , I_JNS , false, GCTRL_JM_ON_FALSE | GCTRL_JCOND_SIGN   ));
 
-    reg_inst(mk_loadable_instruction(ldbit, "JO" , I_JO   , ARGS_1,
-        GCTRL_JM_ON_FALSE | GCTRL_JCOND_N_OVFLW));
-    reg_inst(mk_loadable_instruction(ldbit, "JNO", I_JNO  , ARGS_1,
-        GCTRL_JM_ON_TRUE  | GCTRL_JCOND_N_OVFLW));
+    reg_inst(mk_loadable_instruction(ldbit, "JO"  , I_JO  , false, GCTRL_JM_ON_FALSE | GCTRL_JCOND_N_OVFLW));
+    reg_inst(mk_loadable_instruction(ldbit, "JNO" , I_JNO , false, GCTRL_JM_ON_TRUE  | GCTRL_JCOND_N_OVFLW));
+
+    reg_inst(mk_loadable_instruction(ldbit, "LJMP", I_LJMP, true , GCTRL_JM_YES, {
+        MCTRL_PREFIX_STORE | MCTRL_N_FIDD_OUT | MCTRL_N_MAIN_OUT | RCTRL_IU1_BUSB_O,
+    }));
 }
 
 void gen_ctl() {
     gen_ctl_loadables(0);
     gen_ctl_loadables(P_I_LDJMP);
-
-    // TODO implement
-    // reg_inst("LJMP", 0b00000001, 0, MCTRL_PREFIX_STORE | MCTRL_N_MAIN_OUT | MCTRL_N_FIDD_OUT | RCTRL_IU1_BUSA_O | GCTRL_FT_ENTER);
 }
 
 static void gen_reg() {
@@ -179,29 +172,60 @@ static void gen_reg() {
         MCTRL_N_FIDD_OUT | MCTRL_N_MAIN_OUT | RCTRL_IU1_BUSA_O | RCTRL_IU2_BUSA_I | GCTRL_FT_ENTER));
 }
 
-static instruction mk_arith_inst_arg1(const char *name, regval_t opcode, uinst_t alu_mode, bool const_allowed) {
-    return instruction(name, opcode, const_allowed ? ARGS_1 : ARGS_1_NOCONST, {
-        MCTRL_N_FIDD_OUT | MCTRL_N_MAIN_OUT | ACTRL_INPUT_EN | alu_mode        | RCTRL_IU1_BUSA_O,
-        MCTRL_N_FIDD_OUT | MCTRL_N_MAIN_OUT | ACTRL_DATA_OUT | ACTRL_FLAGS_OUT | RCTRL_IU1_BUSA_I | GCTRL_ACTION_RFG_BUSB_I | GCTRL_FT_ENTER
+#define NOFLAGSUFFIX "NF"
+
+static instruction mk_arith_inst_arg1(uinst_t flagbits, const char *name, regval_t opcode, uinst_t alu_mode, bool const_allowed) {
+    char * buff = (char *) malloc(strlen(NOFLAGSUFFIX) + strlen(name) + 1);
+    sprintf(buff, "%s%s", name, flagbits ? "" : NOFLAGSUFFIX);
+
+    return instruction(buff, opcode | (flagbits ? 0 : P_I_NOFGS), const_allowed ? ARGS_1 : ARGS_1_NOCONST, {
+        MCTRL_N_FIDD_OUT | MCTRL_N_MAIN_OUT | ACTRL_INPUT_EN | alu_mode | RCTRL_IU1_BUSA_O,
+        MCTRL_N_FIDD_OUT | MCTRL_N_MAIN_OUT | ACTRL_DATA_OUT | flagbits | RCTRL_IU1_BUSA_I | GCTRL_FT_ENTER
     });
 }
 
-static instruction mk_arith_inst_arg2(const char *name, regval_t opcode, uinst_t alu_mode) {
-    return instruction(name, opcode, ARGS_2_1CONST, {
-        MCTRL_N_FIDD_OUT | MCTRL_N_MAIN_OUT | ACTRL_INPUT_EN | alu_mode        | RCTRL_IU1_BUSA_O | RCTRL_IU2_BUSB_O,
-        MCTRL_N_FIDD_OUT | MCTRL_N_MAIN_OUT | ACTRL_DATA_OUT | ACTRL_FLAGS_OUT | RCTRL_IU2_BUSA_I | GCTRL_ACTION_RFG_BUSB_I | GCTRL_FT_ENTER
+static instruction mk_arith_inst_arg2(uinst_t flagbits, const char *name, regval_t opcode, uinst_t alu_mode) {
+    char * buff = (char *) malloc(strlen(NOFLAGSUFFIX) + strlen(name) + 1);
+    sprintf(buff, "%s%s", name, flagbits ? "" : NOFLAGSUFFIX);
+
+    return instruction(buff, opcode | (flagbits ? 0 : P_I_NOFGS), ARGS_2_1CONST, {
+        MCTRL_N_FIDD_OUT | MCTRL_N_MAIN_OUT | ACTRL_INPUT_EN | alu_mode | RCTRL_IU1_BUSA_O | RCTRL_IU2_BUSB_O,
+        MCTRL_N_FIDD_OUT | MCTRL_N_MAIN_OUT | ACTRL_DATA_OUT | flagbits | RCTRL_IU2_BUSA_I | GCTRL_FT_ENTER
     });
+}
+
+static void gen_alu_flagables(uinst_t flagbits) {
+    reg_inst(mk_arith_inst_arg2(flagbits, "ADD" , I_ADD , ACTRL_MODE_ADD ));
+    reg_inst(mk_arith_inst_arg2(flagbits, "SUB" , I_SUB , ACTRL_MODE_SUB ));
+    reg_inst(mk_arith_inst_arg2(flagbits, "AND" , I_AND , ACTRL_MODE_AND ));
+    reg_inst(mk_arith_inst_arg2(flagbits, "OR"  , I_OR  , ACTRL_MODE_OR  ));
+    reg_inst(mk_arith_inst_arg2(flagbits, "XOR" , I_XOR , ACTRL_MODE_XOR ));
+    reg_inst(mk_arith_inst_arg1(flagbits, "LSFT", I_LSFT, ACTRL_MODE_LSFT, false));
+    reg_inst(mk_arith_inst_arg1(flagbits, "RSFT", I_RSFT, ACTRL_MODE_RSFT, false));
+    reg_inst(mk_arith_inst_arg1(flagbits, "TST" , I_TST , ACTRL_MODE_TST , true ));
 }
 
 static void gen_alu() {
-    reg_inst(mk_arith_inst_arg2("ADD" , I_ADD , ACTRL_MODE_ADD ));
-    reg_inst(mk_arith_inst_arg2("SUB" , I_SUB , ACTRL_MODE_SUB ));
-    reg_inst(mk_arith_inst_arg2("AND" , I_AND , ACTRL_MODE_AND ));
-    reg_inst(mk_arith_inst_arg2("OR"  , I_OR  , ACTRL_MODE_OR  ));
-    reg_inst(mk_arith_inst_arg2("XOR" , I_XOR , ACTRL_MODE_XOR ));
-    reg_inst(mk_arith_inst_arg1("LSFT", I_LSFT, ACTRL_MODE_LSFT, false));
-    reg_inst(mk_arith_inst_arg1("RSFT", I_RSFT, ACTRL_MODE_RSFT, false));
-    reg_inst(mk_arith_inst_arg1("TST" , I_TST , ACTRL_MODE_TST , true ));
+    gen_alu_flagables(0);
+    gen_alu_flagables(ACTRL_FLAGS_OUT | GCTRL_ACTION_RFG_BUSB_I);
+}
+
+static void gen_x() {
+    // FIXME Note that right now bad things will happen if the first argument of these is not RSP
+    // Probably we should make the assembler prohibit doing anything else.
+
+    reg_inst(instruction("X_PUSH", I_X_PUSH, ARGS_2_2CONST, {
+        //IU1 = MUST BE RSP, IU2 = REG to PUSH
+        MCTRL_FIDD_STORE | MCTRL_N_FIDD_OUT | MCTRL_N_MAIN_OUT | MCTRL_BUSMODE_CONW_BUSB | RCTRL_IU1_BUSA_O | RCTRL_IU2_BUSB_O,
+        MCTRL_MAIN_STORE                    | MCTRL_N_MAIN_OUT | MCTRL_BUSMODE_CONW_BUSM | RCTRL_RSP_INC | GCTRL_FT_ENTER
+    }));
+
+    reg_inst(instruction("X_CALL", I_X_CALL, ARGS_2_2CONST, {
+        // IU1 = MUST BE RSP, IU2 = CALL ADDRESS
+        // Effectively: PUSH RIP RSP | JMP IU2
+        MCTRL_FIDD_STORE | MCTRL_N_FIDD_OUT | MCTRL_N_MAIN_OUT | MCTRL_BUSMODE_CONW_BUSB | RCTRL_IU1_BUSA_O | GCTRL_JM_P_RIP_BUSB_O,
+        MCTRL_MAIN_STORE                    | MCTRL_N_MAIN_OUT | MCTRL_BUSMODE_CONW_BUSM | RCTRL_IU2_BUSB_O | RCTRL_RSP_INC | GCTRL_JM_YES
+    }));
 }
 
 void register_insts() {
@@ -213,4 +237,5 @@ void register_insts() {
     gen_reg();
     gen_mem();
     gen_alu();
+    gen_x();
 }

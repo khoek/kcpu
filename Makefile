@@ -3,23 +3,26 @@
 SRCS := $(shell find src -type f -name "*.cpp")
 OBJS := $(SRCS:.cpp=.o)
 HDRS := $(shell find src -type f -name "*.h")
-LIB := libkcpu.a
+LIB := bin/libkcpu.a
 
-CXXFLAGS := -g -std=c++17
+CXXFLAGS := -std=c++17 -O3 -DDEBUG
 
-$(OBJS): %.o: %.cpp $(HDRS)
+all: bin/main bin/kasm
+    
+run: all
+	./bin/kasm && ./bin/main
+
+$(OBJS): %.o: %.cpp $(HDRS) Makefile
 	g++ $(CXXFLAGS) -c $< -o $@
     
-$(LIB): $(OBJS)
+$(LIB): $(OBJS) Makefile
+	mkdir -p bin
 	ar rvs $(LIB) $(OBJS)
     
-main: main.cpp libkcpu.a
-	g++ $(CXXFLAGS) main.cpp $(LIB) -o main
+bin/main: main.cpp $(LIB) Makefile
+	mkdir -p bin
+	g++ $(CXXFLAGS) main.cpp $(LIB) -o bin/main
     
-kasm: kasm.cpp libkcpu.a
-	g++ $(CXXFLAGS) kasm.cpp $(LIB) -o kasm
-
-all: main kasm
-    
-run: main kasm
-	./kasm && ./main
+bin/kasm: kasm.cpp $(LIB) Makefile
+	mkdir -p bin
+	g++ $(CXXFLAGS) kasm.cpp $(LIB) -o bin/kasm

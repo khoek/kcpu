@@ -1,4 +1,7 @@
 
+
+
+
 In the VM:
    * Byte versions!
    * ADD3/and friends
@@ -7,9 +10,9 @@ In the VM:
    * consider a hardware increment on RSP? Just like RIP, has to be INC BY 2!!!
 
 
-For control board:
+Remember for designs:
   * Remember, BUS_A and BUS_B should both be pulled low.
-
+  * WE ADDED AN INC COMMAND TO RSP. (CAN WE DEC IN ONE INST TOO??? Are there chips which do that? (unlikely?))
 
 
 

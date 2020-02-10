@@ -1,10 +1,22 @@
 #include "kcpu.h"
 
-kcpu::kcpu() : total_clock_cycles(0) {
+kcpu::kcpu() : total_clocks(0) {
 }
 
-void kcpu::ustep() {
-    total_clock_cycles++;
+uint32_t kcpu::get_total_clocks() {
+    return total_clocks;
+}
+
+kcpu::STATE kcpu::get_state() {
+    if(ctl.cbits[CBIT_HALTED]) {
+        return ctl.cbits[CBIT_ABORTED] ? STATE_ABORTED : STATE_HALTED;
+    }
+
+    return STATE_RUNNING;
+}
+
+kcpu::STATE kcpu::ustep() {
+    total_clocks++;
 
     if(ctl.cbits[CBIT_HALTED]) {
         throw "cpu already halted!";
@@ -39,18 +51,35 @@ void kcpu::ustep() {
     mem.dump_registers();
     reg.dump_registers();
     alu.dump_registers();
+
+    return get_state();
 }
 
-void kcpu::step() {
+kcpu::STATE kcpu::step() {
+    if(ctl.cbits[CBIT_HALTED]) {
+        throw "cpu already halted!";
+    }
+
     do {
         ustep();
-    } while(ctl.reg[REG_UC]);
+    } while(ctl.reg[REG_UC] && !ctl.cbits[CBIT_HALTED]);
+
+    return get_state();
 }
 
-uint32_t kcpu::run() {
+kcpu::STATE kcpu::run() {
     while(!ctl.cbits[CBIT_HALTED]) {
         step();
     }
 
-    return total_clock_cycles;
+    return get_state();
+}
+
+void kcpu::resume() {
+    if(get_state() != STATE_ABORTED) {
+        throw "cannot resume, cpu not aborted";
+    }
+
+    ctl.cbits[CBIT_HALTED ] = false;
+    ctl.cbits[CBIT_ABORTED] = false;
 }

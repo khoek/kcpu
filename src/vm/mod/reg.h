@@ -5,8 +5,8 @@
 
 class mod_reg {
     private:
-    void maybe_assign(bus_state &s, uint8_t iu, preg_t r);
-    void maybe_read(bus_state &s, uint8_t iu, preg_t r);
+    void maybe_assign(bus_state &s, uinst_t ui, uint8_t iu, preg_t r);
+    void maybe_read(bus_state &s, uinst_t ui, uint8_t iu, preg_t r);
 
     public:
     //FIXME make private

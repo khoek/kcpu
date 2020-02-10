@@ -126,7 +126,7 @@ void inst_assembler::bind_opcode(unbound_opcode uo, arg_info ai) {
 
                 ius[j] = ai.args[uo.bi[j].val.argidx];
 
-                if(ai.constval && j == ai.constval->first) {
+                if(ai.constval && uo.bi[j].val.argidx == ai.constval->first) {
                     if(constval) {
                         throw "attempting to bind user constvalue when constvalue already assigned";
                     }

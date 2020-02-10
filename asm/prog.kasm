@@ -1,30 +1,33 @@
-NOP
-NOP
-NOP
-NOP
+MOV $10 ra
 
-MOV $0x1000 rsp
+MOV $1 rb
+MOV $1 rc
 
-MOV $0x0117 ra
-MOV $0xBEEF rb
+loop:
+TST ra
+JZ exit
 
-PUSH ra
-MOV $0xDEAD ra
+SUB $1 ra
 
-POP ra
+MOV rc rd
+ADD rb rc
+MOV rd rb
 
-CALL fun
-MOV $0xDDDD rd
-CALL bar
+JMP loop
 
-MOV $0xCCCC rc
+exit:
+
+MOV $-4 ra
+MOV $-3 rb
+CMP ra rb
+
+JL g
+
+MOV $0x0000 rc
 
 HLT
 
-fun:
-MOV $0xAAAA ra
-RET
+g:
+MOV $0x1111 rc
 
-bar:
-MOV $0xBBBB rb
-RET
+HLT

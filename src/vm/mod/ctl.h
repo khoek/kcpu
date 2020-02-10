@@ -5,8 +5,9 @@
 
 #define CBIT_INSTMASK 0
 #define CBIT_HALTED   1
+#define CBIT_ABORTED  2
 
-#define NUM_CBITS 2
+#define NUM_CBITS 3
 
 class mod_ctl {
     private:

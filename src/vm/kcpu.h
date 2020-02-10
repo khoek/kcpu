@@ -9,19 +9,28 @@
 
 class kcpu {
     private:
-    uint32_t total_clock_cycles;
+    uint32_t total_clocks;
 
     public:
+    enum STATE {
+        STATE_RUNNING,
+        STATE_HALTED,
+        STATE_ABORTED,
+    };
+
     mod_ctl ctl;
     mod_reg reg;
     mod_mem mem;
     mod_alu alu;
   
     kcpu();
-    
-    void ustep();
-    void step();
-    uint32_t run();
+    uint32_t get_total_clocks();
+    STATE get_state();
+
+    STATE ustep();
+    STATE step();
+    STATE run();
+    void resume();
 };
 
 #endif

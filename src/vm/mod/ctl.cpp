@@ -39,7 +39,7 @@ void mod_ctl::clock_outputs(uinst_t ui, bus_state &s) {
         }
         case GCTRL_ACTION_NONE: break;
         case GCTRL_ACTION_RFG_BUSB_I: break;
-        case GCTRL_ACTION_HALT: break;
+        case GCTRL_ACTION_STOP: break;
         default: throw "unkown GCTRL_ACTION";
     }
 
@@ -79,8 +79,13 @@ void mod_ctl::clock_inputs(uinst_t ui, bus_state &s) {
             reg[REG_FG] = /* FIXME low mask? */ s.read(BUS_B);
             break;
         }
-        case GCTRL_ACTION_HALT: {
+        case GCTRL_ACTION_STOP: {
             cbits[CBIT_HALTED] = true;
+
+            if((ui & MASK_GCTRL_FTJM) == GCTRL_FT_ENTER) {
+                cbits[CBIT_ABORTED] = true;
+            }
+
             break;
         }
         case GCTRL_ACTION_NONE: break;

@@ -1,0 +1,19 @@
+NOP
+NOP
+NOP
+NOP
+
+CALL target
+MOV $0xBBBB rb
+
+HLT
+
+target:
+MOV $0xAAAA ra
+CALL target2
+MOV $0xDDDD rd
+RET
+
+target2:
+MOV $0xCCCC rc
+RET

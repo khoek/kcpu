@@ -41,7 +41,12 @@
 #define GCTRL_ACTION_NONE       (0b00LL << (5 + GCTRL_BASE))
 #define GCTRL_ACTION_RIP_BUSA_O (0b01LL << (5 + GCTRL_BASE))
 #define GCTRL_ACTION_RFG_BUSB_I (0b10LL << (5 + GCTRL_BASE))
-#define GCTRL_ACTION_HALT       (0b11LL << (5 + GCTRL_BASE))
+// A GCTRL_ACTION_STOP without GCTRL_FT_ENTER halts
+// the computer. GCTRL_ACTION_STOP with GCTRL_FT_ENTER
+// is an "abort", which halts and sets the abort flag as well.
+// Aborts are useful as a breakpoint in the VM, but along
+// with an LED or two will help with hardware debugging as well.
+#define GCTRL_ACTION_STOP       (0b11LL << (5 + GCTRL_BASE))
 
 // NONBIT: GCTRL decoding
 #define MASK_GCTRL_FTJM (0b111LL << (0 + GCTRL_BASE))
@@ -50,7 +55,7 @@
 
 // RCTRL
 #define RCTRL_BASE GCTRL_END
-#define RCTRL_END (RCTRL_BASE + 7)
+#define RCTRL_END (RCTRL_BASE + 11)
 #define RCTRL_IU1_BUSA_I (0b100LL << (0 + RCTRL_BASE))
 #define RCTRL_IU1_BUSA_O (0b101LL << (0 + RCTRL_BASE))
 #define RCTRL_IU1_BUSB_I (0b110LL << (0 + RCTRL_BASE))
@@ -59,13 +64,20 @@
 #define RCTRL_IU2_BUSA_O (0b101LL << (3 + RCTRL_BASE))
 #define RCTRL_IU2_BUSB_I (0b110LL << (3 + RCTRL_BASE))
 #define RCTRL_IU2_BUSB_O (0b111LL << (3 + RCTRL_BASE))
+#define RCTRL_IU3_BUSA_I (0b100LL << (6 + RCTRL_BASE))
+#define RCTRL_IU3_BUSA_O (0b101LL << (6 + RCTRL_BASE))
+#define RCTRL_IU3_BUSB_I (0b110LL << (6 + RCTRL_BASE))
+#define RCTRL_IU3_BUSB_O (0b111LL << (6 + RCTRL_BASE))
+#define RCTRL_RSP_INC (1LL << (7 + RCTRL_BASE))
 
 // NONBIT: RCTRL decoding
 #define MASK_RCTRL_IU 0b111LL
 #define MASK_RCTRL_IU1 (MASK_RCTRL_IU << (0 + RCTRL_BASE))
 #define MASK_RCTRL_IU2 (MASK_RCTRL_IU << (3 + RCTRL_BASE))
+#define MASK_RCTRL_IU3 (MASK_RCTRL_IU << (6 + RCTRL_BASE))
 #define RCTRL_DECODE_IU1(val) (((val) & (MASK_RCTRL_IU << (0 + RCTRL_BASE))) >> (0 + RCTRL_BASE))
 #define RCTRL_DECODE_IU2(val) (((val) & (MASK_RCTRL_IU << (3 + RCTRL_BASE))) >> (3 + RCTRL_BASE))
+#define RCTRL_DECODE_IU3(val) (((val) & (MASK_RCTRL_IU << (6 + RCTRL_BASE))) >> (6 + RCTRL_BASE))
 #define RCTRL_IU_IS_EN(dec) (!!(0b100LL & dec))
 #define RCTRL_IU_GET_BUS(dec) (0b010LL & dec ? BUS_B : BUS_A)
 #define RCTRL_IU_IS_INPUT(dec) (!(0b001LL & dec))

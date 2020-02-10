@@ -11,8 +11,6 @@ static regval_t byte_flip(regval_t v) {
     return ((v & 0x00FF) << 8) | ((v & 0xFF00) >> 8);
 }
 
-#define DEBUG
-
 #ifdef DEBUG
 #define logf printf
 #else

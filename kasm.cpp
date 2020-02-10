@@ -16,13 +16,13 @@ int main() {
 
         {
             std::ifstream in("asm/bios.kasm");
-            std::ofstream out("bios.bin", std::ios::binary);
+            std::ofstream out("bin/bios.bin", std::ios::binary);
             assemble_file(in, out);
         }
 
         {
             std::ifstream in("asm/prog.kasm");
-            std::ofstream out("prog.bin", std::ios::binary);
+            std::ofstream out("bin/prog.bin", std::ios::binary);
             assemble_file(in, out);
         }
     } catch(std::string msg) {
