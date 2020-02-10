@@ -27,11 +27,18 @@ test: all
 clean:
 	rm -f $(OBJS) $(TOOLLIBOBJS) $(KASMOBJS)
 	rm -rf bin
-    
-run: all
+
+bin/bios.bin: asm/bios.kasm
 	bin/kasm asm/bios.kasm bin/bios.bin
+
+bin/prog.bin: asm/prog.kasm
 	bin/kasm asm/prog.kasm bin/prog.bin
+
+run: all bin/bios.bin bin/prog.bin
 	bin/main -v
+    
+run-quiet: all bin/bios.bin bin/prog.bin
+	bin/main
 
 $(OBJS): %.o: %.cpp $(HDRS) Makefile
 	g++ $(CXXFLAGS) -c $< -o $@

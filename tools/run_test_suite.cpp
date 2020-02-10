@@ -12,7 +12,7 @@
 #include "src/vm/kcpu.h"
 
 #define PADDING_WIDTH 17
-#define MAX_USTEPS 1000000
+#define MAX_USTEPS 5000000
 
 static std::filesystem::path suite_path("test");
 
@@ -41,20 +41,22 @@ static std::string colour_str(std::string s, bool good) {
   return (good ? "\033[1;32m" : "\033[1;31m") + s + "\033[0m";
 }
 
-static bool run_test(bool verbose, uint32_t num, const std::filesystem::directory_entry & entry) {
+static bool run_test(bool verbose, uint32_t num, const std::filesystem::path path) {
   kcpu cpu(vm_logger {verbose});
-  load_binary_maybedefault("BIOS", entry.path(), "bios.bin", BIOS_SIZE, cpu.mem.bios.raw);
-  load_binary_maybedefault("PROG", entry.path(), "prog.bin", PROG_SIZE, cpu.mem.prog.raw);
+  load_binary_maybedefault("BIOS", path, "bios.bin", BIOS_SIZE, cpu.mem.bios.raw);
+  load_binary_maybedefault("PROG", path, "prog.bin", PROG_SIZE, cpu.mem.prog.raw);
 
   if(verbose) printf("CPU Start\n");
   kcpu::STATE s = cpu.run(MAX_USTEPS);
   if(verbose) printf("\nCPU %s, %d uinstructions executed\n", cpu.ctl.cbits[CBIT_ABORTED] ? "Aborted" : "Halted", cpu.get_total_clocks());
 
-  std::cout << "Test " << num << std::left << std::setw(PADDING_WIDTH) << ": '" + entry.path().filename().string() + "' ";
+  std::cout << "Test " << num << std::left << std::setw(PADDING_WIDTH) << ": '" + path.filename().string() + "' "
+            << std::right << std::setw(0);
 
   switch(s) {
     case kcpu::STATE_HALTED: {
-      std::cout << colour_str("PASS", true) << std::endl;
+      std::cout << colour_str("PASS", true) << "  @" << std::setfill(' ') << std::setw(8) << cpu.get_total_clocks()
+                << std::setw(0) << std::setfill(' ') << std::endl;
       return true;
     }
     case kcpu::STATE_ABORTED: {
@@ -65,33 +67,43 @@ static bool run_test(bool verbose, uint32_t num, const std::filesystem::director
       std::cout << colour_str("FAIL, TIMEOUT", false) << std::endl;
       return false;
     }
-    default: {
-      throw "abnormal test end condition!";
-    }
   }
 
+  throw "abnormal test end condition!";
 }
 
 int main() {
-  bool verbose = false;
-
   try {
     init_arch();
 
     std::cout << "--------------------------------------------" << std::endl;
 
+    std::vector<std::pair<uint32_t, std::filesystem::path>> failed;
     uint32_t test_count = 0;
     uint32_t passes = 0;
     for (const auto & entry : std::filesystem::directory_iterator(suite_path)) {
       if(entry.is_directory()) {
         test_count++;
-        passes += run_test(verbose, test_count, entry) ? 1 : 0;
+        if(run_test(false, test_count, entry)) {
+          passes++;
+        } else {
+          failed.push_back(std::pair(test_count, entry.path()));
+        }
       }
     }
 
     std::cout << "--------------------------------------------" << std::endl;
-    std::cout << "Test Result: " << colour_str(((test_count == passes) ? "SUCCESS" : "FAILED"), test_count == passes)
+    std::cout << "Test Suite Result: " << colour_str(((test_count == passes) ? "SUCCESS" : "FAILED"), test_count == passes)
               << ", " << passes << "/" << test_count << " passes" << std::endl;
+
+    if(failed.size()) {
+      std::cout << std::endl << "Press any key to re-run " << colour_str("failed", false) << " test '"
+                << failed[0].second.filename().string() << "' verbosely..." << std::endl;
+
+      char c;
+      std::cin >> std::noskipws >> c >> std::skipws;
+      run_test(true, failed[0].first, failed[0].second);
+    }
 
     return !(test_count == passes);
   } catch(std::string msg) {

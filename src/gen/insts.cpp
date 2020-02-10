@@ -140,7 +140,7 @@ static instruction mk_loadable_instruction(regval_t ldbit, const char * const na
     return mk_loadable_instruction(ldbit, name, opcode, second_arg, jm_w_cond, {});
 }
 
-void gen_ctl_loadables(regval_t ldbit) {
+static void gen_ctl_loadables(regval_t ldbit) {
     reg_inst(mk_loadable_instruction(ldbit, "JMP" , I_JMP , false, GCTRL_JM_YES));
 
     reg_inst(mk_loadable_instruction(ldbit, "JC"  , I_JC  , false, GCTRL_JM_ON_TRUE  | GCTRL_JCOND_CARRY  ));
@@ -160,7 +160,7 @@ void gen_ctl_loadables(regval_t ldbit) {
     }));
 }
 
-void gen_ctl() {
+static void gen_ctl() {
     gen_ctl_loadables(0);
     gen_ctl_loadables(P_I_LDJMP);
 }
@@ -231,6 +231,8 @@ static void gen_x() {
 void register_insts() {
     /* If we want to go to 8~10 general purpose registers, I think we could make do with only 
        7 instruction bits compared to 9. */
+
+    // TODO none of our instructions have more than 4 microcode instructions! Trim the "dead zone".
        
     gen_sys();
     gen_ctl();
