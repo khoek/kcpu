@@ -40,11 +40,11 @@ run: all bin/bios.bin bin/prog.bin
 run-quiet: all bin/bios.bin bin/prog.bin
 	bin/main
 
+$(KASMOBJS): %.bin: %.kasm ./bin/kasm
+	bin/kasm $< $@
+
 $(OBJS): %.o: %.cpp $(HDRS) Makefile
 	g++ $(CXXFLAGS) -c $< -o $@
-
-$(KASMOBJS): %.bin: %.kasm ./bin/kasm
-	./bin/kasm $< $@
 
 $(TOOLLIBOBJS): %.o: %.cpp $(HDRS) $(TOOLLIBHDRS) Makefile
 	g++ $(CXXFLAGS) $(TOOLFLAGS) -c $< -o $@
