@@ -35,8 +35,8 @@ HLT
 
 was_ovflw:
 MOV $0xAAAA ra
-HLT
+ABRT
 
 MOV $0x1111 ra
 was_zero:
-HLT
+ABRT

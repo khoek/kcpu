@@ -31,19 +31,19 @@ clean:
 cloc:
 	cloc --read-lang-def=.cloc_lang_def.txt src asm test tools
 
-run: all bin/bios.bin bin/prog.bin
+run: bin/bios.bin bin/prog.bin $(TOOLBINS)
 	bin/main -d
 
-run-step: all bin/bios.bin bin/prog.bin
+run-step: bin/bios.bin bin/prog.bin $(TOOLBINS)
 	bin/main -s
     
-run-quiet: all bin/bios.bin bin/prog.bin
+run-quiet: bin/bios.bin bin/prog.bin $(TOOLBINS)
 	bin/main
 
-bin/bios.bin: asm/bios.kasm
+bin/bios.bin: asm/bios.kasm $(TOOLBINS)
 	bin/kasm asm/bios.kasm bin/bios.bin
 
-bin/prog.bin: asm/prog.kasm
+bin/prog.bin: asm/prog.kasm $(TOOLBINS)
 	bin/kasm asm/prog.kasm bin/prog.bin
 
 $(KASMOBJS): %.bin: %.kasm ./bin/kasm
