@@ -3,7 +3,7 @@
 #include "../../spec/ucode.h"
 #include "ctl.h"
 
-mod_ctl::mod_ctl(vm_logger logger) : logger(logger) {
+mod_ctl::mod_ctl(vm_logger &logger) : logger(logger) {
     for(int i = 0; i < NUM_SREGS; i++) {
         reg[i] = 0;
     }

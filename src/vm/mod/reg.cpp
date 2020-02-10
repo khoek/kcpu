@@ -13,7 +13,7 @@ const char * PREG_NAMES[] = {
     "rbp",
 };
 
-mod_reg::mod_reg(vm_logger logger) : logger(logger) {
+mod_reg::mod_reg(vm_logger &logger) : logger(logger) {
     for(int i = 0; i < NUM_PREGS; i++) {
         reg[i] = 0;
     }

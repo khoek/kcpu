@@ -30,7 +30,7 @@ regval_t mem_bank::load(regval_t addr) {
     return raw[addr];
 }
 
-mod_mem::mod_mem(vm_logger logger) : logger(logger), bios(BIOS_SIZE, true), prog(PROG_SIZE, false) {
+mod_mem::mod_mem(vm_logger &logger) : logger(logger), bios(BIOS_SIZE, true), prog(PROG_SIZE, false) {
     prefix[0] = 0;
     prefix[1] = 0;
     fidd_adr = 0;

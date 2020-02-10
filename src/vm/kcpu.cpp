@@ -1,7 +1,7 @@
 #include "kcpu.h"
 
 kcpu::kcpu() : total_clocks(0), ctl(logger), reg(logger), mem(logger), alu(logger) { }
-kcpu::kcpu(vm_logger logger) : total_clocks(0), logger(logger), ctl(logger), reg(logger), mem(logger), alu(logger) { }
+kcpu::kcpu(vm_logger l) : total_clocks(0), logger(l), ctl(logger), reg(logger), mem(logger), alu(logger) { }
 
 uint32_t kcpu::get_total_clocks() {
     return total_clocks;

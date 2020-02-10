@@ -11,7 +11,7 @@
 
 class mod_ctl {
     private:
-    vm_logger logger;
+    vm_logger &logger;
 
     void set_instmask_enabled(bool state);
     void ft_enter();
@@ -21,7 +21,7 @@ class mod_ctl {
     regval_t reg[NUM_SREGS];
     bool cbits[NUM_CBITS];
 
-    mod_ctl(vm_logger logger);
+    mod_ctl(vm_logger &logger);
     void dump_registers();
     regval_t get_inst();
     uinst_t get_uinst();
