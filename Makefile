@@ -1,4 +1,4 @@
-.PHONY: all run
+.PHONY: all clean run
 
 SRCS := $(shell find src -type f -name "*.cpp")
 OBJS := $(SRCS:.cpp=.o)
@@ -11,6 +11,10 @@ all: bin/main bin/kasm
     
 run: all
 	./bin/kasm && ./bin/main
+
+clean:
+	rm -f $(OBJS)
+	rm -rf bin
 
 $(OBJS): %.o: %.cpp $(HDRS) Makefile
 	g++ $(CXXFLAGS) -c $< -o $@
