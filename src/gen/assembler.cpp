@@ -52,9 +52,7 @@ class inst_assembler {
     void parse();
 };
 
-inst_assembler::inst_assembler(std::istream &in, std::vector<opcode> &buff)
-    : in(in), buff(buff) {
-}
+inst_assembler::inst_assembler(std::istream &in, std::vector<opcode> &buff) : in(in), buff(buff) { }
 
 static std::optional<preg_t> lookup_reg(std::string s) {
     for(int i = 0; i < NUM_PREGS; i++) {
