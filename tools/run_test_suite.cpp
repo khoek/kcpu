@@ -11,11 +11,12 @@
 #include "src/gen/arch.h"
 #include "src/vm/kcpu.h"
 
+#define PADDING_WIDTH 17
 #define MAX_USTEPS 1000000
 
 static std::filesystem::path suite_path("test");
 
-bool load_binary_try(const char *name, std::filesystem::path file, size_t max_len, void *buff) {
+static bool load_binary_try(const char *name, std::filesystem::path file, size_t max_len, void *buff) {
   if(std::filesystem::exists(file)) {
     load_binary(name, file, max_len, buff);
     return true;
@@ -24,7 +25,7 @@ bool load_binary_try(const char *name, std::filesystem::path file, size_t max_le
   return false;
 }
 
-void load_binary_maybedefault(const char *name, std::filesystem::path p, std::string filename, size_t max_len, void *buff) {
+static void load_binary_maybedefault(const char *name, std::filesystem::path p, std::string filename, size_t max_len, void *buff) {
   if(load_binary_try(name, p / filename, max_len, buff)) {
     return;
   }
@@ -36,7 +37,11 @@ void load_binary_maybedefault(const char *name, std::filesystem::path p, std::st
   throw "error: could not find binary or default";
 }
 
-bool run_test(bool verbose, uint32_t num, const std::filesystem::directory_entry & entry) {
+static std::string colour_str(std::string s, bool good) {
+  return (good ? "\033[1;32m" : "\033[1;31m") + s + "\033[0m";
+}
+
+static bool run_test(bool verbose, uint32_t num, const std::filesystem::directory_entry & entry) {
   kcpu cpu(vm_logger {verbose});
   load_binary_maybedefault("BIOS", entry.path(), "bios.bin", BIOS_SIZE, cpu.mem.bios.raw);
   load_binary_maybedefault("PROG", entry.path(), "prog.bin", PROG_SIZE, cpu.mem.prog.raw);
@@ -45,19 +50,19 @@ bool run_test(bool verbose, uint32_t num, const std::filesystem::directory_entry
   kcpu::STATE s = cpu.run(MAX_USTEPS);
   if(verbose) printf("\nCPU %s, %d uinstructions executed\n", cpu.ctl.cbits[CBIT_ABORTED] ? "Aborted" : "Halted", cpu.get_total_clocks());
 
-  std::cout << "Test " << num << ": '" << entry.path().filename().string() << "' ";
+  std::cout << "Test " << num << std::left << std::setw(PADDING_WIDTH) << ": '" + entry.path().filename().string() + "' ";
 
   switch(s) {
     case kcpu::STATE_HALTED: {
-      std::cout << "PASS" << std::endl;
+      std::cout << colour_str("PASS", true) << std::endl;
       return true;
     }
     case kcpu::STATE_ABORTED: {
-      std::cout << "FAIL, ABORTED" << std::endl;
+      std::cout << colour_str("FAIL, ABORTED", false) << std::endl;
       return false;
     }
     case kcpu::STATE_TIMEOUT: {
-      std::cout << "FAIL, TIMEOUT" << std::endl;
+      std::cout << colour_str("FAIL, TIMEOUT", false) << std::endl;
       return false;
     }
     default: {
@@ -85,7 +90,8 @@ int main() {
     }
 
     std::cout << "--------------------------------------------" << std::endl;
-    std::cout << "Test Result: " << ((test_count == passes) ? "SUCCESS" : "FAILED") << ", " << passes << "/" << test_count << " passes" << std::endl;
+    std::cout << "Test Result: " << colour_str(((test_count == passes) ? "SUCCESS" : "FAILED"), test_count == passes)
+              << ", " << passes << "/" << test_count << " passes" << std::endl;
 
     return !(test_count == passes);
   } catch(std::string msg) {
