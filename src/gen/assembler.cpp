@@ -189,8 +189,16 @@ void inst_assembler::parse() {
     if(!(in >> tk)) {
         throw "no token";
     }
+    
+    if(!tk.length()) {
+        return;
+    }
 
-    if(*(tk.end() - 1) == ':') {
+    if(tk[0] == '#') {
+        return;
+    }
+
+    if(tk[tk.length() - 1] == ':') {
         handle_label(tk);
         return;
     }

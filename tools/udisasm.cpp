@@ -1,6 +1,8 @@
 #include <cstdio>
-#include "src/udef.h"
-#include "src/mod/reg.h"
+
+#include "src/spec/hw.h"
+#include "src/spec/ucode.h"
+#include "src/spec/ucode.h"
 
 bool check_cond_onlytrue(bool cond, const char *desc, bool do_nl = true) {
     if(cond) {
@@ -54,7 +56,7 @@ void diasm(regval_t ir, uinst_t ui) {
     check_option(ui, MASK_GCTRL_FTJM, GCTRL_JM_YES,          "JM_YES");
     check_option(ui, MASK_GCTRL_FTJM, GCTRL_JM_ON_TRUE,      "JM_ON_TRUE");
     check_option(ui, MASK_GCTRL_FTJM, GCTRL_JM_ON_FALSE,     "JM_ON_FALSE");
-    //check for the final possible, invalid 3-bit code?
+    check_option(ui, MASK_GCTRL_FTJM, GCTRL_JM_P_RIP_BUSB_O, "JM_P_RIP_BUSB_O");
 
     if((ui & MASK_GCTRL_FTJM) == GCTRL_JM_YES
         || (ui & MASK_GCTRL_FTJM) == GCTRL_JM_ON_TRUE
@@ -65,8 +67,10 @@ void diasm(regval_t ir, uinst_t ui) {
         check_option(ui, MASK_GCTRL_JCOND, GCTRL_JCOND_N_OVFLW, "JCOND_N_OVFLW");
     }
 
-    check_nbit(ui, GCTRL_RIP_BUSA_O, "RIP BUSA OUT");
-    check_nbit(ui, GCTRL_HALT      , "HALT CPU");
+    check_nbit(ui, GCTRL_ACTION_NONE,       "ACTION_NONE");
+    check_nbit(ui, GCTRL_ACTION_RFG_BUSB_I, "ACTION_RFG_BUSB_I");
+    check_nbit(ui, GCTRL_ACTION_RIP_BUSA_O, "ACTION_RIP_BUSA_O");
+    check_nbit(ui, GCTRL_ACTION_STOP,       "ACTION_STOP");
 
     gap();
 

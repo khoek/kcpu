@@ -51,6 +51,12 @@
         "bit": "cpp",
         "set": "cpp",
         "unordered_set": "cpp",
-        "strstream": "cpp"
+        "strstream": "cpp",
+        "ctime": "cpp",
+        "chrono": "cpp",
+        "codecvt": "cpp",
+        "filesystem": "cpp",
+        "ratio": "cpp",
+        "iomanip": "cpp"
     }
 }
