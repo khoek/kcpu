@@ -133,7 +133,7 @@ void mod_mem::clock_connects(uinst_t ui, bus_state &s) {
                     res |= (val_b & 0x00FF) >> 0;
                 } else {
                     // B_HI_TO_LO
-                    res |= (val_b & 0xFF0) >> 8;
+                    res |= (val_b & 0xFF00) >> 8;
                 }
             }
             s.assign(BUS_F, res);
