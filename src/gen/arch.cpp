@@ -1,12 +1,14 @@
 #include <cstdlib>
 #include <cstdio>
 #include <cstring>
+#include <cassert>
 #include <unordered_set>
 #include <unordered_map>
 #include <sstream>
 #include <iterator>
 
 #include "../spec/inst.h"
+#include "../spec/ucode.h"
 #include "arch.h"
 #include "insts.h"
 #include "alias.h"
@@ -75,11 +77,31 @@ alias::alias(std::string name, argtype args, std::vector<unbound_opcode> insts)
 alias::alias(std::string name, argtype args, unbound_opcode inst)
     : name(name), args(args), insts({inst}) { }
 
+static void check_ucode(std::string name, std::vector<uinst_t> uis) {
+    if(uis.size() > UCODE_LEN) {
+        std::stringstream ss;
+        ss << "ucode for instruction " << name << " too long (" << uis.size() << " > " << UCODE_LEN << ")";
+        throw ss.str();
+    }
+    
+    for(int i = 0; i < uis.size(); i++) {
+        if((uis[i] & MASK_GCTRL_FTJM) == GCTRL_FT_ENTER) {
+            if(name != "NOP" && i + 1 != uis.size()) {
+                std::stringstream ss;
+                ss << "ucode for instruction " << name << " has dangling GCTRL_FT_ENTER at position " << i << "/" << uis.size();
+                throw ss.str();
+            }
+        }
+    }
+}
+
 instruction::instruction(std::string name, regval_t opcode, argtype args, std::vector<uinst_t> uis)
-    : name(name), opcode(opcode), args(args), uis(uis) { }
+    : name(name), opcode(opcode), args(args), uis(uis) {
+    check_ucode(name, uis);
+}
 
 instruction::instruction(std::string name, regval_t opcode, argtype args, uinst_t ui)
-    : name(name), opcode(opcode), args(args), uis({ui}) { }
+    : instruction(name, opcode, args, std::vector<uinst_t>{ui}) {}
 
 template <typename Out>
 void split(const std::string &s, char delim, Out result) {

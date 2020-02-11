@@ -50,7 +50,7 @@ static bool run_test(bool verbose, uint32_t num, const std::filesystem::path pat
   kcpu::STATE s = cpu.run(MAX_USTEPS);
   if(verbose) printf("\nCPU %s, %d uinstructions executed\n", cpu.ctl.cbits[CBIT_ABORTED] ? "Aborted" : "Halted", cpu.get_total_clocks());
 
-  std::cout << "Test " << num << std::left << std::setw(PADDING_WIDTH) << ": '" + path.filename().string() + "' "
+  std::cout << "Test " << std::setw(2) << num << std::left << std::setw(PADDING_WIDTH) << ": '" + path.filename().string() + "' "
             << std::right << std::setw(0);
 
   switch(s) {

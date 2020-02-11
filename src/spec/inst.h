@@ -1,6 +1,8 @@
 #ifndef SPEC_INST_H
 #define SPEC_INST_H
 
+#include "hw.h"
+
 // START PREAMBLE
 
 #define INST_SHIFT (2 * IU_WIDTH)
@@ -63,9 +65,15 @@
 #define P_I_NOFGS 0b00100000
 
 // X
-#define I_X_PUSH 0b10101000
-#define I_X_POP  0b10101001
-#define I_X_CALL 0b10101010
-#define I_X_RET  0b10101011
+// FIXME? make all of these use IU3 = REG_RSP? not fully sold on IU3 yet.
+// TBH its probably best to shrink the microcode count space and then just reserve enough bits for an IU3 as well
+#define I_X_PUSH    0b10101000
+#define I_X_POP     0b10101001
+#define I_X_CALL    0b10101010
+#define I_X_RET     0b10101011
+
+#define I_X_ENTER   0b10101100
+#define I_X_LEAVE   0b10101101
+#define I_X_ENTERFR (0b10101000 | 0b110) // IU3 = REG_RSP
 
 #endif

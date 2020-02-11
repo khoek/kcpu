@@ -1,0 +1,34 @@
+
+PUSH $0xDEAD
+PUSH $0xBEEF
+POP ra
+PUSH $0x1337
+PUSH $0xF0F0
+PUSH $0x0F0F
+PUSH $0xAAAA
+POP rb
+POP rc
+PUSH $0xBBBB
+POP rd
+POP rd
+POP rbp
+# The below triggers an assertion violation. Either a) prevent it in the assembler, or b) design the hardware so an RSP write and INC just does a write.
+#POP rsp
+
+CMP $0xBEEF ra
+JNE fail
+CMP $0xAAAA rb
+JNE fail
+CMP $0x0F0F rc
+JNE fail
+CMP $0xF0F0 rd
+JNE fail
+CMP $0x1337 rbp
+JNE fail
+#CMP $0xDEAD rsp
+#JNE fail
+
+HLT
+
+fail:
+ABRT

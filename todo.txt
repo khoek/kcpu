@@ -12,12 +12,23 @@ SOFT/FIRMWARE:
                                                                     1. combines the MOV and ADD in the same instruction
                                                                        (use the face that esp is on the bus in both)
                                                                     2. a no-arg variant of ENTER which doesn't allocate any space, saving a cycle)
-    * LEAVE(=mov %ebp, %esp; pop %ebp)  ONCE THIS EXISTS ALONG WITH ENTER FIX ALL OF THE TESTS WHICH USE THE STACK
+    * LEAVE(=mov %ebp, %esp; pop %ebp)
+
+
+
+    
+    * ONCE ENTER/LEAVE THIS EXISTS ALONG WITH ENTER FIX ALL OF THE TESTS WHICH USE THE STACK
 
     * Implement ADD3 and ADD3NF (NOFLAGS), for offset calculations (of the form e.g. ADD3NF rbp $0x6 rb or ADD3NF rbp ra rb)
     * STW, LWD family offset instructions (so we can refer relative to RBP)
 
     * FLAG-ONLY versions of the ALU insts (we already value-only versions).
+
+
+
+    * DEAL with the hardware design comment in the push_pop test
+
+    
 
     * Allow a const in either argument in e.g. a STW (but not e.g. LDW)
 

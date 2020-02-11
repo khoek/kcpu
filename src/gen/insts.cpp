@@ -121,7 +121,7 @@ static void gen_mem() {
 
 // `second_arg` means the instruction will take 2 arguments instead of 1, and we will use the value of the second arg
 // for the direct jump/load jump.
-static instruction mk_loadable_instruction(regval_t ldbit, const char * const name, regval_t opcode,\
+static instruction mk_loadable_instruction(regval_t ldbit, const char * const name, regval_t opcode,
     bool second_arg, uinst_t jm_w_cond, std::vector<uinst_t> preamble) {
     char * buff = (char *) malloc(strlen(LDJMPPREFIX) + strlen(name) + 1);
     sprintf(buff, "%s%s", ldbit ? LDJMPPREFIX : "", name);
@@ -211,6 +211,35 @@ static void gen_alu() {
 }
 
 static void gen_x() {
+    // FIXME as below, args should be RSP, RBP
+
+    // Faster version of: PUSH rbp; MOV rsp rbp;, i.e. (X_PUSH rsp rbp; MOV rsp rbp;)
+    reg_inst(instruction("X_ENTER", I_X_ENTER, ARGS_2_NOCONST, {
+                           MCTRL_N_FIDD_OUT | MCTRL_N_MAIN_OUT | RCTRL_RSP_DEC,
+        MCTRL_FIDD_STORE | MCTRL_N_FIDD_OUT | MCTRL_N_MAIN_OUT | MCTRL_BUSMODE_CONW_BUSB | RCTRL_IU1_BUSA_O | RCTRL_IU2_BUSB_O,
+        MCTRL_MAIN_STORE                    | MCTRL_N_MAIN_OUT | MCTRL_BUSMODE_CONW_BUSM | RCTRL_IU1_BUSA_O | RCTRL_IU2_BUSA_I | GCTRL_FT_ENTER,
+    }));
+
+    // IU1 must be RBP, IU2 = $CONST or reg, IU3 is forced to RSP
+    // Faster version of: PUSH rbp; MOV rsp rbp; SUBNF $CONST, rsp;
+    // FIXME if we move to non-hardcoded IU3s, then change this to 3 args.
+    reg_inst(instruction("X_ENTERFR", I_X_ENTERFR, ARGS_2_2CONST, {
+        //PUSH rbp; MOV rsp rbp;
+                           MCTRL_N_FIDD_OUT | MCTRL_N_MAIN_OUT | RCTRL_RSP_DEC,
+        MCTRL_FIDD_STORE | MCTRL_N_FIDD_OUT | MCTRL_N_MAIN_OUT | MCTRL_BUSMODE_CONW_BUSB | RCTRL_IU3_BUSA_O | RCTRL_IU1_BUSB_O,
+        MCTRL_MAIN_STORE                    | MCTRL_N_MAIN_OUT | MCTRL_BUSMODE_CONW_BUSM | RCTRL_IU3_BUSA_O | RCTRL_IU1_BUSA_I
+        //SUBNF $CONST, rsp
+                | RCTRL_IU2_BUSB_O | ACTRL_INPUT_EN | ACTRL_MODE_SUB,
+        MCTRL_N_FIDD_OUT | MCTRL_N_MAIN_OUT | ACTRL_DATA_OUT | RCTRL_IU3_BUSA_I | GCTRL_FT_ENTER,
+    }));
+
+    // Faster version of: MOV rbp rsp; POP rbp, i.e. (MOV rbp rsp; X_POP rsp rbp;)
+    // instead we do them both simultaneously.
+    reg_inst(instruction("X_LEAVE", I_X_LEAVE, ARGS_2_NOCONST, {
+        MCTRL_FIDD_STORE | MCTRL_N_FIDD_OUT |                    MCTRL_BUSMODE_CONW_BUSM | RCTRL_IU1_BUSA_I | RCTRL_IU2_BUSA_O,
+                                              MCTRL_N_MAIN_OUT | MCTRL_BUSMODE_CONW_BUSB | RCTRL_IU2_BUSB_I | RCTRL_RSP_INC | GCTRL_FT_ENTER,
+    }));
+
     // FIXME Note that right now bad things will happen if the first argument of these is not RSP
     // Probably we should make the assembler prohibit doing anything else.
 
@@ -218,13 +247,13 @@ static void gen_x() {
         //IU1 = MUST BE RSP, IU2 = REG to PUSH
                            MCTRL_N_FIDD_OUT | MCTRL_N_MAIN_OUT | RCTRL_RSP_DEC,
         MCTRL_FIDD_STORE | MCTRL_N_FIDD_OUT | MCTRL_N_MAIN_OUT | MCTRL_BUSMODE_CONW_BUSB | RCTRL_IU1_BUSA_O | RCTRL_IU2_BUSB_O,
-        MCTRL_MAIN_STORE                    | MCTRL_N_MAIN_OUT | MCTRL_BUSMODE_CONW_BUSM | GCTRL_FT_ENTER
+        MCTRL_MAIN_STORE                    | MCTRL_N_MAIN_OUT | MCTRL_BUSMODE_CONW_BUSM | GCTRL_FT_ENTER,
     }));
-    
+
     reg_inst(instruction("X_POP", I_X_POP, ARGS_2_NOCONST, {
         //IU1 = MUST BE RSP, IU2 = REG to POP
         MCTRL_FIDD_STORE | MCTRL_N_FIDD_OUT |                    MCTRL_BUSMODE_CONW_BUSM | RCTRL_IU1_BUSA_O,
-                                              MCTRL_N_MAIN_OUT | MCTRL_BUSMODE_CONW_BUSB | RCTRL_IU2_BUSB_I | RCTRL_RSP_INC | GCTRL_FT_ENTER
+                                              MCTRL_N_MAIN_OUT | MCTRL_BUSMODE_CONW_BUSB | RCTRL_IU2_BUSB_I | RCTRL_RSP_INC | GCTRL_FT_ENTER,
     }));
 
     reg_inst(instruction("X_CALL", I_X_CALL, ARGS_2_2CONST, {
@@ -232,14 +261,14 @@ static void gen_x() {
         // Effectively: X_PUSH RSP RIP
                            MCTRL_N_FIDD_OUT | MCTRL_N_MAIN_OUT | RCTRL_RSP_DEC,
         MCTRL_FIDD_STORE | MCTRL_N_FIDD_OUT | MCTRL_N_MAIN_OUT | MCTRL_BUSMODE_CONW_BUSB | RCTRL_IU1_BUSA_O | GCTRL_JM_P_RIP_BUSB_O,
-        MCTRL_MAIN_STORE                    | MCTRL_N_MAIN_OUT | MCTRL_BUSMODE_CONW_BUSM | RCTRL_IU2_BUSB_O | GCTRL_JM_YES
+        MCTRL_MAIN_STORE                    | MCTRL_N_MAIN_OUT | MCTRL_BUSMODE_CONW_BUSM | RCTRL_IU2_BUSB_O | GCTRL_JM_YES,
     }));
 
     reg_inst(instruction("X_RET", I_X_RET, ARGS_1_NOCONST, {
         // IU1 = MUST BE RSP, IU2 = CALL ADDRESS
         // Effectively: X_POP RSP RIP          
         MCTRL_FIDD_STORE | MCTRL_N_FIDD_OUT |                    MCTRL_BUSMODE_CONW_BUSM | RCTRL_IU1_BUSA_O,
-                                              MCTRL_N_MAIN_OUT | MCTRL_BUSMODE_CONW_BUSB | RCTRL_RSP_INC | GCTRL_JM_YES
+                                              MCTRL_N_MAIN_OUT | MCTRL_BUSMODE_CONW_BUSB | RCTRL_RSP_INC | GCTRL_JM_YES,
     }));
 }
 

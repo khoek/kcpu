@@ -9,8 +9,11 @@
 using namespace arch;
 
 static void gen_ctl() {
-    reg_alias(alias("CALL", ARGS_1, unbound_opcode(I_X_CALL, { slot_reg(REG_SP), slot_arg(0) })));
-    reg_alias(alias("RET" , ARGS_0, unbound_opcode(I_X_RET , { slot_reg(REG_SP) })));
+    reg_alias(alias("CALL"   , ARGS_1, unbound_opcode(I_X_CALL ,   { slot_reg(REG_SP), slot_arg(0) })));
+    reg_alias(alias("RET"    , ARGS_0, unbound_opcode(I_X_RET  ,   { slot_reg(REG_SP) })));
+    reg_alias(alias("ENTER"  , ARGS_0, unbound_opcode(I_X_ENTER,   { slot_reg(REG_SP), slot_reg(REG_BP) })));
+    reg_alias(alias("LEAVE"  , ARGS_0, unbound_opcode(I_X_LEAVE,   { slot_reg(REG_SP), slot_reg(REG_BP) })));
+    reg_alias(alias("ENTERFR", ARGS_1, unbound_opcode(I_X_ENTERFR, { slot_reg(REG_BP), slot_arg(0) })));
 }
 
 static void gen_mem() {
@@ -40,7 +43,7 @@ static void gen_alu() {
     }));
 
     reg_alias(alias("JE" , ARGS_1, unbound_opcode(I_JZ,  { slot_arg(0) })));
-    reg_alias(alias("JNE" , ARGS_1, unbound_opcode(I_JNZ,  { slot_arg(0) })));
+    reg_alias(alias("JNE", ARGS_1, unbound_opcode(I_JNZ,  { slot_arg(0) })));
     reg_alias(alias("JL" , ARGS_1, unbound_opcode(I_JNC, { slot_arg(0) })));
     reg_alias(alias("JNL", ARGS_1, unbound_opcode(I_JC, { slot_arg(0) })));
     reg_alias(alias("JGE", ARGS_1, unbound_opcode(I_JC, { slot_arg(0) })));
