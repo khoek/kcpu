@@ -5,6 +5,8 @@
 
 #include "../common.h"
 
+namespace kcpu {
+
 #define BIOS_SIZE (1 << 13)
 #define PROG_SIZE (1 << 21) // FIXME what is the actual value?
 
@@ -42,5 +44,7 @@ class mod_mem {
     void clock_connects(uinst_t ui, bus_state &s);
     void clock_inputs(uinst_t ui, bus_state &s);
 };
+
+}
 
 #endif

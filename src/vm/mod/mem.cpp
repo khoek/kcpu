@@ -2,6 +2,8 @@
 #include "../../spec/ucode.h"
 #include "mem.h"
 
+namespace kcpu {
+
 mem_bank::mem_bank(uint32_t bytes, bool rom) : rom(rom), raw(std::vector<uint16_t>(bytes >> 1)) { }
 
 void mem_bank::store(regval_t addr, regval_t val) {
@@ -158,4 +160,6 @@ void mod_mem::clock_inputs(uinst_t ui, bus_state &s) {
         if(logger.dump_bus) logger.logf("  MB(%d) <- %04X@%04X\n", SHOULD_USE_PREFIX_FAR(ui), fidd_adr, s.read(BUS_M));
         get_bank(SHOULD_USE_PREFIX_FAR(ui)).store(fidd_adr, s.read(BUS_M));
     }
+}
+
 }

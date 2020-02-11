@@ -80,7 +80,7 @@ void diasm(regval_t ir, uinst_t ui) {
     check_option(ui, MASK_RCTRL_IU1, RCTRL_IU1_BUSB_I, "IU1 BUSB IN ", false);
     check_option(ui, MASK_RCTRL_IU1, RCTRL_IU1_BUSB_O, "IU1 BUSB OUT", false);
     if(RCTRL_IU_IS_EN(RCTRL_DECODE_IU1(ui))) {
-        printf(": %s\n", PREG_NAMES[INST_GET_IU1(ir)]);
+        printf(": %s\n", kcpu::PREG_NAMES[INST_GET_IU1(ir)]);
     } else {
         printf("IU1 DISABLE\n");
     }
@@ -90,7 +90,7 @@ void diasm(regval_t ir, uinst_t ui) {
     check_option(ui, MASK_RCTRL_IU2, RCTRL_IU2_BUSB_I, "IU2 BUSB IN ", false);
     check_option(ui, MASK_RCTRL_IU2, RCTRL_IU2_BUSB_O, "IU2 BUSB OUT", false);
     if(RCTRL_IU_IS_EN(RCTRL_DECODE_IU2(ui))) {
-        printf(": %s\n", PREG_NAMES[INST_GET_IU2(ir)]);
+        printf(": %s\n", kcpu::PREG_NAMES[INST_GET_IU2(ir)]);
     } else {
         printf("IU2 DISABLE\n");
     }

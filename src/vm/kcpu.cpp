@@ -3,14 +3,16 @@
 #include "../spec/inst.h"
 #include "../gen/disassembler.h"
 
-kcpu::kcpu() : total_clocks(0), ctl(logger), reg(logger), mem(logger), alu(logger) { }
-kcpu::kcpu(vm_logger l) : total_clocks(0), logger(l), ctl(logger), reg(logger), mem(logger), alu(logger) { }
+namespace kcpu {
 
-uint32_t kcpu::get_total_clocks() {
+vm::vm() : total_clocks(0), ctl(logger), reg(logger), mem(logger), alu(logger) { }
+vm::vm(vm_logger l) : total_clocks(0), logger(l), ctl(logger), reg(logger), mem(logger), alu(logger) { }
+
+uint32_t vm::get_total_clocks() {
     return total_clocks;
 }
 
-kcpu::STATE kcpu::get_state() {
+vm::STATE vm::get_state() {
     if(ctl.cbits[CBIT_HALTED]) {
         return ctl.cbits[CBIT_ABORTED] ? STATE_ABORTED : STATE_HALTED;
     }
@@ -18,7 +20,7 @@ kcpu::STATE kcpu::get_state() {
     return STATE_RUNNING;
 }
 
-void kcpu::dump_registers() {
+void vm::dump_registers() {
     logger.logf("---------------------\n");
     ctl.dump_registers();
     mem.dump_registers();
@@ -27,7 +29,7 @@ void kcpu::dump_registers() {
     logger.logf("\n");
 }
 
-kcpu::STATE kcpu::ustep() {
+vm::STATE vm::ustep() {
     total_clocks++;
 
     if(ctl.cbits[CBIT_HALTED]) {
@@ -66,7 +68,7 @@ kcpu::STATE kcpu::ustep() {
     return get_state();
 }
 
-void kcpu::disassemble_current() {
+void vm::disassemble_current() {
     regval_t ip = ctl.reg[REG_IP] - ((ctl.cbits[CBIT_INSTMASK] ? 0 : 1) * (INST_GET_LOADDATA(ctl.reg[REG_IR]) ? 4 : 2));
     std::pair<inst_pieces, std::string> d = disassemble_peek(ip, mem.get_bank(false));
 
@@ -80,7 +82,7 @@ void kcpu::disassemble_current() {
     }
 }
 
-kcpu::STATE kcpu::step() {
+vm::STATE vm::step() {
     if(logger.disassemble && !ctl.cbits[CBIT_INSTMASK]) {
         disassemble_current();
     }
@@ -96,12 +98,12 @@ kcpu::STATE kcpu::step() {
     return get_state();
 }
 
-kcpu::STATE kcpu::run(std::optional<uint32_t> max_clocks) {
+vm::STATE vm::run(std::optional<uint32_t> max_clocks) {
     uint32_t then = total_clocks;
 
     while(!ctl.cbits[CBIT_HALTED]) {
         if(max_clocks && *max_clocks < (total_clocks - then)) {
-            return kcpu::STATE_TIMEOUT;
+            return vm::STATE_TIMEOUT;
         }
         
         step();
@@ -110,15 +112,17 @@ kcpu::STATE kcpu::run(std::optional<uint32_t> max_clocks) {
     return get_state();
 }
 
-kcpu::STATE kcpu::run() {
+vm::STATE vm::run() {
     return run(std::nullopt);
 }
 
-void kcpu::resume() {
+void vm::resume() {
     if(get_state() != STATE_ABORTED) {
         throw "cannot resume, cpu not aborted";
     }
 
     ctl.cbits[CBIT_HALTED ] = false;
     ctl.cbits[CBIT_ABORTED] = false;
+}
+
 }

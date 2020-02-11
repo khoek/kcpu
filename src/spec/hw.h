@@ -3,6 +3,8 @@
 
 #include "../types.h"
 
+namespace kcpu {
+
 #define UCVAL_WIDTH 4
 #define ADDR_WIDTH 13
 
@@ -21,9 +23,9 @@
 #define INST_MK_IU2(reg) (((reg) & IU_MASK) << (1 * IU_WIDTH))
 #define INST_MK_IU3(reg) (((reg) & IU_MASK) << (2 * IU_WIDTH))
 
-#define INST_GET_IU1(inst) ((preg_t) (((inst) & (IU_MASK << (0 * IU_WIDTH))) >> (0 * IU_WIDTH)))
-#define INST_GET_IU2(inst) ((preg_t) (((inst) & (IU_MASK << (1 * IU_WIDTH))) >> (1 * IU_WIDTH)))
-#define INST_GET_IU3(inst) ((preg_t) (((inst) & (IU_MASK << (2 * IU_WIDTH))) >> (2 * IU_WIDTH)))
+#define INST_GET_IU1(inst) ((kcpu::preg_t) (((inst) & (IU_MASK << (0 * IU_WIDTH))) >> (0 * IU_WIDTH)))
+#define INST_GET_IU2(inst) ((kcpu::preg_t) (((inst) & (IU_MASK << (1 * IU_WIDTH))) >> (1 * IU_WIDTH)))
+#define INST_GET_IU3(inst) ((kcpu::preg_t) (((inst) & (IU_MASK << (2 * IU_WIDTH))) >> (2 * IU_WIDTH)))
 #define INST_GET_IUS(inst) { INST_GET_IU1(inst), INST_GET_IU2(inst), INST_GET_IU3(inst), }
 
 #define NUM_BUSES 4
@@ -59,5 +61,7 @@ enum sreg_t {
     REG_IR = 2,
     REG_FG = 3,
 };
+
+}
 
 #endif

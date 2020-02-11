@@ -2,6 +2,8 @@
 #include "../spec/ucode.h"
 #include "lang.h"
 
+namespace kcpu {
+
 using namespace arch;
 
 static void gen_ctl() {
@@ -54,4 +56,6 @@ void register_aliases() {
     gen_ctl();
     gen_mem();
     gen_alu();
+}
+
 }

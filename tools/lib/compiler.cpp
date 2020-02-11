@@ -4,7 +4,7 @@
 #include "src/gen/assembler.h"
 
 void build(std::istream &in, std::ostream &out) {
-  auto ops = assemble(&in);
+  auto ops = kcpu::assemble(&in);
   out.write((const char *) ops.data(), ops.size() * (sizeof(regval_t) / sizeof(uint8_t)));
 }
 

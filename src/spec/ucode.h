@@ -3,6 +3,8 @@
 
 #include "../types.h"
 
+namespace kcpu {
+
 #define UCODE_BITS ((sizeof(uinst_t) / sizeof(uint8_t)) * 8)
 
 #define GCTRL_BASE 0
@@ -129,5 +131,7 @@
 #define UCODE_END ACTRL_END
 
 static_assert(UCODE_END <= UCODE_BITS, "The UCODE is too long!");
+
+}
 
 #endif

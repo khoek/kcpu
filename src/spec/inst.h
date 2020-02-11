@@ -3,6 +3,8 @@
 
 #include "opclass.h"
 
+namespace kcpu {
+
 // START PREAMBLE
 
 #define INST_SHIFT (2 * IU_WIDTH)
@@ -83,5 +85,7 @@
 #define I_ADD3          ANY_IU3(0b11000000)
 #define I_LDWO          ANY_IU3(0b11001000)
 #define I_STWO          ANY_IU3(0b11011000)
+
+}
 
 #endif

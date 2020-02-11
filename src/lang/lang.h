@@ -5,8 +5,16 @@
 #include <string>
 #include <optional>
 #include "../types.h"
+#include "../except.h"
 #include "../spec/hw.h"
 #include "../spec/inst.h"
+
+namespace kcpu {
+
+class lang_error : public bt_error {
+    public:
+    lang_error(const std::string &arg);
+};
 
 struct argtype {
     uint8_t count;
@@ -76,6 +84,17 @@ class alias {
     alias(std::string name, argtype args, virtual_instruction inst);
 };
 
+class lang {
+    public:
+    lang();
+
+    uinst_t ucode_lookup(regval_t inst, ucval_t uc);
+
+    bool inst_is_prefix(std::string str);
+    std::optional<alias> alias_lookup(std::string name);
+    std::optional<instruction> inst_lookup(regval_t opcode);
+};
+
 namespace arch {
     void reg_inst(instruction i);
     void reg_alias(alias a);
@@ -88,5 +107,7 @@ uinst_t ucode_lookup(regval_t inst, ucval_t uc);
 bool inst_is_prefix(std::string str);
 std::optional<alias> alias_lookup(std::string name);
 std::optional<instruction> inst_lookup(regval_t opcode);
+
+}
 
 #endif

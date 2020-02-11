@@ -4,6 +4,8 @@
 #include "../spec/ucode.h"
 #include "lang.h"
 
+namespace kcpu {
+
 using namespace arch;
 
 static void gen_sys() {
@@ -279,4 +281,6 @@ void register_insts() {
     gen_mem();
     gen_alu();
     gen_x();
+}
+
 }

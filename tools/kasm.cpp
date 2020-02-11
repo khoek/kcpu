@@ -13,9 +13,8 @@ int main(int argc, char **argv) {
     }
 
     try {
-        init_arch();
+        kcpu::init_arch();
         build(argv[1], argv[2]);
-
         return 0;
     } catch(std::string msg) {
         std::cerr << msg << '\n';

@@ -10,6 +10,8 @@
 #include "insts.h"
 #include "alias.h"
 
+namespace kcpu {
+
 static uinst_t ucode[UCODE_LEN];
 static std::string ucode_name[UCODE_LEN];
 static std::optional<instruction> ucode_inst[OPCODE_LEN];
@@ -17,6 +19,8 @@ static std::optional<instruction> ucode_inst[OPCODE_LEN];
 static std::unordered_set<std::string> prefixes;
 static std::unordered_map<std::string, alias> aliases;
 static std::unordered_map<regval_t, instruction> insts;
+
+lang_error::lang_error(const std::string &msg) : bt_error(msg) { }
 
 static uint16_t uaddr(regval_t inst, ucval_t uc) {
     if(uc > UCVAL_MAX) {
@@ -276,4 +280,6 @@ static void write_ucode() {
     // TODO this.
 
     throw "do this";
+}
+
 }

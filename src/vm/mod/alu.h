@@ -3,6 +3,8 @@
 
 #include "../common.h"
 
+namespace kcpu {
+
 struct op_result {
     uint16_t val;
     uint16_t flags;
@@ -26,5 +28,7 @@ class mod_alu {
     void clock_outputs(uinst_t ui, bus_state &s);
     void clock_inputs(uinst_t ui, bus_state &s);
 };
+
+}
 
 #endif

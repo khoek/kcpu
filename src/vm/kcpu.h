@@ -8,7 +8,9 @@
 #include "mod/mem.h"
 #include "mod/alu.h"
 
-class kcpu {
+namespace kcpu {
+
+class vm {
     private:
     uint32_t total_clocks;
     vm_logger logger;
@@ -31,8 +33,8 @@ class kcpu {
     mod_mem mem;
     mod_alu alu;
   
-    kcpu();
-    kcpu(vm_logger logger);
+    vm();
+    vm(vm_logger logger);
     uint32_t get_total_clocks();
     STATE get_state();
 
@@ -42,5 +44,7 @@ class kcpu {
     STATE run();
     void resume();
 };
+
+}
 
 #endif

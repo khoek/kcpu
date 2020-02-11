@@ -4,6 +4,8 @@
 #include "opclass.h"
 #include "inst.h"
 
+namespace kcpu {
+
 opclass::opclass(regval_t raw, kind cls, preg_t iu3) : raw(raw), cls(cls), iu3(iu3) {
     if(cls != opclass::IU3_SINGLE) {
         assert(!iu3);
@@ -75,4 +77,6 @@ regval_t opclass::resolve_dummy() {
 
 opclass opclass::add_flag(regval_t flag) {
     return opclass(raw | flag, cls, iu3);
+}
+
 }

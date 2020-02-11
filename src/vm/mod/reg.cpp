@@ -2,6 +2,8 @@
 #include "reg.h"
 #include <cassert>
 
+namespace kcpu {
+
 const char * PREG_NAMES[] = {
     "rid",
     "r1",
@@ -79,4 +81,6 @@ void mod_reg::clock_inputs(regval_t inst, uinst_t ui, bus_state &s) {
         assert(!(ui & RCTRL_RSP_INC));
         reg[REG_SP] -= 2;
     }
+}
+
 }

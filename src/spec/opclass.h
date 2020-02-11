@@ -3,6 +3,8 @@
 
 #include "hw.h"
 
+namespace kcpu {
+
 /* An `opclass` represents one of:
     1. (NO_IU3) a single opcode which ignores IU3.
     2. (IU3_SINGLE) a single opcode which cares about IU3.
@@ -34,5 +36,7 @@ class opclass {
 
 opclass opclass_iu3_single(regval_t raw, preg_t iu3);
 opclass opclass_iu3_all(regval_t raw);
+
+}
 
 #endif

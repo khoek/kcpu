@@ -4,6 +4,8 @@
 #include "../lang/lang.h"
 #include "../vm/mod/mem.h"
 
+namespace kcpu {
+
 class inst_pieces {
     public:
     bool load_data;
@@ -16,5 +18,7 @@ class inst_pieces {
 
 std::pair<inst_pieces, std::string> disassemble(regval_t inst, std::optional<regval_t> constval);
 std::pair<inst_pieces, std::string> disassemble_peek(regval_t rip, mem_bank &bank);
+
+}
 
 #endif

@@ -5,6 +5,8 @@
 #include "../except.h"
 #include "../spec/hw.h"
 
+namespace kcpu {
+
 class vm_error : public bt_error {
     public:
     vm_error(const std::string &arg);
@@ -45,5 +47,7 @@ class bus_state {
     regval_t early_read(bus_t b);
     regval_t read(bus_t b);
 };
+
+}
 
 #endif

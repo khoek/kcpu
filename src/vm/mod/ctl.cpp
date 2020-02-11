@@ -3,6 +3,8 @@
 #include "../../spec/ucode.h"
 #include "ctl.h"
 
+namespace kcpu {
+
 mod_ctl::mod_ctl(vm_logger &logger) : logger(logger) {
     for(int i = 0; i < NUM_SREGS; i++) {
         reg[i] = 0;
@@ -145,4 +147,6 @@ void mod_ctl::clock_inputs(uinst_t ui, bus_state &s) {
             throw vm_error("unknown FT/JM!");
         }
     }
+}
+
 }

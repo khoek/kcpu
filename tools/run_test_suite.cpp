@@ -39,7 +39,7 @@ static std::string colour_str(std::string s, bool good) {
 }
 
 static bool run_test(bool verbose, uint32_t num, const std::filesystem::path path) {
-  kcpu cpu(vm_logger {verbose});
+  kcpu::vm cpu(kcpu::vm_logger {verbose});
   load_binary_maybedefault("BIOS", path, "bios.bin", BIOS_SIZE, cpu.mem.bios.data());
   load_binary_maybedefault("PROG", path, "prog.bin", PROG_SIZE, cpu.mem.prog.data());
 
@@ -48,20 +48,20 @@ static bool run_test(bool verbose, uint32_t num, const std::filesystem::path pat
               << std::right << std::setw(0);
 
     if(verbose) printf("\nCPU Start\n");
-    kcpu::STATE s = cpu.run(MAX_USTEPS);
+    kcpu::vm::STATE s = cpu.run(MAX_USTEPS);
     if(verbose) printf("\nCPU %s, %d uinstructions executed\n", cpu.ctl.cbits[CBIT_ABORTED] ? "Aborted" : "Halted", cpu.get_total_clocks());
 
     switch(s) {
-      case kcpu::STATE_HALTED: {
+      case kcpu::vm::STATE_HALTED: {
         std::cout << colour_str("PASS", true) << "  @" << std::setfill(' ') << std::setw(8) << cpu.get_total_clocks()
                   << std::setw(0) << std::setfill(' ') << std::endl;
         return true;
       }
-      case kcpu::STATE_ABORTED: {
+      case kcpu::vm::STATE_ABORTED: {
         std::cout << colour_str("FAIL, ABORTED", false) << std::endl;
         return false;
       }
-      case kcpu::STATE_TIMEOUT: {
+      case kcpu::vm::STATE_TIMEOUT: {
         std::cout << colour_str("FAIL, DETERMINISTIC TIMEOUT", false) << std::endl;
         return false;
       }
@@ -79,7 +79,7 @@ static bool run_test(bool verbose, uint32_t num, const std::filesystem::path pat
 
 int main() {
   try {
-    init_arch();
+    kcpu::init_arch();
 
     std::cout << "--------------------------------------------" << std::endl;
 

@@ -8,6 +8,8 @@
 #include "../lang/lang.h"
 #include "assembler.h"
 
+namespace kcpu {
+
 // FIXME make sure labels don't collide with register names
 
 class chunk {
@@ -269,3 +271,5 @@ std::vector<regval_t> assemble(std::istream *in) {
     return resolve_labels(build_label_table(ops), ops);
 }
 
+
+}

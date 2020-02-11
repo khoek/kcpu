@@ -3,6 +3,8 @@
 
 #include "../common.h"
 
+namespace kcpu {
+
 #define CBIT_INSTMASK 0
 #define CBIT_HALTED   1
 #define CBIT_ABORTED  2
@@ -28,5 +30,7 @@ class mod_ctl {
     void clock_outputs(uinst_t ui, bus_state &s);
     void clock_inputs(uinst_t ui, bus_state &s);
 };
+
+}
 
 #endif

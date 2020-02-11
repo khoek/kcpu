@@ -5,6 +5,8 @@
 #include "disassembler.h"
 #include "../spec/inst.h"
 
+namespace kcpu {
+
 inst_pieces::inst_pieces(regval_t inst, std::optional<regval_t> constval)
     : load_data(INST_GET_LOADDATA(inst)), opcode(INST_GET_OPCODE(inst)), ius INST_GET_IUS(inst), constval(constval) { }
 
@@ -67,4 +69,6 @@ std::pair<inst_pieces, std::string> disassemble_peek(regval_t rip, mem_bank &ban
         constval = bank.load(rip + 2);
     }
     return disassemble(inst, constval);
+}
+
 }

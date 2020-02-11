@@ -3,6 +3,8 @@
 
 #include "../common.h"
 
+namespace kcpu {
+
 class mod_reg {
     private:
     vm_logger &logger;
@@ -20,5 +22,7 @@ class mod_reg {
     void clock_outputs(regval_t inst, uinst_t ui, bus_state &s);
     void clock_inputs(regval_t inst, uinst_t ui, bus_state &s);
 };
+
+}
 
 #endif

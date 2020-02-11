@@ -3,6 +3,8 @@
 #include "../../spec/ucode.h"
 #include "alu.h"
 
+namespace kcpu {
+
 mod_alu::mod_alu(vm_logger &logger) : logger(logger) {
     result = {.val = 0, .flags = 0};
 }
@@ -118,4 +120,6 @@ void mod_alu::clock_inputs(uinst_t ui, bus_state &s) {
         assert(ops[mode]->mode == mode);
         result = ops[mode]->eval(s.read(BUS_A), s.read(BUS_B));
     }
+}
+
 }

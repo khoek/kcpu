@@ -4,6 +4,8 @@
 #include "../except.h"
 #include "common.h"
 
+namespace kcpu {
+
 vm_error::vm_error(const std::string &msg) : bt_error(msg) { }
 
 vm_logger::vm_logger(bool disassemble, bool dump_registers, bool dump_bus)
@@ -94,4 +96,6 @@ regval_t bus_state::read(bus_t b) {
     }
 
     return early_read(b);
+}
+
 }
