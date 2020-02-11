@@ -31,7 +31,7 @@ kcpu::STATE kcpu::ustep() {
     total_clocks++;
 
     if(ctl.cbits[CBIT_HALTED]) {
-        throw "cpu already halted!";
+        throw vm_error("cpu already halted!");
     }
 
     regval_t i = ctl.get_inst();
@@ -39,7 +39,7 @@ kcpu::STATE kcpu::ustep() {
     if(logger.dump_bus) logger.logf("IP/UC @ I/UI: 0x%04X/0x%04X @ 0x%04X/0x%04lX\n", ctl.reg[REG_IP], ctl.reg[REG_UC], i, ui);
 
     if(!ui) {
-        throw "executing undefined microcode instruction!";
+        throw vm_error("executing undefined microcode instruction!");
     }
 
     if(logger.dump_registers) {

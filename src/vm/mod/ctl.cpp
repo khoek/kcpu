@@ -1,4 +1,4 @@
-#include "../../gen/arch.h"
+#include "../../lang/lang.h"
 #include "../../spec/inst.h"
 #include "../../spec/ucode.h"
 #include "ctl.h"
@@ -43,7 +43,7 @@ void mod_ctl::clock_outputs(uinst_t ui, bus_state &s) {
         case GCTRL_ACTION_NONE: break;
         case GCTRL_ACTION_RFG_BUSB_I: break;
         case GCTRL_ACTION_STOP: break;
-        default: throw "unkown GCTRL_ACTION";
+        default: throw vm_error("unkown GCTRL_ACTION");
     }
 
     if((ui & MASK_GCTRL_FTJM) == GCTRL_JM_P_RIP_BUSB_O) {
@@ -68,7 +68,7 @@ static regval_t decode_jcond_mask(uinst_t ui) {
         case GCTRL_JCOND_N_ZERO:  return (1 << 1);
         case GCTRL_JCOND_SIGN:    return (1 << 2);
         case GCTRL_JCOND_N_OVFLW: return (1 << 3);
-        default: throw "unknown JCOND!";
+        default: throw vm_error("unknown JCOND!");
     }
 }
 
@@ -93,7 +93,7 @@ void mod_ctl::clock_inputs(uinst_t ui, bus_state &s) {
         }
         case GCTRL_ACTION_NONE: break;
         case GCTRL_ACTION_RIP_BUSA_O: break;
-        default: throw "unkown GCTRL_ACTION";
+        default: throw vm_error("unkown GCTRL_ACTION");
     }
 
     // NOTE This register can be simultaneously reset under the GCTRL_FT_ENTER/MAYBEEXIT/EXIT conditions, but we
@@ -142,7 +142,7 @@ void mod_ctl::clock_inputs(uinst_t ui, bus_state &s) {
             break;
         }
         default: {
-            throw "unknown FT/JM!";
+            throw vm_error("unknown FT/JM!");
         }
     }
 }

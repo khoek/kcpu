@@ -1,7 +1,7 @@
 #ifndef SPEC_INST_H
 #define SPEC_INST_H
 
-#include "hw.h"
+#include "opclass.h"
 
 // START PREAMBLE
 
@@ -11,8 +11,8 @@
 #define INST_GET_OPCODE(inst) (((inst) & ~P_I_LOADDATA) >> INST_SHIFT)
 #define INST_MK(loaddata, opcode, iu1, iu2, iu3) (((loaddata) ? P_I_LOADDATA : 0) | (opcode << INST_SHIFT) | INST_MK_IU1(iu1) | INST_MK_IU2(iu2) | INST_MK_IU3(iu3))
 
-#define SINGLE_IU3(raw, iu3) ((raw) | (iu3))
-#define ANY_IU3(raw) (raw)
+#define SINGLE_IU3(raw, iu3) opclass_iu3_single((raw) | (iu3), (iu3))
+#define ANY_IU3(raw) opclass_iu3_all((raw))
 
 // END PREAMBLE
 
@@ -36,18 +36,18 @@
 #define I_STBLZ 0b00001101
 #define I_STBHZ 0b00001111
 // Use Farmem Prefix
-#define P_I_FAR 0b00010000
+#define P_I_FAR 0b00100000
 
 // CTL
-#define I_JMP     0b00101000
-#define I_JC      0b00100000
-#define I_JNC     0b00100100
-#define I_JZ      0b00100001
-#define I_JNZ     0b00100101
-#define I_JS      0b00100010
-#define I_JNS     0b00100110
-#define I_JO      0b00100011
-#define I_JNO     0b00100111
+#define I_JMP     0b101101000
+#define I_JC      0b101100000
+#define I_JNC     0b101100100
+#define I_JZ      0b101100001
+#define I_JNZ     0b101100101
+#define I_JS      0b101100010
+#define I_JNS     0b101100110
+#define I_JO      0b101100011
+#define I_JNO     0b101100111
 // LD JMP Prefix
 #define P_I_LDJMP 0b00010000
 
@@ -80,6 +80,8 @@
 #define I_X_LEAVE               0b10101101
 #define I_X_ENTERFR  SINGLE_IU3(0b10101000, REG_SP)
 
-#define I_ADD3          ANY_IU3(0b11001000)
+#define I_ADD3          ANY_IU3(0b11000000)
+#define I_LDWO          ANY_IU3(0b11001000)
+#define I_STWO          ANY_IU3(0b11011000)
 
 #endif

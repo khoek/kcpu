@@ -1,53 +1,47 @@
-MOV $0x1337 ra
-STW $0 ra
 
-MOV $0xBEEF ra
-STW $2 ra
+PUSH $0x1337
+PUSH $0xBEEF
+CALL sample
+POP ra
+POP rb
 
-MOV $0xAAAA ra
-LDBLZ $0 ra
-CMP $0x0037 ra
+CMP $0x1337 rb
 JNE fail
-
-MOV $0xAAAA ra
-LDBHZ $0 ra
-CMP $0x3700 ra
+CMP $0xBEEF ra
 JNE fail
-
-MOV $0xAAAA ra
-LDBL $0 ra
-CMP $0xAA37 ra
-JNE fail
-
-MOV $0xAAAA ra
-LDBH $0 ra
-CMP $0x37AA ra
-JNE fail
-
-MOV $0xAAAA ra
-LDBLZ $1 ra
-CMP $0x0013 ra
-JNE fail
-
-MOV $0xAAAA ra
-LDBHZ $1 ra
-CMP $0x1300 ra
-JNE fail
-
-MOV $0xAAAA ra
-LDBL $1 ra
-CMP $0xAA13 ra
-JNE fail
-
-MOV $0xAAAA ra
-LDBH $1 ra
-CMP $0x13AA ra
-JNE fail
-
 
 HLT
 
+sample:
+    ENTERFR $4
 
+    MOV $0xAAAA ra
+    STWO rbp $-2 ra
+    MOV $0xBBBB ra
+    STWO rbp $-4 ra
+
+    PUSH $0xCCCC
+    PUSH $0xDDDD
+
+    POP ra
+    CMP $0xDDDD ra
+    JNE fail
+
+    POP ra
+    CMP $0xCCCC ra
+    JNE fail
+
+    LDWO rbp $-2 rb
+    CMP $0xAAAA rb
+    JNE fail
+
+    LDWO rbp $-4 rb
+    CMP $0xBBBB rb
+    JNE fail
+
+    LEAVE
+    RET
 
 fail:
     ABRT
+

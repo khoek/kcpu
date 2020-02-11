@@ -29,7 +29,7 @@ void mod_reg::dump_registers() {
 
 regval_t mod_reg::get(preg_t r) {
     if(r >= NUM_PREGS) {
-        throw "invalid preg id";
+        throw vm_error("invalid preg id");
     }
 
     return reg[r];

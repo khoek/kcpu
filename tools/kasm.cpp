@@ -4,7 +4,7 @@
 #include <fstream>
 
 #include "lib/compiler.h"
-#include "src/gen/arch.h"
+#include "src/lang/lang.h"
 
 int main(int argc, char **argv) {
     if(argc != 3) {

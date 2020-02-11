@@ -1,11 +1,12 @@
-#ifndef GEN_ARCH_H
-#define GEN_ARCH_H
+#ifndef LANG_LANG_H
+#define LANG_LANG_H
 
 #include <vector>
 #include <string>
 #include <optional>
 #include "../types.h"
 #include "../spec/hw.h"
+#include "../spec/inst.h"
 
 struct argtype {
     uint8_t count;
@@ -22,36 +23,6 @@ struct argtype {
 #define ARGS_3_1CONST  ((argtype) {.count = 3, .maybeconst =  0})
 #define ARGS_3_2CONST  ((argtype) {.count = 3, .maybeconst =  1})
 #define ARGS_3_3CONST  ((argtype) {.count = 3, .maybeconst =  2})
-
-/* An `opclass` represents one of:
-    1. (NO_IU3) a single opcode which ignores IU3.
-    2. (IU3_SINGLE) a single opcode which cares about IU3.
-    3. (IU3_ALL) a range of opcodes for which IU3 represents a third argument.
-
-   In principle more complicated patterns can be supported.
-*/
-class opclass {
-    public:
-    enum kind {
-        NO_IU3,
-        IU3_SINGLE,
-        IU3_ALL,
-    };
-
-    regval_t raw;
-    kind cls;
-    preg_t iu3;
-
-    opclass(regval_t raw);
-    opclass(regval_t raw, kind k, preg_t iu3);
-
-    regval_t resolve();
-    regval_t resolve(preg_t r);
-    regval_t resolve_dummy();
-};
-
-opclass opclass_iu3_single(regval_t raw, preg_t iu3);
-opclass opclass_iu3_all(regval_t raw);
 
 class instruction {
     private:

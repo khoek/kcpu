@@ -1,6 +1,10 @@
 #include <cstdio>
 #include <cstdarg>
+#include <sstream>
+#include "../except.h"
 #include "common.h"
+
+vm_error::vm_error(const std::string &msg) : bt_error(msg) { }
 
 vm_logger::vm_logger(bool disassemble, bool dump_registers, bool dump_bus)
     : disassemble(disassemble), dump_registers(dump_registers), dump_bus(dump_bus) { }
@@ -29,7 +33,7 @@ bus_state::bus_state(vm_logger &logger) : logger(logger) {
 
 regval_t bus_state::get_unset_value(bus_t b) {
     if(b >= BUS_FIRST_FLOATER) {
-        throw "storing floating levels!";
+        throw vm_error("storing floating levels!");
     }
 
     return BUS_DEFAULT_VAL;
@@ -37,7 +41,7 @@ regval_t bus_state::get_unset_value(bus_t b) {
 
 void bus_state::freeze() {
     if(frozen) {
-        throw "bus state already frozen!";
+        throw vm_error("bus state already frozen!");
     }
 
     frozen = true;
@@ -45,11 +49,11 @@ void bus_state::freeze() {
 
 void bus_state::assign(bus_t b, regval_t val) {
     if(frozen) {
-        throw "bus state frozen!";
+        throw vm_error("bus state frozen!");
     }
 
     if(set[b]) {
-        throw "out bus collision";
+        throw vm_error("out bus collision");
     }
 
     if(logger.dump_bus) logger.logf("  %s <- %X\n", BUS_NAMES[b], val);
@@ -64,11 +68,11 @@ bool bus_state::is_assigned(bus_t b) {
 
 void bus_state::connect(bus_t b1, bus_t b2) {
     if(set[b1] && set[b2]) {
-        throw "connect collision!";
+        throw vm_error("connect collision!");
     }
     
     if(!set[b1] && !set[b2]) {
-        throw "IMPLEMENT THIS! (one could have a default)";
+        throw vm_error("IMPLEMENT THIS! (one could have a default)");
     }
     
     if(set[b1]) {
@@ -86,7 +90,7 @@ regval_t bus_state::early_read(bus_t b) {
 
 regval_t bus_state::read(bus_t b) {
     if(!frozen) {
-        throw "bus state not yet frozen!";
+        throw vm_error("bus state not yet frozen!");
     }
 
     return early_read(b);

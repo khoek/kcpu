@@ -7,8 +7,6 @@ SOFT/FIRMWARE:
 
 
   In the VM:
-    * STW, LWD family offset instructions (so we can refer relative to RBP)
-
     * ENTERFR is currently untested
 
     * FLAG-ONLY versions of the ALU insts (we already value-only versions).

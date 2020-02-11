@@ -1,10 +1,8 @@
-#include <cstdlib>
-#include <cstring>
-#include <cstdio>
+#include <sstream>
 
 #include "../spec/inst.h"
 #include "../spec/ucode.h"
-#include "arch.h"
+#include "lang.h"
 
 using namespace arch;
 
@@ -30,17 +28,17 @@ static void gen_sys() {
 
 #define FARPREFIX "FAR "
 
-static instruction mk_distanced_instruction(regval_t farbit, const char * const name, regval_t opcode, argtype args, std::vector<uinst_t> uis) {
-    char * buff = (char *) malloc(strlen(FARPREFIX) + strlen(name) + 1);
-    sprintf(buff, "%s%s", farbit ? FARPREFIX : "", name);
+static instruction mk_distanced_instruction(regval_t farbit, const char * const name, opclass op, argtype args, std::vector<uinst_t> uis) {
+    std::stringstream ss;
+    ss << (farbit ? FARPREFIX : "") << name;
     for(auto ui = uis.begin(); ui != uis.end(); ui++) {
 	    *ui |= farbit ? MCTRL_USE_PREFIX_FAR : 0;
     }
-    return instruction(buff, opcode | farbit, args, uis);
+    return instruction(ss.str(), op.add_flag(farbit), args, uis);
 }
 
-static instruction mk_distanced_instruction(regval_t farbit, const char * const name, regval_t opcode, argtype args, uinst_t ui) {
-    return mk_distanced_instruction(farbit, name, opcode, args, std::vector<uinst_t> { ui });
+static instruction mk_distanced_instruction(regval_t farbit, const char * const name, opclass op, argtype args, uinst_t ui) {
+    return mk_distanced_instruction(farbit, name, op, args, std::vector<uinst_t> { ui });
 }
 
 static uinst_t ucode_memb_sh_step1(bool is_write, bool lo_or_hi, bool zero) {
@@ -56,11 +54,11 @@ static uinst_t ucode_memb_st_step2(bool lo_or_hi, bool zero) {
     return MCTRL_N_MAIN_OUT | MCTRL_MAIN_STORE | MCTRL_BUSMODE_CONW_BUSM;
 }
 
-static instruction mk_mem_byte_ld_instruction(regval_t farbit, const char * const name, regval_t opcode, argtype args,
+static instruction mk_mem_byte_instruction(regval_t farbit, const char * const name, opclass op, argtype args,
     bool is_write, bool lo_or_hi, bool zero) {
-    return mk_distanced_instruction(farbit, name, opcode, args, {
+    return mk_distanced_instruction(farbit, name, op, args, {
         ucode_memb_sh_step1(is_write, lo_or_hi, zero),
-        ucode_memb_ld_step2(          lo_or_hi, zero) | GCTRL_FT_ENTER
+        (is_write ? ucode_memb_st_step2(lo_or_hi, zero) : ucode_memb_ld_step2(lo_or_hi, zero)) | GCTRL_FT_ENTER
     });
 }
 
@@ -72,22 +70,22 @@ static void gen_mem_variants(regval_t farbit) {
         MCTRL_FIDD_STORE | MCTRL_N_FIDD_OUT | MCTRL_BUSMODE_CONW_BUSM | RCTRL_IU1_BUSA_O,
                            MCTRL_N_MAIN_OUT | MCTRL_BUSMODE_CONW_BUSB | RCTRL_IU2_BUSB_I | GCTRL_FT_ENTER
     }));
+    
+    reg_inst(mk_distanced_instruction(farbit, "LDWO", I_LDWO, ARGS_3_2CONST, {
+        MCTRL_N_FIDD_OUT | MCTRL_N_MAIN_OUT | ACTRL_INPUT_EN | ACTRL_MODE_ADD | RCTRL_IU1_BUSA_O | RCTRL_IU2_BUSB_O,
+        MCTRL_FIDD_STORE | MCTRL_N_FIDD_OUT | MCTRL_BUSMODE_CONW_BUSM | ACTRL_DATA_OUT,
+                           MCTRL_N_MAIN_OUT | MCTRL_BUSMODE_CONW_BUSB | RCTRL_IU3_BUSB_I | GCTRL_FT_ENTER
+    }));
 
-    reg_inst(mk_mem_byte_ld_instruction(farbit, "LDBL", I_LDBL, ARGS_2_1CONST, false, false, false));
+    reg_inst(mk_mem_byte_instruction(farbit, "LDBL" , I_LDBL , ARGS_2_1CONST, false, false, false));
+    reg_inst(mk_mem_byte_instruction(farbit, "LDBH" , I_LDBH , ARGS_2_1CONST, false, true , false));
+    reg_inst(mk_mem_byte_instruction(farbit, "LDBLZ", I_LDBLZ, ARGS_2_1CONST, false, false, true ));
+    reg_inst(mk_mem_byte_instruction(farbit, "LDBHZ", I_LDBHZ, ARGS_2_1CONST, false, true , true ));
     
-    reg_inst(mk_distanced_instruction(farbit, "LDBH", I_LDBH, ARGS_2_1CONST, {
-        ucode_memb_sh_step1(false, true , false),
-        ucode_memb_ld_step2(       true , false) | GCTRL_FT_ENTER
-    }));
-    
-    reg_inst(mk_distanced_instruction(farbit, "LDBLZ", I_LDBLZ, ARGS_2_1CONST, {
-        ucode_memb_sh_step1(false, false, true ),
-        ucode_memb_ld_step2(       false, true ) | GCTRL_FT_ENTER
-    }));
-    
-    reg_inst(mk_distanced_instruction(farbit, "LDBHZ", I_LDBHZ, ARGS_2_1CONST, {
-        ucode_memb_sh_step1(false, true , true ),
-        ucode_memb_ld_step2(       true , true ) | GCTRL_FT_ENTER
+    reg_inst(mk_distanced_instruction(farbit, "STWO", I_STWO, ARGS_3_2CONST, {
+        MCTRL_N_FIDD_OUT | MCTRL_N_MAIN_OUT | ACTRL_INPUT_EN | ACTRL_MODE_ADD | RCTRL_IU1_BUSA_O | RCTRL_IU2_BUSB_O,
+        MCTRL_FIDD_STORE | MCTRL_N_FIDD_OUT | MCTRL_N_MAIN_OUT | MCTRL_BUSMODE_CONW_BUSB | ACTRL_DATA_OUT | RCTRL_IU3_BUSB_O,
+        MCTRL_MAIN_STORE                    | MCTRL_N_MAIN_OUT | MCTRL_BUSMODE_CONW_BUSM | GCTRL_FT_ENTER
     }));
 
     reg_inst(mk_distanced_instruction(farbit, "STW", I_STW, ARGS_2_1CONST, {
@@ -95,25 +93,10 @@ static void gen_mem_variants(regval_t farbit) {
         MCTRL_MAIN_STORE                    | MCTRL_N_MAIN_OUT | MCTRL_BUSMODE_CONW_BUSM | GCTRL_FT_ENTER
     }));
 
-    reg_inst(mk_distanced_instruction(farbit, "STBL", I_STBL, ARGS_2_1CONST, {
-        ucode_memb_sh_step1(true , false, false),
-        ucode_memb_st_step2(       false, false) | GCTRL_FT_ENTER
-    }));
-    
-    reg_inst(mk_distanced_instruction(farbit, "STBH", I_STBH, ARGS_2_1CONST, {
-        ucode_memb_sh_step1(true , true , false),
-        ucode_memb_st_step2(       true , false) | GCTRL_FT_ENTER
-    }));
-    
-    reg_inst(mk_distanced_instruction(farbit, "STBLZ", I_STBLZ, ARGS_2_1CONST, {
-        ucode_memb_sh_step1(true , false, true ),
-        ucode_memb_st_step2(       false, true ) | GCTRL_FT_ENTER
-    }));
-    
-    reg_inst(mk_distanced_instruction(farbit, "STBHZ", I_STBHZ, ARGS_2_1CONST, {
-        ucode_memb_sh_step1(true , true , true ),
-        ucode_memb_st_step2(       true , true ) | GCTRL_FT_ENTER
-    }));
+    reg_inst(mk_mem_byte_instruction(farbit, "STBL" , I_STBL , ARGS_2_1CONST, true , false, false));
+    reg_inst(mk_mem_byte_instruction(farbit, "STBH" , I_STBH , ARGS_2_1CONST, true , true , false));
+
+    // TODO did we ever envision "zero" variants for STBL and STBH?
 }
 
 static void gen_mem() {
@@ -127,8 +110,8 @@ static void gen_mem() {
 // for the direct jump/load jump.
 static instruction mk_loadable_instruction(regval_t ldbit, const char * const name, regval_t opcode,
     bool second_arg, uinst_t jm_w_cond, std::vector<uinst_t> preamble = {}) {
-    char * buff = (char *) malloc(strlen(LDJMPPREFIX) + strlen(name) + 1);
-    sprintf(buff, "%s%s", ldbit ? LDJMPPREFIX : "", name);
+    std::stringstream ss;
+    ss << (ldbit ? LDJMPPREFIX : "") << name;
 
     if(ldbit) {
         preamble.push_back(MCTRL_FIDD_STORE | MCTRL_N_FIDD_OUT | MCTRL_BUSMODE_CONW_BUSM | (second_arg ? RCTRL_IU2_BUSA_O : RCTRL_IU1_BUSA_O));
@@ -136,7 +119,7 @@ static instruction mk_loadable_instruction(regval_t ldbit, const char * const na
     } else {
         preamble.push_back(MCTRL_N_FIDD_OUT | MCTRL_N_MAIN_OUT | jm_w_cond | (second_arg ? RCTRL_IU2_BUSB_O : RCTRL_IU1_BUSB_O));
     }
-    return instruction(buff, opcode | ldbit, second_arg ? ARGS_2_1CONST : ARGS_1, preamble);
+    return instruction(ss.str(), opcode | ldbit, second_arg ? ARGS_2_1CONST : ARGS_1, preamble);
 }
 
 static void gen_ctl_loadables(regval_t ldbit) {
@@ -173,47 +156,48 @@ static void gen_reg() {
 
 #define NOFLAGSUFFIX "NF"
 
-static instruction mk_arith_inst_arg1(uinst_t flagbits, const char *name, regval_t opcode, uinst_t alu_mode, bool const_allowed) {
-    char * buff = (char *) malloc(strlen(NOFLAGSUFFIX) + strlen(name) + 1);
-    sprintf(buff, "%s%s", name, flagbits ? "" : NOFLAGSUFFIX);
+static instruction mk_arith_inst(uinst_t flagbits, const char *name, opclass op, argtype args, uinst_t alu_mode) {
+    std::stringstream ss;
+    ss << name << (flagbits ? "" : NOFLAGSUFFIX);
 
-    return instruction(buff, opcode | (flagbits ? 0 : P_I_NOFGS), const_allowed ? ARGS_1 : ARGS_1_NOCONST, {
-        MCTRL_N_FIDD_OUT | MCTRL_N_MAIN_OUT | ACTRL_INPUT_EN | alu_mode | RCTRL_IU1_BUSA_O,
-        MCTRL_N_FIDD_OUT | MCTRL_N_MAIN_OUT | ACTRL_DATA_OUT | flagbits | RCTRL_IU1_BUSA_I | GCTRL_FT_ENTER,
-    });
-}
+    uinst_t tgt, srcs;
+    switch(args.count) {
+        case 0: throw "zero arg arith instruction";
+        case 1: {
+            srcs = RCTRL_IU1_BUSA_O;
+            tgt = RCTRL_IU1_BUSA_I;
+            break;
+        }
+        case 2: {
+            srcs = RCTRL_IU1_BUSA_O | RCTRL_IU2_BUSB_O;
+            tgt = RCTRL_IU2_BUSA_I;
+            break;
+        }
+        case 3: {
+            srcs = RCTRL_IU1_BUSA_O | RCTRL_IU2_BUSB_O;
+            tgt = RCTRL_IU3_BUSA_I;
+            break;
+        }
+        default: throw "too many args!";
+    }
 
-static instruction mk_arith_inst_arg2(uinst_t flagbits, const char *name, regval_t opcode, uinst_t alu_mode) {
-    char * buff = (char *) malloc(strlen(NOFLAGSUFFIX) + strlen(name) + 1);
-    sprintf(buff, "%s%s", name, flagbits ? "" : NOFLAGSUFFIX);
-
-    return instruction(buff, opcode | (flagbits ? 0 : P_I_NOFGS), ARGS_2_1CONST, {
-        MCTRL_N_FIDD_OUT | MCTRL_N_MAIN_OUT | ACTRL_INPUT_EN | alu_mode | RCTRL_IU1_BUSA_O | RCTRL_IU2_BUSB_O,
-        MCTRL_N_FIDD_OUT | MCTRL_N_MAIN_OUT | ACTRL_DATA_OUT | flagbits | RCTRL_IU2_BUSA_I | GCTRL_FT_ENTER,
-    });
-}
-
-static instruction mk_arith_inst_arg3_iu3all(uinst_t flagbits, const char *name, regval_t opcode, uinst_t alu_mode) {
-    char * buff = (char *) malloc(strlen(NOFLAGSUFFIX) + strlen(name) + 1);
-    sprintf(buff, "%s%s", name, flagbits ? "" : NOFLAGSUFFIX);
-
-    return instruction(buff, opclass_iu3_all(opcode | (flagbits ? 0 : P_I_NOFGS)), ARGS_3_1CONST, {
-        MCTRL_N_FIDD_OUT | MCTRL_N_MAIN_OUT | ACTRL_INPUT_EN | alu_mode | RCTRL_IU1_BUSA_O | RCTRL_IU2_BUSB_O,
-        MCTRL_N_FIDD_OUT | MCTRL_N_MAIN_OUT | ACTRL_DATA_OUT | flagbits | RCTRL_IU3_BUSA_I | GCTRL_FT_ENTER,
+    return instruction(ss.str(), op.add_flag(flagbits ? 0 : P_I_NOFGS), args, {
+        MCTRL_N_FIDD_OUT | MCTRL_N_MAIN_OUT | ACTRL_INPUT_EN | alu_mode | srcs | RCTRL_IU1_BUSA_O,
+        MCTRL_N_FIDD_OUT | MCTRL_N_MAIN_OUT | ACTRL_DATA_OUT | flagbits | tgt  | GCTRL_FT_ENTER,
     });
 }
 
 static void gen_alu_flagables(uinst_t flagbits) {
-    reg_inst(mk_arith_inst_arg2(flagbits, "ADD" , I_ADD , ACTRL_MODE_ADD ));
-    reg_inst(mk_arith_inst_arg2(flagbits, "SUB" , I_SUB , ACTRL_MODE_SUB ));
-    reg_inst(mk_arith_inst_arg2(flagbits, "AND" , I_AND , ACTRL_MODE_AND ));
-    reg_inst(mk_arith_inst_arg2(flagbits, "OR"  , I_OR  , ACTRL_MODE_OR  ));
-    reg_inst(mk_arith_inst_arg2(flagbits, "XOR" , I_XOR , ACTRL_MODE_XOR ));
-    reg_inst(mk_arith_inst_arg1(flagbits, "LSFT", I_LSFT, ACTRL_MODE_LSFT, false));
-    reg_inst(mk_arith_inst_arg1(flagbits, "RSFT", I_RSFT, ACTRL_MODE_RSFT, false));
-    reg_inst(mk_arith_inst_arg1(flagbits, "TST" , I_TST , ACTRL_MODE_TST , true ));
+    reg_inst(mk_arith_inst(flagbits, "ADD" , I_ADD , ARGS_2_1CONST , ACTRL_MODE_ADD ));
+    reg_inst(mk_arith_inst(flagbits, "SUB" , I_SUB , ARGS_2_1CONST , ACTRL_MODE_SUB ));
+    reg_inst(mk_arith_inst(flagbits, "AND" , I_AND , ARGS_2_1CONST , ACTRL_MODE_AND ));
+    reg_inst(mk_arith_inst(flagbits, "OR"  , I_OR  , ARGS_2_1CONST , ACTRL_MODE_OR  ));
+    reg_inst(mk_arith_inst(flagbits, "XOR" , I_XOR , ARGS_2_1CONST , ACTRL_MODE_XOR ));
+    reg_inst(mk_arith_inst(flagbits, "LSFT", I_LSFT, ARGS_1_NOCONST, ACTRL_MODE_LSFT));
+    reg_inst(mk_arith_inst(flagbits, "RSFT", I_RSFT, ARGS_1_NOCONST, ACTRL_MODE_RSFT));
+    reg_inst(mk_arith_inst(flagbits, "TST" , I_TST , ARGS_1        , ACTRL_MODE_TST ));
 
-    reg_inst(mk_arith_inst_arg3_iu3all(flagbits, "ADD3", I_ADD3, ACTRL_MODE_ADD));
+    reg_inst(mk_arith_inst(flagbits, "ADD3", I_ADD3, ARGS_3_1CONST , ACTRL_MODE_ADD));
 }
 
 static void gen_alu() {
@@ -234,13 +218,13 @@ static void gen_x() {
     // IU1 must be RBP, IU2 = $CONST or reg, IU3 is forced to RSP
     // Faster version of: PUSH rbp; MOV rsp rbp; SUBNF $CONST, rsp;
     // FIXME if we move to non-hardcoded IU3s, then change this to 3 args.
-    reg_inst(instruction("X_ENTERFR", opclass_iu3_single(I_X_ENTERFR, REG_SP), ARGS_2_2CONST, {
+    reg_inst(instruction("X_ENTERFR", I_X_ENTERFR, ARGS_2_2CONST, {
         //PUSH rbp; MOV rsp rbp;
                            MCTRL_N_FIDD_OUT | MCTRL_N_MAIN_OUT | RCTRL_RSP_DEC,
         MCTRL_FIDD_STORE | MCTRL_N_FIDD_OUT | MCTRL_N_MAIN_OUT | MCTRL_BUSMODE_CONW_BUSB | RCTRL_IU3_BUSA_O | RCTRL_IU1_BUSB_O,
-        MCTRL_MAIN_STORE                    | MCTRL_N_MAIN_OUT | MCTRL_BUSMODE_CONW_BUSM | RCTRL_IU3_BUSA_O | RCTRL_IU1_BUSA_I
+        MCTRL_MAIN_STORE                    | MCTRL_N_MAIN_OUT | MCTRL_BUSMODE_CONW_BUSM | RCTRL_IU3_BUSB_O | RCTRL_IU1_BUSB_I
         //SUBNF $CONST, rsp
-                | RCTRL_IU2_BUSB_O | ACTRL_INPUT_EN | ACTRL_MODE_SUB,
+                | RCTRL_IU2_BUSA_O | ACTRL_INPUT_EN | ACTRL_MODE_SUB,
         MCTRL_N_FIDD_OUT | MCTRL_N_MAIN_OUT | ACTRL_DATA_OUT | RCTRL_IU3_BUSA_I | GCTRL_FT_ENTER,
     }));
 

@@ -1,10 +1,6 @@
-#include <cstdlib>
-#include <cstring>
-#include <cstdio>
-
 #include "../spec/inst.h"
 #include "../spec/ucode.h"
-#include "arch.h"
+#include "lang.h"
 
 using namespace arch;
 
@@ -35,6 +31,7 @@ static void gen_alu() {
         virtual_instruction(I_ADD, { slot_constval(0x0001), slot_arg(0) }),
     }));
 
+    // FIXME use a "nodata" version of an arithmetic instruction instead
     // Subtract one operand from the other to perform the comparison.
     // e.g. FLAG_SIGN tells you which is greater.
     reg_alias(alias("CMP", ARGS_2_1CONST, {

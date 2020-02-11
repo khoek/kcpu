@@ -1,33 +1,31 @@
-#include <cstdlib>
-#include <cstring>
 #include <cassert>
 #include "../../spec/ucode.h"
 #include "mem.h"
 
-mem_bank::mem_bank(uint32_t size, bool rom) : size(size), rom(rom) {
-    size_t bts = (sizeof(regval_t) / sizeof(char)) * size;
-    raw = reinterpret_cast<regval_t *>(malloc(bts));
-    memset(raw, 0, bts);
-}
+mem_bank::mem_bank(uint32_t bytes, bool rom) : rom(rom), raw(std::vector<uint16_t>(bytes >> 1)) { }
 
 void mem_bank::store(regval_t addr, regval_t val) {
-    if(addr >= size) {
-        throw "out of bounds memory store";
+    if(addr >= raw.size()) {
+        throw vm_error("out of bounds memory store");
     }
 
     if(rom) {
-        throw "cannot write to ROM!";
+        throw vm_error("cannot write to ROM!");
     }
 
     raw[addr >> 1] = val;
 }
 
 regval_t mem_bank::load(regval_t addr) {
-    if(addr >= size) {
-        throw "out of bounds memory load";
+    if(addr >= raw.size()) {
+        throw vm_error("out of bounds memory load");
     }
 
     return raw[addr >> 1];
+}
+
+regval_t * mem_bank::data() {
+    return raw.data();
 }
 
 mod_mem::mod_mem(vm_logger &logger) : logger(logger), bios(BIOS_SIZE, true), prog(PROG_SIZE, false) {
@@ -139,10 +137,7 @@ void mod_mem::clock_connects(uinst_t ui, bus_state &s) {
             s.assign(BUS_F, res);
             break;
         }
-        default: {
-            throw "invalid busmode!";
-            break;
-        }
+        default: throw vm_error("invalid busmode!");
     }
 }
 

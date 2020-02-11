@@ -1,7 +1,7 @@
 #ifndef GEN_DISASSEMBLER_H
 #define GEN_DISASSEMBLER_H
 
-#include "arch.h"
+#include "../lang/lang.h"
 #include "../vm/mod/mem.h"
 
 class inst_pieces {

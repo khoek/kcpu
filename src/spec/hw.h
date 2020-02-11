@@ -1,6 +1,8 @@
 #ifndef SPEC_HW_H
 #define SPEC_HW_H
 
+#include "../types.h"
+
 #define UCVAL_WIDTH 4
 #define ADDR_WIDTH 13
 
@@ -10,8 +12,8 @@
 #define INST_WIDTH (ADDR_WIDTH - UCVAL_WIDTH)
 #define UCVAL_MAX ((1 << UCVAL_WIDTH) - 1)
 #define INST_MAX ((1 << INST_WIDTH) - 1)
-#define UCODE_LEN (1 << (ADDR_WIDTH - 1))
-#define OPCODE_LEN (1 << (INST_WIDTH - 1))
+#define UCODE_LEN (1 << ADDR_WIDTH)
+#define OPCODE_LEN (1 << INST_WIDTH)
 
 #define IU_MASK 0b111
 

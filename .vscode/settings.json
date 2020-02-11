@@ -57,6 +57,7 @@
         "codecvt": "cpp",
         "filesystem": "cpp",
         "ratio": "cpp",
-        "iomanip": "cpp"
+        "iomanip": "cpp",
+        "cassert": "cpp"
     }
 }

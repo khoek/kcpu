@@ -1,4 +1,5 @@
 #include <cassert>
+#include <stdexcept>
 #include "../../spec/ucode.h"
 #include "alu.h"
 
@@ -111,7 +112,7 @@ void mod_alu::clock_inputs(uinst_t ui, bus_state &s) {
     if(ui & ACTRL_INPUT_EN) {
         uint8_t mode = DECODE_ACTRL_MODE(ui);
         if(mode & ~0b111) {
-            throw "unknown ACTRL_MODE";
+            throw vm_error("unknown ACTRL_MODE");
         }
 
         assert(ops[mode]->mode == mode);

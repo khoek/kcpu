@@ -1,10 +1,14 @@
 #ifndef VM_COMMON_H
 #define VM_COMMON_H
 
-#include <cstdio>
-
 #include "../types.h"
+#include "../except.h"
 #include "../spec/hw.h"
+
+class vm_error : public bt_error {
+    public:
+    vm_error(const std::string &arg);
+};
 
 class vm_logger {
     public:

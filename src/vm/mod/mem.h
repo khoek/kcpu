@@ -1,6 +1,8 @@
 #ifndef VM_MOD_MEM_H
 #define VM_MOD_MEM_H
 
+#include <vector>
+
 #include "../common.h"
 
 #define BIOS_SIZE (1 << 13)
@@ -8,15 +10,16 @@
 
 class mem_bank {
     private:
-    uint32_t size;
     bool rom;
+    std::vector<regval_t> raw;
 
     public:
-    regval_t *raw;
 
-    mem_bank(uint32_t size, bool rom);
+    mem_bank(uint32_t bytes, bool rom);
+    
     void store(regval_t addr, regval_t val);
     regval_t load(regval_t addr);
+    regval_t * data();
 };
 
 class mod_mem {

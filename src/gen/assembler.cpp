@@ -3,10 +3,9 @@
 #include <sstream>
 #include <iostream>
 #include <unordered_map>
-#include <cstring>
 
 #include "../spec/inst.h"
-#include "arch.h"
+#include "../lang/lang.h"
 #include "assembler.h"
 
 // FIXME make sure labels don't collide with register names

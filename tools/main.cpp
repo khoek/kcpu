@@ -1,13 +1,9 @@
-#include <cstdlib>
-#include <iostream>
-#include <cstring>
-#include <fstream>
 #include <execinfo.h>
 #include <signal.h>
 #include <unistd.h>
 
 #include "lib/compiler.h"
-#include "src/gen/arch.h"
+#include "src/lang/lang.h"
 #include "src/spec/ucode.h"
 #include "src/vm/kcpu.h"
 
@@ -50,8 +46,8 @@ int main(int argc, char **argv) {
       init_arch(); // alternatively, load the microcode from somewhere.
 
       kcpu cpu(vm_logger{disasm_mode, verbose, verbose});
-      load_binary("BIOS", "bin/bios.bin", BIOS_SIZE, cpu.mem.bios.raw);
-      load_binary("PROG", "bin/prog.bin", PROG_SIZE, cpu.mem.prog.raw);
+      load_binary("BIOS", "bin/bios.bin", BIOS_SIZE, cpu.mem.bios.data());
+      load_binary("PROG", "bin/prog.bin", PROG_SIZE, cpu.mem.prog.data());
 
       printf("CPU Start\n");
       
