@@ -2,7 +2,7 @@ MOV $3 ra
 MOV $88 rb
 
 TST $0
-ADD3rc ra rb
+ADD3 ra rb rc
 JZ fail
 
 CMP $3 ra
@@ -13,7 +13,7 @@ CMP $91 rc
 JNE fail
 
 TST $0
-ADD3NFrc ra rb
+ADD3NF ra rb rc
 JNZ fail
 
 CMP $3 ra

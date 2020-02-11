@@ -6,9 +6,13 @@
 // START PREAMBLE
 
 #define INST_SHIFT (2 * IU_WIDTH)
+#define INST_STRIP_IU3(raw) ((raw) & ~IU_MASK)
 #define INST_GET_LOADDATA(inst) ((inst) & P_I_LOADDATA)
 #define INST_GET_OPCODE(inst) (((inst) & ~P_I_LOADDATA) >> INST_SHIFT)
 #define INST_MK(loaddata, opcode, iu1, iu2, iu3) (((loaddata) ? P_I_LOADDATA : 0) | (opcode << INST_SHIFT) | INST_MK_IU1(iu1) | INST_MK_IU2(iu2) | INST_MK_IU3(iu3))
+
+#define SINGLE_IU3(raw, iu3) ((raw) | (iu3))
+#define ANY_IU3(raw) (raw)
 
 // END PREAMBLE
 
@@ -67,15 +71,15 @@
 // X
 // FIXME? make all of these use IU3 = REG_RSP? not fully sold on IU3 yet.
 // TBH its probably best to shrink the microcode count space and then just reserve enough bits for an IU3 as well
-#define I_X_PUSH    0b10101000
-#define I_X_POP     0b10101001
-#define I_X_CALL    0b10101010
-#define I_X_RET     0b10101011
+#define I_X_PUSH                0b10101000
+#define I_X_POP                 0b10101001
+#define I_X_CALL                0b10101010
+#define I_X_RET                 0b10101011
 
-#define I_X_ENTER   0b10101100
-#define I_X_LEAVE   0b10101101
-#define I_X_ENTERFR (0b10101000 | 0b110) // IU3 = REG_RSP
+#define I_X_ENTER               0b10101100
+#define I_X_LEAVE               0b10101101
+#define I_X_ENTERFR  SINGLE_IU3(0b10101000, REG_SP)
 
-#define I_ADD3      0b11001000
+#define I_ADD3          ANY_IU3(0b11001000)
 
 #endif

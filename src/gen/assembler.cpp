@@ -11,48 +11,48 @@
 
 // FIXME make sure labels don't collide with register names
 
-class opcode {
+class chunk {
     public:
     bool concrete;
     bool label_def;
     regval_t val;
     std::string label;
 
-    opcode(regval_t val);
-    opcode(std::string label, bool label_def);
+    chunk(regval_t val);
+    chunk(std::string label, bool label_def);
 };
 
-opcode::opcode(regval_t raw) : concrete(true), val(raw) { }
+chunk::chunk(regval_t raw) : concrete(true), val(raw) { }
 
-opcode::opcode(std::string label, bool label_def = false) : concrete(false), label(label), label_def(label_def) { }
+chunk::chunk(std::string label, bool label_def = false) : concrete(false), label(label), label_def(label_def) { }
 
 class arg_info {
     public:
     std::vector<preg_t> args;
-    std::optional<std::pair<uint8_t, opcode>> constval;
+    std::optional<std::pair<uint8_t, chunk>> constval;
 
-    arg_info(std::vector<preg_t> args, std::optional<std::pair<uint8_t, opcode>> constval);
+    arg_info(std::vector<preg_t> args, std::optional<std::pair<uint8_t, chunk>> constval);
 };
 
-arg_info::arg_info(std::vector<preg_t> args, std::optional<std::pair<uint8_t, opcode>> constval)
+arg_info::arg_info(std::vector<preg_t> args, std::optional<std::pair<uint8_t, chunk>> constval)
     : args(args), constval(constval) {}
 
 class inst_assembler {
     private:
     std::istream &in;
-    std::vector<opcode> &buff;
+    std::vector<chunk> &buff;
 
-    std::pair<preg_t, std::optional<opcode>> parse_arg();
+    std::pair<preg_t, std::optional<chunk>> parse_arg();
     void handle_label(std::string &tk);
     void handle_instruction(std::string &tk);
-    void bind_opcode(unbound_opcode uo, arg_info ai);
+    void bind_virtual(virtual_instruction uo, arg_info ai);
 
     public:
-    inst_assembler(std::istream &in, std::vector<opcode> &buff);
+    inst_assembler(std::istream &in, std::vector<chunk> &buff);
     void parse();
 };
 
-inst_assembler::inst_assembler(std::istream &in, std::vector<opcode> &buff) : in(in), buff(buff) { }
+inst_assembler::inst_assembler(std::istream &in, std::vector<chunk> &buff) : in(in), buff(buff) { }
 
 static std::optional<preg_t> lookup_reg(std::string s) {
     for(int i = 0; i < NUM_PREGS; i++) {
@@ -67,7 +67,7 @@ static std::optional<preg_t> lookup_reg(std::string s) {
     return std::nullopt;
 }
 
-std::pair<preg_t, std::optional<opcode>> inst_assembler::parse_arg() {
+std::pair<preg_t, std::optional<chunk>> inst_assembler::parse_arg() {
     std::string tk;
     in >> tk;
 
@@ -94,19 +94,18 @@ std::pair<preg_t, std::optional<opcode>> inst_assembler::parse_arg() {
         return std::pair(*reg, std::nullopt);
     }
 
-    return std::pair(REG_ID, std::optional(opcode(tk, false)));
+    return std::pair(REG_ID, std::optional(chunk(tk, false)));
 }
 
 void inst_assembler::handle_label(std::string &tk) {
-    opcode o(tk.substr(0, tk.length() - 1), true);
+    chunk o(tk.substr(0, tk.length() - 1), true);
     buff.push_back(o);
 }
 
-void inst_assembler::bind_opcode(unbound_opcode uo, arg_info ai) {
-    preg_t ius[NUM_IUS];
-    memset(ius, 0, sizeof(ius));
+void inst_assembler::bind_virtual(virtual_instruction uo, arg_info ai) {
+    std::vector<preg_t> ius(uo.bi.size());
 
-    std::optional<opcode> constval;
+    std::optional<chunk> constval;
     for(int j = 0; j < uo.bi.size(); j++) {
         if(j >= NUM_IUS) {
             throw "too many args!";
@@ -149,7 +148,7 @@ void inst_assembler::bind_opcode(unbound_opcode uo, arg_info ai) {
         }
     }
 
-    buff.push_back(INST_MK(constval, uo.raw, ius[0], ius[1], ius[2]));
+    buff.push_back(uo.build_inst(constval.has_value(), ius));
 
     if(constval) {
         buff.push_back(*constval);
@@ -163,9 +162,9 @@ void inst_assembler::handle_instruction(std::string &tk) {
     }
 
     std::vector<preg_t> args;
-    std::optional<std::pair<uint8_t, opcode>> constval;
+    std::optional<std::pair<uint8_t, chunk>> constval;
     for(uint8_t j = 0; j < a->args.count; j++) {
-        std::pair<preg_t, std::optional<opcode>> arg = parse_arg();
+        std::pair<preg_t, std::optional<chunk>> arg = parse_arg();
         if (arg.second) {
             if(a->args.maybeconst != j) {
                 throw "Const arg not allowed in that place!";
@@ -178,7 +177,7 @@ void inst_assembler::handle_instruction(std::string &tk) {
     }
 
     for(auto j = a->insts.begin(); j < a->insts.end(); j++) {
-        bind_opcode(*j, arg_info(args, constval));
+        bind_virtual(*j, arg_info(args, constval));
     }
 }
 
@@ -214,7 +213,7 @@ void inst_assembler::parse() {
     handle_instruction(tk);
 }
 
-static std::unordered_map<std::string, regval_t> build_label_table(std::vector<opcode> ocs) {
+static std::unordered_map<std::string, regval_t> build_label_table(std::vector<chunk> ocs) {
     std::unordered_map<std::string, regval_t> labels;
 
     regval_t pos = 0;
@@ -230,7 +229,7 @@ static std::unordered_map<std::string, regval_t> build_label_table(std::vector<o
     return labels;
 }
 
-static std::vector<regval_t> resolve_labels(std::unordered_map<std::string, regval_t> labels, std::vector<opcode> ocs) {
+static std::vector<regval_t> resolve_labels(std::unordered_map<std::string, regval_t> labels, std::vector<chunk> ocs) {
     std::vector<regval_t> ret;
 
     for(auto i = ocs.begin(); i < ocs.end(); i++) {
@@ -255,7 +254,7 @@ static std::vector<regval_t> resolve_labels(std::unordered_map<std::string, regv
 }
 
 std::vector<regval_t> assemble(std::istream *in) {
-    std::vector<opcode> ops;
+    std::vector<chunk> ops;
 
     std::string line;
     while(std::getline(*in, line)) {

@@ -23,15 +23,48 @@ struct argtype {
 #define ARGS_3_2CONST  ((argtype) {.count = 3, .maybeconst =  1})
 #define ARGS_3_3CONST  ((argtype) {.count = 3, .maybeconst =  2})
 
+/* An `opclass` represents one of:
+    1. (NO_IU3) a single opcode which ignores IU3.
+    2. (IU3_SINGLE) a single opcode which cares about IU3.
+    3. (IU3_ALL) a range of opcodes for which IU3 represents a third argument.
+
+   In principle more complicated patterns can be supported.
+*/
+class opclass {
+    public:
+    enum kind {
+        NO_IU3,
+        IU3_SINGLE,
+        IU3_ALL,
+    };
+
+    regval_t raw;
+    kind cls;
+    preg_t iu3;
+
+    opclass(regval_t raw);
+    opclass(regval_t raw, kind k, preg_t iu3);
+
+    regval_t resolve();
+    regval_t resolve(preg_t r);
+    regval_t resolve_dummy();
+};
+
+opclass opclass_iu3_single(regval_t raw, preg_t iu3);
+opclass opclass_iu3_all(regval_t raw);
+
 class instruction {
+    private:
+    void check_valid();
+
     public:
     std::string name;
-    regval_t opcode;
+    opclass op;
     argtype args;
     std::vector<uinst_t> uis;
 
-    instruction(std::string name, regval_t opcode, argtype args, std::vector<uinst_t> uis);
-    instruction(std::string name, regval_t opcode, argtype args, uinst_t ui);
+    instruction(std::string name, opclass op, argtype args, std::vector<uinst_t> uis);
+    instruction(std::string name, opclass op, argtype args, uinst_t ui);
 };
 
 struct slot {
@@ -51,23 +84,25 @@ slot slot_reg(preg_t reg);
 slot slot_arg(uint8_t argidx);
 slot slot_constval(regval_t constval);
 
-class unbound_opcode {
+class virtual_instruction {
     public:
-    regval_t raw;
+    opclass op;
     std::vector<slot> bi;
 
-    unbound_opcode(regval_t raw, std::vector<slot> bi);
-    unbound_opcode(regval_t raw, argtype args);
+    virtual_instruction(opclass op, std::vector<slot> bi);
+    virtual_instruction(opclass op, argtype args);
+
+    regval_t build_inst(bool loaddata, std::vector<preg_t> ius);
 };
 
 class alias {
     public:
     std::string name;
     argtype args;
-    std::vector<unbound_opcode> insts;
+    std::vector<virtual_instruction> insts;
 
-    alias(std::string name, argtype args, std::vector<unbound_opcode> insts);
-    alias(std::string name, argtype args, unbound_opcode inst);
+    alias(std::string name, argtype args, std::vector<virtual_instruction> insts);
+    alias(std::string name, argtype args, virtual_instruction inst);
 };
 
 namespace arch {

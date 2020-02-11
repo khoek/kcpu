@@ -8,7 +8,8 @@
 inst_pieces::inst_pieces(regval_t inst, std::optional<regval_t> constval)
     : load_data(INST_GET_LOADDATA(inst)), opcode(INST_GET_OPCODE(inst)), ius INST_GET_IUS(inst), constval(constval) { }
 
-static instruction unknown_inst("????", 0b11111111, ARGS_3_NOCONST, { });
+// Dummy instruction, with argument type so that we always report all 3 possible arguments
+static instruction unknown_inst("????", opclass_iu3_all(0b111111000), ARGS_3_NOCONST, { });
 
 static std::string format_constval(regval_t constval) {
     std::stringstream ss;

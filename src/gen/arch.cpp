@@ -21,6 +21,75 @@ static std::unordered_set<std::string> prefixes;
 static std::unordered_map<std::string, alias> aliases;
 static std::unordered_map<regval_t, instruction> insts;
 
+opclass::opclass(regval_t raw, kind cls, preg_t iu3) : raw(raw), cls(cls), iu3(iu3) {
+    if(cls != opclass::IU3_SINGLE) {
+        assert(!iu3);
+    }
+
+    if(cls == opclass::IU3_ALL) {
+        assert(raw == INST_STRIP_IU3(raw));
+    }
+
+    if(raw & P_I_LOADDATA) {
+        std::stringstream ss;
+        ss << "opclass raw " << raw << " has LOADDATA bit set!";
+        throw ss.str();
+    }
+}
+
+opclass::opclass(regval_t raw) : opclass(raw, opclass::NO_IU3, (preg_t) 0) { }
+
+regval_t opclass::resolve() {
+    switch(cls) {
+        case opclass::NO_IU3: {
+            return raw;
+        }
+        case opclass::IU3_SINGLE: {
+            return raw | iu3;
+        }
+        case opclass::IU3_ALL: {
+            throw "cannot resolve class";
+        }
+        default: throw "unknown opclass";
+    }
+}
+
+opclass opclass_iu3_single(regval_t raw, preg_t iu3) {
+    return opclass(raw, opclass::IU3_SINGLE, iu3);
+}
+
+opclass opclass_iu3_all(regval_t raw) {
+    return opclass(raw, opclass::IU3_ALL, (preg_t) 0);
+}
+
+regval_t opclass::resolve(preg_t r) {
+    switch(cls) {
+        case opclass::NO_IU3: {
+            throw "cannot resolve class";
+        }
+        case opclass::IU3_SINGLE: {
+            throw "cannot resolve class";
+        }
+        case opclass::IU3_ALL: {
+            return raw | r;
+        }
+        default: throw "unknown opclass";
+    }
+}
+
+regval_t opclass::resolve_dummy() {
+    switch(cls) {
+        case opclass::NO_IU3:
+        case opclass::IU3_SINGLE: {
+            return resolve();
+        }
+        case opclass::IU3_ALL: {
+            return resolve((preg_t) 0);
+        }
+        default: throw "unknown opclass";
+    }
+}
+
 static uint16_t uaddr(regval_t inst, ucval_t uc) {
     if(uc > UCVAL_MAX) {
         throw "uc too great";
@@ -63,21 +132,66 @@ slot slot_constval(regval_t constval) {
     return {.kind = slot::SLOT_CONSTVAL, .val = { .constval = constval } };
 }
 
-unbound_opcode::unbound_opcode(regval_t raw, std::vector<slot> bi) : raw(raw), bi(bi) {}
-
-unbound_opcode::unbound_opcode(regval_t raw, argtype args) : raw(raw), bi() {
+static std::vector<slot> get_slots(argtype args) {
+    std::vector<slot> bi;
     for(int i = 0; i < args.count; i++) {
         bi.push_back(slot_arg(i));
     }
+    return bi;
 }
 
-alias::alias(std::string name, argtype args, std::vector<unbound_opcode> insts)
+static void check_opcode_supports_argcount(opclass op, uint8_t argcount) {
+    switch(op.cls) {
+        case opclass::NO_IU3: {
+            assert(argcount < 3);
+            break;
+        }
+        case opclass::IU3_SINGLE: {
+            assert(argcount == 2);
+            break;
+        }
+        case opclass::IU3_ALL: {
+            assert(argcount == 3);
+            break;
+        }
+        default: throw "unknown opclass";
+    }
+}
+
+virtual_instruction::virtual_instruction(opclass op, std::vector<slot> bi) : op(op), bi(bi) {
+    check_opcode_supports_argcount(op, bi.size());
+}
+
+virtual_instruction::virtual_instruction(opclass op, argtype args) : virtual_instruction(op, get_slots(args)) { }
+
+regval_t virtual_instruction::build_inst(bool loaddata, std::vector<preg_t> ius) {
+    assert(bi.size() == ius.size());
+
+    regval_t inst = ((loaddata) ? P_I_LOADDATA : 0) | (op.raw << INST_SHIFT);
+    switch(bi.size()) {
+        case 3: inst |= INST_MK_IU3(ius[2]);
+        case 2: inst |= INST_MK_IU2(ius[1]);
+        case 1: inst |= INST_MK_IU1(ius[0]);
+        case 0: break;
+        default: throw "too many args!";
+    }
+
+    if(op.cls == opclass::IU3_SINGLE) {
+        inst |= INST_MK_IU3(op.iu3);
+    }
+
+    return inst;
+}
+
+alias::alias(std::string name, argtype args, std::vector<virtual_instruction> insts)
     : name(name), args(args), insts(insts) { }
 
-alias::alias(std::string name, argtype args, unbound_opcode inst)
+alias::alias(std::string name, argtype args, virtual_instruction inst)
     : name(name), args(args), insts({inst}) { }
 
-static void check_ucode(std::string name, std::vector<uinst_t> uis) {
+void instruction::check_valid() {
+    check_opcode_supports_argcount(op, args.count);
+
     if(uis.size() > UCODE_LEN) {
         std::stringstream ss;
         ss << "ucode for instruction " << name << " too long (" << uis.size() << " > " << UCODE_LEN << ")";
@@ -92,16 +206,24 @@ static void check_ucode(std::string name, std::vector<uinst_t> uis) {
                 throw ss.str();
             }
         }
+
+        if(uis[i] & MASK_RCTRL_IU3) {
+            if(op.cls == opclass::NO_IU3) {
+                std::stringstream ss;
+                ss << "ucode for instruction " << name << " refers to IU3 but does not declare this in the opcode, at position " << i << "/" << uis.size();
+                throw ss.str();
+            }
+        }
     }
 }
 
-instruction::instruction(std::string name, regval_t opcode, argtype args, std::vector<uinst_t> uis)
-    : name(name), opcode(opcode), args(args), uis(uis) {
-    check_ucode(name, uis);
+instruction::instruction(std::string name, opclass op, argtype args, std::vector<uinst_t> uis)
+    : name(name), op(op), args(args), uis(uis) {
+    check_valid();
 }
 
-instruction::instruction(std::string name, regval_t opcode, argtype args, uinst_t ui)
-    : instruction(name, opcode, args, std::vector<uinst_t>{ui}) {}
+instruction::instruction(std::string name, opclass op, argtype args, uinst_t ui)
+    : instruction(name, op, args, std::vector<uinst_t>{ui}) { }
 
 template <typename Out>
 void split(const std::string &s, char delim, Out result) {
@@ -118,20 +240,16 @@ std::vector<std::string> split(const std::string &s, char delim) {
     return elems;
 }
 
-void arch::reg_inst(instruction i) {
-    if(i.opcode & P_I_LOADDATA) {
-        throw "instruction " + i.name + " has LOADDATA bit set!";
+static void reg_opcode(regval_t opcode, instruction i) {
+    if(ucode_inst[opcode]) {
+        throw "opcode collision: " + ucode_inst[opcode]->name + ", " + i.name;
     }
 
-    if(ucode_inst[i.opcode]) {
-        throw "opcode collision: " + ucode_inst[i.opcode]->name + ", " + i.name;
-    }
-
-    ucode_inst[i.opcode] = i;
-    insts.emplace(i.opcode, i);
+    ucode_inst[opcode] = i;
+    insts.emplace(opcode, i);
 
     for(std::size_t uc = 0; uc < i.uis.size(); uc++) {
-        uint16_t ua = uaddr(i.opcode, uc);
+        uint16_t ua = uaddr(opcode, uc);
         if(ucode[ua]) {
             throw "ucode collision: " + ucode_name[ua] + ", " + i.name;
         }
@@ -139,16 +257,33 @@ void arch::reg_inst(instruction i) {
         ucode[ua] = i.uis[uc];
         ucode_name[ua] = i.name;
     }
+}
+
+void arch::reg_inst(instruction i) {
+    switch(i.op.cls) {
+        case opclass::NO_IU3:
+        case opclass::IU3_SINGLE: {
+            reg_opcode(i.op.resolve(), i);
+            break;
+        }
+        case opclass::IU3_ALL: {
+            for(int j = 0; j < NUM_PREGS; j++) {
+                reg_opcode(i.op.resolve((preg_t) j), i);
+            }
+            break;
+        }
+        default: throw "unknown opclass!";
+    }
 
     // This must happen last in order not to trip up the sanity checker
     // in reg_alias.
-    reg_alias(alias(i.name, i.args, { unbound_opcode(i.opcode, i.args) }));
+    reg_alias(alias(i.name, i.args, { virtual_instruction(i.op, i.args) }));
 }
 
 void arch::reg_alias(alias a) {
     // In this loop we just do some consistency checks.
     for(auto j = a.insts.begin(); j < a.insts.end(); j++) {
-        std::optional<instruction> i = ucode_inst[j->raw];
+        std::optional<instruction> i = ucode_inst[j->op.resolve_dummy()];
         if(!i) {
             throw "alias " + a.name + " registers an unknown opcode";
         }

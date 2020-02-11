@@ -45,6 +45,9 @@ CMP $0x13AA ra
 JNE fail
 
 
+# TODO test stores.
+
+
 HLT
 
 

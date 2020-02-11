@@ -7,7 +7,6 @@ SOFT/FIRMWARE:
 
 
   In the VM:
-    * Implement ADD3 and ADD3NF (NOFLAGS), for offset calculations (of the form e.g. ADD3NF rbp $0x6 rb or ADD3NF rbp ra rb)
     * STW, LWD family offset instructions (so we can refer relative to RBP)
 
     * ENTERFR is currently untested
@@ -21,6 +20,8 @@ SOFT/FIRMWARE:
     
 
     * Allow a const in either argument in e.g. a STW (but not e.g. LDW)
+
+
 
     * Does ADD3 need any friends?
 
