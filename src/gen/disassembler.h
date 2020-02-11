@@ -1,7 +1,7 @@
 #ifndef GEN_DISASSEMBLER_H
 #define GEN_DISASSEMBLER_H
 
-#include "../lang/lang.h"
+#include "../lang/arch.h"
 #include "../vm/mod/mem.h"
 
 namespace kcpu {

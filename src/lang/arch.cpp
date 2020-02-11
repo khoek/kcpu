@@ -1,24 +1,14 @@
-#include <cassert>
-#include <unordered_set>
-#include <unordered_map>
+
 #include <sstream>
 #include <iterator>
 
 #include "../spec/inst.h"
 #include "../spec/ucode.h"
-#include "lang.h"
+#include "arch.h"
 #include "insts.h"
 #include "alias.h"
 
 namespace kcpu {
-
-static uinst_t ucode[UCODE_LEN];
-static std::string ucode_name[UCODE_LEN];
-static std::optional<instruction> ucode_inst[OPCODE_LEN];
-
-static std::unordered_set<std::string> prefixes;
-static std::unordered_map<std::string, alias> aliases;
-static std::unordered_map<regval_t, instruction> insts;
 
 lang_error::lang_error(const std::string &msg) : bt_error(msg) { }
 
@@ -32,24 +22,6 @@ static uint16_t uaddr(regval_t inst, ucval_t uc) {
     }
     
     return (inst << UCVAL_WIDTH) | uc;
-}
-
-uinst_t ucode_lookup(regval_t inst, ucval_t uc) {
-    return ucode[uaddr((inst & ~P_I_LOADDATA) >> INST_SHIFT, uc)];
-}
-
-bool inst_is_prefix(std::string str) {
-    return prefixes.find(str) != prefixes.end();
-}
-
-std::optional<alias> alias_lookup(std::string name) {
-    auto r = aliases.find(name);
-    return r == aliases.end() ? std::nullopt : std::optional(r->second);
-}
-
-std::optional<instruction> inst_lookup(regval_t opcode) {
-    auto r = insts.find(opcode);
-    return r == insts.end() ? std::nullopt : std::optional(r->second);
 }
 
 slot slot_reg(preg_t reg) {
@@ -158,7 +130,7 @@ instruction::instruction(std::string name, opclass op, argtype args, uinst_t ui)
     : instruction(name, op, args, std::vector<uinst_t>{ui}) { }
 
 template <typename Out>
-void split(const std::string &s, char delim, Out result) {
+static void split(const std::string &s, char delim, Out result) {
     std::istringstream iss(s);
     std::string item;
     while (std::getline(iss, item, delim)) {
@@ -166,13 +138,36 @@ void split(const std::string &s, char delim, Out result) {
     }
 }
 
-std::vector<std::string> split(const std::string &s, char delim) {
+static std::vector<std::string> split(const std::string &s, char delim) {
     std::vector<std::string> elems;
     split(s, delim, std::back_inserter(elems));
     return elems;
 }
 
-static void reg_opcode(regval_t opcode, instruction i) {
+arch::arch() {
+    register_insts(*this);
+    register_aliases(*this);
+}
+
+uinst_t arch::ucode_lookup(regval_t inst, ucval_t uc) {
+    return ucode[uaddr((inst & ~P_I_LOADDATA) >> INST_SHIFT, uc)];
+}
+
+bool arch::inst_is_prefix(std::string str) {
+    return prefixes.find(str) != prefixes.end();
+}
+
+std::optional<alias> arch::alias_lookup(std::string name) {
+    auto r = aliases.find(name);
+    return r == aliases.end() ? std::nullopt : std::optional(r->second);
+}
+
+std::optional<instruction> arch::inst_lookup(regval_t opcode) {
+    auto r = insts.find(opcode);
+    return r == insts.end() ? std::nullopt : std::optional(r->second);
+}
+
+void arch::reg_opcode(regval_t opcode, instruction i) {
     if(ucode_inst[opcode]) {
         throw "opcode collision: " + ucode_inst[opcode]->name + ", " + i.name;
     }
@@ -271,15 +266,9 @@ void arch::reg_alias(alias a) {
     aliases.emplace(a.name, a);
 }
 
-void init_arch() {
-    register_insts();
-    register_aliases();
-}
-
-static void write_ucode() {
-    // TODO this.
-
-    throw "do this";
+arch & arch::self() {
+    static arch instance;
+    return instance;
 }
 
 }

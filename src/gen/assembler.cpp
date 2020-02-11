@@ -5,7 +5,7 @@
 #include <unordered_map>
 
 #include "../spec/inst.h"
-#include "../lang/lang.h"
+#include "../lang/arch.h"
 #include "assembler.h"
 
 namespace kcpu {
@@ -157,7 +157,7 @@ void inst_assembler::bind_virtual(virtual_instruction uo, arg_info ai) {
 }
 
 void inst_assembler::handle_instruction(std::string &tk) {
-    std::optional<alias> a = alias_lookup(tk);
+    std::optional<alias> a = arch::self().alias_lookup(tk);
     if(!a) {
         throw "no such instruction '" + tk + "'";
     }
@@ -201,7 +201,7 @@ void inst_assembler::parse() {
         return;
     }
     
-    if(inst_is_prefix(tk)) {
+    if(arch::self().inst_is_prefix(tk)) {
         std::string tk2;
         if(!(in >> tk2)) {
             throw "no second token";

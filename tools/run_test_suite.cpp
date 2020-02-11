@@ -5,7 +5,7 @@
 #include <unistd.h>
 
 #include "lib/compiler.h"
-#include "src/lang/lang.h"
+#include "src/lang/arch.h"
 #include "src/vm/kcpu.h"
 
 #define PADDING_WIDTH 17
@@ -79,8 +79,6 @@ static bool run_test(bool verbose, uint32_t num, const std::filesystem::path pat
 
 int main() {
   try {
-    kcpu::init_arch();
-
     std::cout << "--------------------------------------------" << std::endl;
 
     std::vector<std::filesystem::path> tests;

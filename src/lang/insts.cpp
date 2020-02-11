@@ -2,13 +2,13 @@
 
 #include "../spec/inst.h"
 #include "../spec/ucode.h"
-#include "lang.h"
+#include "arch.h"
 
 namespace kcpu {
 
-using namespace arch;
+#define reg_inst arch.reg_inst
 
-static void gen_sys() {
+static void gen_sys(arch &arch) {
     //FIXME handle N_XXXXX values....
 
     reg_inst(instruction("NOP" , I_NOP, ARGS_0, {
@@ -64,7 +64,7 @@ static instruction mk_mem_byte_instruction(regval_t farbit, const char * const n
     });
 }
 
-static void gen_mem_variants(regval_t farbit) {
+static void gen_mem_variants(arch &arch, regval_t farbit) {
     reg_inst(mk_distanced_instruction(farbit, "STPFX", I_STPFX, ARGS_1,
         MCTRL_PREFIX_STORE | MCTRL_N_MAIN_OUT | MCTRL_N_FIDD_OUT | RCTRL_IU1_BUSB_O | GCTRL_FT_ENTER));
     
@@ -101,9 +101,9 @@ static void gen_mem_variants(regval_t farbit) {
     // TODO did we ever envision "zero" variants for STBL and STBH?
 }
 
-static void gen_mem() {
-    gen_mem_variants(0);
-    gen_mem_variants(P_I_FAR);
+static void gen_mem(arch &arch) {
+    gen_mem_variants(arch, 0);
+    gen_mem_variants(arch, P_I_FAR);
 }
 
 #define LDJMPPREFIX "LD"
@@ -124,7 +124,7 @@ static instruction mk_loadable_instruction(regval_t ldbit, const char * const na
     return instruction(ss.str(), opcode | ldbit, second_arg ? ARGS_2_1CONST : ARGS_1, preamble);
 }
 
-static void gen_ctl_loadables(regval_t ldbit) {
+static void gen_ctl_loadables(arch &arch, regval_t ldbit) {
     reg_inst(mk_loadable_instruction(ldbit, "JMP" , I_JMP , false, GCTRL_JM_YES));
 
     reg_inst(mk_loadable_instruction(ldbit, "JC"  , I_JC  , false, GCTRL_JM_ON_TRUE  | GCTRL_JCOND_CARRY  ));
@@ -144,12 +144,12 @@ static void gen_ctl_loadables(regval_t ldbit) {
     }));
 }
 
-static void gen_ctl() {
-    gen_ctl_loadables(0);
-    gen_ctl_loadables(P_I_LDJMP);
+static void gen_ctl(arch &arch) {
+    gen_ctl_loadables(arch, 0);
+    gen_ctl_loadables(arch, P_I_LDJMP);
 }
 
-static void gen_reg() {
+static void gen_reg(arch &arch) {
     //FIXME handle N_XXXXX values....
 
     reg_inst(instruction("MOV", I_MOV, ARGS_2_1CONST,
@@ -189,7 +189,7 @@ static instruction mk_arith_inst(uinst_t flagbits, const char *name, opclass op,
     });
 }
 
-static void gen_alu_flagables(uinst_t flagbits) {
+static void gen_alu_flagables(arch &arch, uinst_t flagbits) {
     reg_inst(mk_arith_inst(flagbits, "ADD" , I_ADD , ARGS_2_1CONST , ACTRL_MODE_ADD ));
     reg_inst(mk_arith_inst(flagbits, "SUB" , I_SUB , ARGS_2_1CONST , ACTRL_MODE_SUB ));
     reg_inst(mk_arith_inst(flagbits, "AND" , I_AND , ARGS_2_1CONST , ACTRL_MODE_AND ));
@@ -202,12 +202,12 @@ static void gen_alu_flagables(uinst_t flagbits) {
     reg_inst(mk_arith_inst(flagbits, "ADD3", I_ADD3, ARGS_3_1CONST , ACTRL_MODE_ADD));
 }
 
-static void gen_alu() {
-    gen_alu_flagables(0);
-    gen_alu_flagables(ACTRL_FLAGS_OUT | GCTRL_ACTION_RFG_BUSB_I);
+static void gen_alu(arch &arch) {
+    gen_alu_flagables(arch, 0);
+    gen_alu_flagables(arch, ACTRL_FLAGS_OUT | GCTRL_ACTION_RFG_BUSB_I);
 }
 
-static void gen_x() {
+static void gen_x(arch &arch) {
     // FIXME as below, args should be RSP, RBP
 
     // Faster version of: PUSH rbp; MOV rsp rbp;, i.e. (X_PUSH rsp rbp; MOV rsp rbp;)
@@ -269,18 +269,18 @@ static void gen_x() {
     }));
 }
 
-void register_insts() {
+void register_insts(arch &arch) {
     /* If we want to go to 8~10 general purpose registers, I think we could make do with only 
        7 instruction bits compared to 9. */
 
     // TODO none of our instructions have more than 4 microcode instructions! Trim the "dead zone".
        
-    gen_sys();
-    gen_ctl();
-    gen_reg();
-    gen_mem();
-    gen_alu();
-    gen_x();
+    gen_sys(arch);
+    gen_ctl(arch);
+    gen_reg(arch);
+    gen_mem(arch);
+    gen_alu(arch);
+    gen_x(arch);
 }
 
 }

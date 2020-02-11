@@ -4,6 +4,10 @@
 #include <vector>
 #include <string>
 #include <optional>
+#include <cassert>
+#include <unordered_set>
+#include <unordered_map>
+
 #include "../types.h"
 #include "../except.h"
 #include "../spec/hw.h"
@@ -84,29 +88,31 @@ class alias {
     alias(std::string name, argtype args, virtual_instruction inst);
 };
 
-class lang {
+class arch {
+    private:
+    uinst_t ucode[UCODE_LEN];
+    std::string ucode_name[UCODE_LEN];
+    std::optional<instruction> ucode_inst[OPCODE_LEN];
+
+    std::unordered_set<std::string> prefixes;
+    std::unordered_map<std::string, alias> aliases;
+    std::unordered_map<regval_t, instruction> insts;
+
+    void reg_opcode(regval_t opcode, instruction i);
+
     public:
-    lang();
+    arch();
+    void reg_inst(instruction i);
+    void reg_alias(alias a);
 
     uinst_t ucode_lookup(regval_t inst, ucval_t uc);
 
     bool inst_is_prefix(std::string str);
     std::optional<alias> alias_lookup(std::string name);
     std::optional<instruction> inst_lookup(regval_t opcode);
+
+    static arch & self();
 };
-
-namespace arch {
-    void reg_inst(instruction i);
-    void reg_alias(alias a);
-};
-
-void init_arch();
-
-uinst_t ucode_lookup(regval_t inst, ucval_t uc);
-
-bool inst_is_prefix(std::string str);
-std::optional<alias> alias_lookup(std::string name);
-std::optional<instruction> inst_lookup(regval_t opcode);
 
 }
 

@@ -1,5 +1,5 @@
 #include "lib/compiler.h"
-#include "src/lang/lang.h"
+#include "src/lang/arch.h"
 #include "src/spec/ucode.h"
 #include "src/vm/kcpu.h"
 
@@ -26,8 +26,6 @@ int main(int argc, char **argv) {
     }
 
     try {
-      kcpu::init_arch();
-
       kcpu::vm cpu(kcpu::vm_logger{disasm_mode, verbose, verbose});
       load_binary("BIOS", "bin/bios.bin", BIOS_SIZE, cpu.mem.bios.data());
       load_binary("PROG", "bin/prog.bin", PROG_SIZE, cpu.mem.prog.data());

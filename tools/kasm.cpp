@@ -4,7 +4,7 @@
 #include <fstream>
 
 #include "lib/compiler.h"
-#include "src/lang/lang.h"
+#include "src/lang/arch.h"
 
 int main(int argc, char **argv) {
     if(argc != 3) {
@@ -13,7 +13,6 @@ int main(int argc, char **argv) {
     }
 
     try {
-        kcpu::init_arch();
         build(argv[1], argv[2]);
         return 0;
     } catch(std::string msg) {

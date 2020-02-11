@@ -1,4 +1,4 @@
-#include "../../lang/lang.h"
+#include "../../lang/arch.h"
 #include "../../spec/inst.h"
 #include "../../spec/ucode.h"
 #include "ctl.h"
@@ -33,7 +33,7 @@ regval_t mod_ctl::get_inst() {
 }
 
 uinst_t mod_ctl::get_uinst() {
-    return ucode_lookup(get_inst(), reg[REG_UC]);
+    return arch::self().ucode_lookup(get_inst(), reg[REG_UC]);
 }
 
 void mod_ctl::clock_outputs(uinst_t ui, bus_state &s) {

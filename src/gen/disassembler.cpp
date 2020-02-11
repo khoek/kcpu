@@ -31,7 +31,7 @@ std::pair<inst_pieces, std::string> disassemble(regval_t inst, std::optional<reg
     std::vector<std::string> comments;
 
     instruction i = ({
-        std::optional<instruction> i = inst_lookup(p.opcode);
+        std::optional<instruction> i = arch::self().inst_lookup(p.opcode);
         i ? *i : unknown_inst;
     });
 
