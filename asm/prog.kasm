@@ -1,33 +1,8 @@
-MOV $10 ra
 
-MOV $1 rb
-MOV $1 rc
+PUSH $0x5369
 
-loop:
-TST ra
-JZ exit
+ABRT
 
-SUB $1 ra
+POP ra
 
-MOV rc rd
-ADD rb rc
-MOV rd rb
-
-JMP loop
-
-exit:
-
-MOV $-4 ra
-MOV $-3 rb
-CMP ra rb
-
-JL g
-
-MOV $0x0000 rc
-
-HLT
-
-g:
-MOV $0x1111 rc
-
-HLT
+ABRT

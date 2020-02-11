@@ -63,7 +63,9 @@
 #define P_I_NOFGS 0b00100000
 
 // X
-#define I_X_PUSH 0b10101001
-#define I_X_CALL 0b10101000
+#define I_X_PUSH 0b10101000
+#define I_X_POP  0b10101001
+#define I_X_CALL 0b10101010
+#define I_X_RET  0b10101011
 
 #endif

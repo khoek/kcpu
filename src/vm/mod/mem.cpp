@@ -64,6 +64,7 @@ void mod_mem::clock_outputs(uinst_t ui, bus_state &s) {
 
     if(!(ui & MCTRL_N_MAIN_OUT)) {
         assert(!(ui & MCTRL_MAIN_STORE));
+        if(logger.dump_bus) logger.logf("  MB(%d) -> %04X@%04X\n", SHOULD_USE_PREFIX_FAR(ui), fidd_adr, get_bank(SHOULD_USE_PREFIX_FAR(ui)).load(fidd_adr));
         s.assign(BUS_M, get_bank(SHOULD_USE_PREFIX_FAR(ui)).load(fidd_adr));
     }
 }
@@ -159,6 +160,7 @@ void mod_mem::clock_inputs(uinst_t ui, bus_state &s) {
     }
 
     if(ui & MCTRL_MAIN_STORE) {
+        if(logger.dump_bus) logger.logf("  MB(%d) <- %04X@%04X\n", SHOULD_USE_PREFIX_FAR(ui), fidd_adr, s.read(BUS_M));
         get_bank(SHOULD_USE_PREFIX_FAR(ui)).store(fidd_adr, s.read(BUS_M));
     }
 }

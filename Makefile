@@ -36,6 +36,9 @@ run: bin/bios.bin bin/prog.bin $(TOOLBINS)
 
 run-step: bin/bios.bin bin/prog.bin $(TOOLBINS)
 	bin/main -s
+
+run-verbose: bin/bios.bin bin/prog.bin $(TOOLBINS)
+	bin/main -s -v
     
 run-quiet: bin/bios.bin bin/prog.bin $(TOOLBINS)
 	bin/main

@@ -7,15 +7,45 @@ SOFT/FIRMWARE:
 
 
   In the VM:
-    * ENTER/LEAVE
-    * offset instructions (so we can refer relative to RBP)----will this require ADD3 below?
+    * ENTER $CONST(=pushl %ebp; movl %esp,%ebp; SUBNF $CONST, %esp) (sets ebp, then allocates space on the stack,
+                                                                    implement as an alias, and 2 variants:
+                                                                    1. combines the MOV and ADD in the same instruction
+                                                                       (use the face that esp is on the bus in both)
+                                                                    2. a no-arg variant of ENTER which doesn't allocate any space, saving a cycle)
+    * LEAVE(=mov %ebp, %esp; pop %ebp)  ONCE THIS EXISTS ALONG WITH ENTER FIX ALL OF THE TESTS WHICH USE THE STACK
+
+    * Implement ADD3 and ADD3NF (NOFLAGS), for offset calculations (of the form e.g. ADD3NF rbp $0x6 rb or ADD3NF rbp ra rb)
+    * STW, LWD family offset instructions (so we can refer relative to RBP)
 
     * FLAG-ONLY versions of the ALU insts (we already value-only versions).
 
-    * ADD3/and friends
-    * Byte versions!
+    * Allow a const in either argument in e.g. a STW (but not e.g. LDW)
+
+    * Does ADD3 need any friends?
+
+    * Assemble byte versions of instructions properly!---as part of this, allow the specification of "families",
+      e.g. so you can just write "ST hra rb" and "STZ hra rb" and have the size-related meaning inferred for you.
+      A "family" should be made up of a number of acceptable aliases.
+
+      To be specific, each mapping in a "family" should be of the form
+             (alias_name) (args) (arg_kinds)
+      Where: alias_name is just the name of the alias which is being bound
+             args is just an argtype
+             arg_kinds is, for each arg in argtype, a statement of which of (CONST|REG|LBREG|HBREG) are acceptable.
+             
+      for each such entry we should do a sanity check of whether the alias_name
+      exists, and if so whether it takes the same args.
+
+    * Could turn RCTRL_RSP_DEC (no need for RCTRL_RSP_INC) into a bit passed during the fetch phase, like LOADDATA is right now.
+
+    * Compress flags!
+
+    * MOAR TESTS
 
 
+
+DESIGN:
+    * Did we ever end up using IU3? Only for REG_ID? (so simplify?)
 
 
 
@@ -33,6 +63,9 @@ HARDWARE:
 
   Improvements future revisions:
   * remove the zero registers from the REG module? (can we change the VM code so that we never use a pull-down behaviour?)
+  * remote the one register and deal with it in the microcode?---once we fix NEG, we only need REG_ONE for NOT.
+    ---much more useful would be a constant=2 reg, we should see where these are and see if we can fix by adding hardware decrements (do these exist?),
+       and if they don't maybe consider adding a "2" register.
   * mod_alu: OR and AND are swapped physically on the board vs the mode signal numbers
 
 

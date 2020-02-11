@@ -68,7 +68,8 @@
 #define RCTRL_IU3_BUSA_O (0b101LL << (6 + RCTRL_BASE))
 #define RCTRL_IU3_BUSB_I (0b110LL << (6 + RCTRL_BASE))
 #define RCTRL_IU3_BUSB_O (0b111LL << (6 + RCTRL_BASE))
-#define RCTRL_RSP_INC (1LL << (7 + RCTRL_BASE))
+#define RCTRL_RSP_INC (1LL << (9 + RCTRL_BASE))
+#define RCTRL_RSP_DEC (1LL << (10 + RCTRL_BASE))
 
 // NONBIT: RCTRL decoding
 #define MASK_RCTRL_IU 0b111LL

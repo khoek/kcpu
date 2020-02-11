@@ -9,26 +9,15 @@
 using namespace arch;
 
 static void gen_ctl() {
-    reg_alias(alias("CALL", ARGS_1, {
-        unbound_opcode(I_X_CALL, { slot_reg(REG_SP), slot_arg(0) }),
-    }));
-
-    // This is just a POP RID; JMP RID, but we do it faster
-    reg_alias(alias("RET", ARGS_0, {
-        unbound_opcode(P_I_NOFGS | I_SUB, { slot_constval(0x0002), slot_reg(REG_SP) }),
-        unbound_opcode(P_I_LDJMP | I_JMP, { slot_reg(REG_SP) }),
-    }));
+    reg_alias(alias("CALL", ARGS_1, unbound_opcode(I_X_CALL, { slot_reg(REG_SP), slot_arg(0) })));
+    reg_alias(alias("RET" , ARGS_0, unbound_opcode(I_X_RET , { slot_reg(REG_SP) })));
 }
 
 static void gen_mem() {
-    reg_alias(alias("PUSH", ARGS_1, {
-        unbound_opcode(I_X_PUSH, { slot_reg(REG_SP), slot_arg(0) }),
-    }));
+    reg_alias(alias("PUSH", ARGS_1        , unbound_opcode(I_X_PUSH, { slot_reg(REG_SP), slot_arg(0) })));
+    reg_alias(alias("POP" , ARGS_1_NOCONST, unbound_opcode(I_X_POP , { slot_reg(REG_SP), slot_arg(0) })));
 
-    reg_alias(alias("POP", ARGS_1_NOCONST, {
-        unbound_opcode(P_I_NOFGS | I_SUB, { slot_constval(0x0002), slot_reg(REG_SP) }),
-        unbound_opcode(I_LDW, { slot_reg(REG_SP), slot_arg(0) }),
-    }));
+    // LDW OFF
 }
 
 static void gen_alu() {
@@ -36,7 +25,7 @@ static void gen_alu() {
     reg_alias(alias("NOT", ARGS_1_NOCONST,
         unbound_opcode(I_XOR, { slot_reg(REG_ONE), slot_arg(0) })));
 
-    // TODO allow nesting aliases? (thus, NOT)
+    // FIXME just subtract from zero! need a "sub the other way" instruction for this
     // Negate then add 1
     reg_alias(alias("NEG", ARGS_1_NOCONST, {
         unbound_opcode(I_XOR, { slot_reg(REG_ONE), slot_arg(0) }),

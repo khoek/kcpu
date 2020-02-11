@@ -1,2 +1,4 @@
+MOV $0x1000 rsp
+
 MOV $0 ra
 LJMP $0x0080 ra

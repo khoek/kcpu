@@ -6,6 +6,8 @@ NOP
 MOV $0x1000 rsp
 
 MOV $0x0117 ra
+MOV $0x1000 rsp
+
 MOV $0xBEEF rb
 
 PUSH ra

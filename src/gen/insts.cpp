@@ -216,15 +216,30 @@ static void gen_x() {
 
     reg_inst(instruction("X_PUSH", I_X_PUSH, ARGS_2_2CONST, {
         //IU1 = MUST BE RSP, IU2 = REG to PUSH
+                           MCTRL_N_FIDD_OUT | MCTRL_N_MAIN_OUT | RCTRL_RSP_DEC,
         MCTRL_FIDD_STORE | MCTRL_N_FIDD_OUT | MCTRL_N_MAIN_OUT | MCTRL_BUSMODE_CONW_BUSB | RCTRL_IU1_BUSA_O | RCTRL_IU2_BUSB_O,
-        MCTRL_MAIN_STORE                    | MCTRL_N_MAIN_OUT | MCTRL_BUSMODE_CONW_BUSM | RCTRL_RSP_INC | GCTRL_FT_ENTER
+        MCTRL_MAIN_STORE                    | MCTRL_N_MAIN_OUT | MCTRL_BUSMODE_CONW_BUSM | GCTRL_FT_ENTER
+    }));
+    
+    reg_inst(instruction("X_POP", I_X_POP, ARGS_2_NOCONST, {
+        //IU1 = MUST BE RSP, IU2 = REG to POP
+        MCTRL_FIDD_STORE | MCTRL_N_FIDD_OUT |                    MCTRL_BUSMODE_CONW_BUSM | RCTRL_IU1_BUSA_O,
+                                              MCTRL_N_MAIN_OUT | MCTRL_BUSMODE_CONW_BUSB | RCTRL_IU2_BUSB_I | RCTRL_RSP_INC | GCTRL_FT_ENTER
     }));
 
     reg_inst(instruction("X_CALL", I_X_CALL, ARGS_2_2CONST, {
         // IU1 = MUST BE RSP, IU2 = CALL ADDRESS
-        // Effectively: PUSH RIP RSP | JMP IU2
+        // Effectively: X_PUSH RSP RIP
+                           MCTRL_N_FIDD_OUT | MCTRL_N_MAIN_OUT | RCTRL_RSP_DEC,
         MCTRL_FIDD_STORE | MCTRL_N_FIDD_OUT | MCTRL_N_MAIN_OUT | MCTRL_BUSMODE_CONW_BUSB | RCTRL_IU1_BUSA_O | GCTRL_JM_P_RIP_BUSB_O,
-        MCTRL_MAIN_STORE                    | MCTRL_N_MAIN_OUT | MCTRL_BUSMODE_CONW_BUSM | RCTRL_IU2_BUSB_O | RCTRL_RSP_INC | GCTRL_JM_YES
+        MCTRL_MAIN_STORE                    | MCTRL_N_MAIN_OUT | MCTRL_BUSMODE_CONW_BUSM | RCTRL_IU2_BUSB_O | GCTRL_JM_YES
+    }));
+
+    reg_inst(instruction("X_RET", I_X_RET, ARGS_1_NOCONST, {
+        // IU1 = MUST BE RSP, IU2 = CALL ADDRESS
+        // Effectively: X_POP RSP RIP          
+        MCTRL_FIDD_STORE | MCTRL_N_FIDD_OUT |                    MCTRL_BUSMODE_CONW_BUSM | RCTRL_IU1_BUSA_O,
+                                              MCTRL_N_MAIN_OUT | MCTRL_BUSMODE_CONW_BUSB | RCTRL_RSP_INC | GCTRL_JM_YES
     }));
 }
 
