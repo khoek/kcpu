@@ -76,4 +76,6 @@
 #define I_X_LEAVE   0b10101101
 #define I_X_ENTERFR (0b10101000 | 0b110) // IU3 = REG_RSP
 
+#define I_ADD3      0b11001000
+
 #endif

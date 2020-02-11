@@ -194,6 +194,16 @@ static instruction mk_arith_inst_arg2(uinst_t flagbits, const char *name, regval
     });
 }
 
+static instruction mk_arith_inst_arg3(uinst_t flagbits, const char *name, preg_t tgt_reg, regval_t opcode, uinst_t alu_mode) {
+    char * buff = (char *) malloc(strlen(NOFLAGSUFFIX) + strlen(name) + strlen(PREG_NAMES[tgt_reg]) + 1);
+    sprintf(buff, "%s%s%s", name, flagbits ? "" : NOFLAGSUFFIX, PREG_NAMES[tgt_reg]);
+
+    return instruction(buff, opcode | (flagbits ? 0 : P_I_NOFGS) | tgt_reg, ARGS_2_1CONST, {
+        MCTRL_N_FIDD_OUT | MCTRL_N_MAIN_OUT | ACTRL_INPUT_EN | alu_mode | RCTRL_IU1_BUSA_O | RCTRL_IU2_BUSB_O,
+        MCTRL_N_FIDD_OUT | MCTRL_N_MAIN_OUT | ACTRL_DATA_OUT | flagbits | RCTRL_IU3_BUSA_I | GCTRL_FT_ENTER
+    });
+}
+
 static void gen_alu_flagables(uinst_t flagbits) {
     reg_inst(mk_arith_inst_arg2(flagbits, "ADD" , I_ADD , ACTRL_MODE_ADD ));
     reg_inst(mk_arith_inst_arg2(flagbits, "SUB" , I_SUB , ACTRL_MODE_SUB ));
@@ -203,6 +213,10 @@ static void gen_alu_flagables(uinst_t flagbits) {
     reg_inst(mk_arith_inst_arg1(flagbits, "LSFT", I_LSFT, ACTRL_MODE_LSFT, false));
     reg_inst(mk_arith_inst_arg1(flagbits, "RSFT", I_RSFT, ACTRL_MODE_RSFT, false));
     reg_inst(mk_arith_inst_arg1(flagbits, "TST" , I_TST , ACTRL_MODE_TST , true ));
+
+    for(int i = 0; i < NUM_PREGS; i++) {
+        reg_inst(mk_arith_inst_arg3(flagbits, "ADD3", (preg_t) i, I_ADD3, ACTRL_MODE_ADD));
+    }
 }
 
 static void gen_alu() {
