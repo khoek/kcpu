@@ -3,6 +3,7 @@
 
 #include "opclass.h"
 #include "inst.h"
+#include "../lang/arch.h"
 
 namespace kcpu {
 
@@ -18,7 +19,7 @@ opclass::opclass(regval_t raw, kind cls, preg_t iu3) : raw(raw), cls(cls), iu3(i
     if(raw & P_I_LOADDATA) {
         std::stringstream ss;
         ss << "opclass raw " << raw << " has LOADDATA bit set!";
-        throw ss.str();
+        throw arch_error(ss.str());
     }
 }
 
@@ -33,9 +34,9 @@ regval_t opclass::resolve() {
             return raw | iu3;
         }
         case opclass::IU3_ALL: {
-            throw "cannot resolve class";
+            throw arch_error("cannot resolve class");
         }
-        default: throw "unknown opclass";
+        default: throw arch_error("unknown opclass");
     }
 }
 
@@ -50,15 +51,15 @@ opclass opclass_iu3_all(regval_t raw) {
 regval_t opclass::resolve(preg_t r) {
     switch(cls) {
         case opclass::NO_IU3: {
-            throw "cannot resolve class";
+            throw arch_error("cannot resolve class");
         }
         case opclass::IU3_SINGLE: {
-            throw "cannot resolve class";
+            throw arch_error("cannot resolve class");
         }
         case opclass::IU3_ALL: {
             return raw | r;
         }
-        default: throw "unknown opclass";
+        default: throw arch_error("unknown opclass");
     }
 }
 
@@ -71,7 +72,7 @@ regval_t opclass::resolve_dummy() {
         case opclass::IU3_ALL: {
             return resolve((preg_t) 0);
         }
-        default: throw "unknown opclass";
+        default: throw arch_error("unknown opclass");
     }
 }
 

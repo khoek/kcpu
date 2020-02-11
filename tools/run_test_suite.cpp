@@ -31,7 +31,7 @@ static void load_binary_maybedefault(const char *name, std::filesystem::path p, 
     return;
   }
 
-  throw "error: could not find binary or default";
+  throw std::runtime_error("error: could not find binary or default");
 }
 
 static std::string colour_str(std::string s, bool good) {
@@ -66,59 +66,50 @@ static bool run_test(bool verbose, uint32_t num, const std::filesystem::path pat
         return false;
       }
     }
-  } catch(const char *str) {
-    std::cout << colour_str("FAIL, EXCEPTION", false) << ": " << str << std::endl;
-    return false;
-  } catch(std::string str) {
-    std::cout << colour_str("FAIL, EXCEPTION", false) << ": " << str << std::endl;
+  } catch(kcpu::vm_error e) {
+    std::cout << colour_str("FAIL, EXCEPTION", false) << ": " << e.what() << std::endl;
     return false;
   }
 
-  throw "abnormal test end condition!";
+  throw std::runtime_error("abnormal test end condition!");
 }
 
 int main() {
-  try {
-    std::cout << "--------------------------------------------" << std::endl;
+  std::cout << "--------------------------------------------" << std::endl;
 
-    std::vector<std::filesystem::path> tests;
-    for(const auto & entry : std::filesystem::directory_iterator(suite_path)) {
-      if(entry.is_directory()) {
-        tests.push_back(entry.path());
-      }
+  std::vector<std::filesystem::path> tests;
+  for(const auto & entry : std::filesystem::directory_iterator(suite_path)) {
+    if(entry.is_directory()) {
+      tests.push_back(entry.path());
     }
-
-    std::sort(tests.begin(), tests.end());
-    
-    std::vector<std::pair<uint32_t, std::filesystem::path>> failed;
-    uint32_t passes = 0;
-    for(int i = 0; i < tests.size(); i++) {
-      if(run_test(false, i, tests[i])) {
-        passes++;
-      } else {
-        failed.push_back(std::pair(i, tests[i]));
-      }
-    }
-
-    std::cout << "--------------------------------------------" << std::endl;
-    std::cout << "Test Suite Result: " << colour_str(((tests.size() == passes) ? "SUCCESS" : "FAILED"), tests.size() == passes)
-              << ", " << passes << "/" << tests.size() << " passes" << std::endl;
-
-    if(failed.size()) {
-      std::cout << std::endl << "Press any key to re-run " << colour_str("failed", false) << " test '"
-                << failed[0].second.filename().string() << "' verbosely..." << std::endl;
-
-      char c;
-      std::cin >> std::noskipws >> c >> std::skipws;
-      run_test(true, failed[0].first, failed[0].second);
-    }
-
-    return !(tests.size() == passes);
-  } catch(std::string msg) {
-      std::cerr << msg << "\n";
-  } catch(const char * msg) {
-      std::cerr << msg << "\n";
   }
+
+  std::sort(tests.begin(), tests.end());
+  
+  std::vector<std::pair<uint32_t, std::filesystem::path>> failed;
+  uint32_t passes = 0;
+  for(int i = 0; i < tests.size(); i++) {
+    if(run_test(false, i, tests[i])) {
+      passes++;
+    } else {
+      failed.push_back(std::pair(i, tests[i]));
+    }
+  }
+
+  std::cout << "--------------------------------------------" << std::endl;
+  std::cout << "Test Suite Result: " << colour_str(((tests.size() == passes) ? "SUCCESS" : "FAILED"), tests.size() == passes)
+            << ", " << passes << "/" << tests.size() << " passes" << std::endl;
+
+  if(failed.size()) {
+    std::cout << std::endl << "Press any key to re-run " << colour_str("failed", false) << " test '"
+              << failed[0].second.filename().string() << "' verbosely..." << std::endl;
+
+    char c;
+    std::cin >> std::noskipws >> c >> std::skipws;
+    run_test(true, failed[0].first, failed[0].second);
+  }
+
+  return !(tests.size() == passes);
 
   return 1;
 }

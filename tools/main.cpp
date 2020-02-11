@@ -25,44 +25,38 @@ int main(int argc, char **argv) {
       }
     }
 
-    try {
-      kcpu::vm cpu(kcpu::vm_logger{disasm_mode, verbose, verbose});
-      load_binary("BIOS", "bin/bios.bin", BIOS_SIZE, cpu.mem.bios.data());
-      load_binary("PROG", "bin/prog.bin", PROG_SIZE, cpu.mem.prog.data());
+    kcpu::vm cpu(kcpu::vm_logger{disasm_mode, verbose, verbose});
+    load_binary("BIOS", "bin/bios.bin", BIOS_SIZE, cpu.mem.bios.data());
+    load_binary("PROG", "bin/prog.bin", PROG_SIZE, cpu.mem.prog.data());
 
-      printf("CPU Start\n");
-      
-      do {
-        kcpu::vm::STATE s = step_mode ? cpu.step() : cpu.run();
-        if(step_mode && cpu.ctl.cbits[CBIT_INSTMASK]) {
-          std::string prompt_msg("[ENTER to step]");
-          std::cout << prompt_msg << std::flush;
-          char c;
-          std::cin >> std::noskipws >> c;
-          std::cout << "\r" << std::string(prompt_msg.length(), ' ') << "\r" << std::flush;
+    printf("CPU Start\n");
+    
+    do {
+      kcpu::vm::STATE s = step_mode ? cpu.step() : cpu.run();
+      if(step_mode && cpu.ctl.cbits[CBIT_INSTMASK]) {
+        std::string prompt_msg("[ENTER to step]");
+        std::cout << prompt_msg << std::flush;
+        char c;
+        std::cin >> std::noskipws >> c;
+        std::cout << "\r" << std::string(prompt_msg.length(), ' ') << "\r" << std::flush;
+      }
+
+      if(s == kcpu::vm::STATE_ABORTED) {
+        printf("CPU Aborted, continue(y)? ");
+
+        char c;
+        std::cin >> std::noskipws >> c;
+        if(c == 'n' || c == 'N') {
+          printf("Stopping...\n");
+          break;
         }
 
-        if(s == kcpu::vm::STATE_ABORTED) {
-          printf("CPU Aborted, continue(y)? ");
+        printf("Continuing...\n");
+        cpu.resume();
+      }
+    } while(cpu.get_state() == kcpu::vm::STATE_RUNNING);
 
-          char c;
-          std::cin >> std::noskipws >> c;
-          if(c == 'n' || c == 'N') {
-            printf("Stopping...\n");
-            break;
-          }
-
-          printf("Continuing...\n");
-          cpu.resume();
-        }
-      } while(cpu.get_state() == kcpu::vm::STATE_RUNNING);
-
-      printf("CPU %s, %d uinstructions executed\n", cpu.ctl.cbits[CBIT_ABORTED] ? "Aborted" : "Halted", cpu.get_total_clocks());
-    } catch(std::string msg) {
-        std::cerr << msg << "\n";
-    } catch(const char * msg) {
-        std::cerr << msg << "\n";
-    }
+    printf("CPU %s, %d uinstructions executed\n", cpu.ctl.cbits[CBIT_ABORTED] ? "Aborted" : "Halted", cpu.get_total_clocks());
 
     return 0;
 }

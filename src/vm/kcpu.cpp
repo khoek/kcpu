@@ -88,7 +88,7 @@ vm::STATE vm::step() {
     }
 
     if(ctl.cbits[CBIT_HALTED]) {
-        throw "cpu already halted!";
+        throw vm_error("cpu already halted!");
     }
 
     do {
@@ -118,7 +118,7 @@ vm::STATE vm::run() {
 
 void vm::resume() {
     if(get_state() != STATE_ABORTED) {
-        throw "cannot resume, cpu not aborted";
+        throw vm_error("cannot resume, cpu not aborted");
     }
 
     ctl.cbits[CBIT_HALTED ] = false;

@@ -15,9 +15,9 @@
 
 namespace kcpu {
 
-class lang_error : public bt_error {
+class arch_error : public bt_error {
     public:
-    lang_error(const std::string &arg);
+    arch_error(const std::string &arg);
 };
 
 struct argtype {

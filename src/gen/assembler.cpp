@@ -10,6 +10,16 @@
 
 namespace kcpu {
 
+static std::string format_line_msg(uint32_t line, const std::string &msg) {
+    std::stringstream ss;
+    ss << "Line " << line << ": " << msg;
+    return ss.str();
+}
+
+assembler::parse_error::parse_error(uint32_t line, const std::string &msg) : bt_error(format_line_msg(line, msg)) { }
+
+assembler::internal_error::internal_error(uint32_t line, const std::string &msg) : bt_error(format_line_msg(line, msg)) { }
+
 // FIXME make sure labels don't collide with register names
 
 class chunk {
@@ -42,6 +52,12 @@ class inst_assembler {
     private:
     std::istream &in;
     std::vector<chunk> &buff;
+    uint32_t line;
+
+    void throw_parse_error(std::string msg);
+    void throw_internal_error(std::string msg);
+
+    std::optional<preg_t> lookup_reg(std::string s);
 
     std::pair<preg_t, std::optional<chunk>> parse_arg();
     void handle_label(std::string &tk);
@@ -49,18 +65,26 @@ class inst_assembler {
     void bind_virtual(virtual_instruction uo, arg_info ai);
 
     public:
-    inst_assembler(std::istream &in, std::vector<chunk> &buff);
+    inst_assembler(std::istream &in, std::vector<chunk> &buff, uint32_t line);
     void parse();
 };
 
-inst_assembler::inst_assembler(std::istream &in, std::vector<chunk> &buff) : in(in), buff(buff) { }
+inst_assembler::inst_assembler(std::istream &in, std::vector<chunk> &buff, uint32_t line) : in(in), buff(buff), line(line) { }
 
-static std::optional<preg_t> lookup_reg(std::string s) {
+void inst_assembler::throw_parse_error(std::string msg) {
+    throw assembler::parse_error(line, msg);
+}
+
+void inst_assembler::throw_internal_error(std::string msg) {
+    throw assembler::internal_error(line, msg);
+}
+
+std::optional<preg_t> inst_assembler::lookup_reg(std::string s) {
     for(int i = 0; i < NUM_PREGS; i++) {
         if(s == PREG_NAMES[i]) {
             switch(i) {
-                case REG_ID: throw "cannot refer to REG_ID!";
-                case REG_ONE: throw "cannot refer to REG_ONE!";
+                case REG_ID: throw_parse_error("cannot refer to REG_ID!");
+                case REG_ONE: throw_parse_error("cannot refer to REG_ONE!");
                 default: return (preg_t) i;
             }
         }
@@ -73,7 +97,7 @@ std::pair<preg_t, std::optional<chunk>> inst_assembler::parse_arg() {
     in >> tk;
 
     if(!tk.length()) {
-        throw "read empty token!";
+        throw_parse_error("read empty token!");
     }
 
     if(tk[0] == '$') {
@@ -109,7 +133,7 @@ void inst_assembler::bind_virtual(virtual_instruction uo, arg_info ai) {
     std::optional<chunk> constval;
     for(int j = 0; j < uo.bi.size(); j++) {
         if(j >= NUM_IUS) {
-            throw "too many args!";
+            throw_parse_error("too many args!");
         }
 
         switch(uo.bi[j].kind) {
@@ -119,14 +143,14 @@ void inst_assembler::bind_virtual(virtual_instruction uo, arg_info ai) {
             }
             case slot::SLOT_ARG: {
                 if(uo.bi[j].val.argidx >= ai.args.size()) {
-                    throw "can't bind opcode: desired arg number too great";
+                    throw_internal_error("can't bind opcode: desired arg number too great");
                 }
 
                 ius[j] = ai.args[uo.bi[j].val.argidx];
 
                 if(ai.constval && uo.bi[j].val.argidx == ai.constval->first) {
                     if(constval) {
-                        throw "attempting to bind user constvalue when constvalue already assigned";
+                        throw_parse_error("attempting to bind user constvalue when constvalue already assigned");
                     }
                     
                     constval = ai.constval->second;
@@ -137,14 +161,14 @@ void inst_assembler::bind_virtual(virtual_instruction uo, arg_info ai) {
                 ius[j] = REG_ID;
 
                 if(constval) {
-                    throw "attempting to bind alias (not user) constvalue when constvalue already assigned (probably by the user)";
+                    throw_parse_error("attempting to bind alias (not user) constvalue when constvalue already assigned (probably by the user)");
                 }
 
                 constval = uo.bi[j].val.constval;
                 break;
             }
             default: {
-                throw "unknown slot kind";
+                throw_internal_error("unknown slot kind");
             }
         }
     }
@@ -159,7 +183,7 @@ void inst_assembler::bind_virtual(virtual_instruction uo, arg_info ai) {
 void inst_assembler::handle_instruction(std::string &tk) {
     std::optional<alias> a = arch::self().alias_lookup(tk);
     if(!a) {
-        throw "no such instruction '" + tk + "'";
+        throw_parse_error("no such instruction '" + tk + "'");
     }
 
     std::vector<preg_t> args;
@@ -168,7 +192,7 @@ void inst_assembler::handle_instruction(std::string &tk) {
         std::pair<preg_t, std::optional<chunk>> arg = parse_arg();
         if (arg.second) {
             if(a->args.maybeconst != j) {
-                throw "Const arg not allowed in that place!";
+                throw_parse_error("Const arg not allowed in that place!");
             }
 
             constval = std::pair(j, *arg.second);
@@ -185,7 +209,7 @@ void inst_assembler::handle_instruction(std::string &tk) {
 void inst_assembler::parse() {
     std::string tk;
     if(!(in >> tk)) {
-        throw "no token";
+        throw_parse_error("no token");
     }
     
     if(!tk.length()) {
@@ -204,7 +228,7 @@ void inst_assembler::parse() {
     if(arch::self().inst_is_prefix(tk)) {
         std::string tk2;
         if(!(in >> tk2)) {
-            throw "no second token";
+            throw_parse_error("no second token");
         }
 
         tk += " ";
@@ -245,7 +269,7 @@ static std::vector<regval_t> resolve_labels(std::unordered_map<std::string, regv
         
         auto lbl = labels.find(i->label);
         if(lbl == labels.end()) {
-            throw "unknown label: " + i->label;
+            throw assembler::parse_error(0 /* FIXME store, then recall lineno */, "unknown label: " + i->label);
         }
 
         ret.push_back(lbl->second);
@@ -257,13 +281,15 @@ static std::vector<regval_t> resolve_labels(std::unordered_map<std::string, regv
 std::vector<regval_t> assemble(std::istream *in) {
     std::vector<chunk> ops;
 
+    uint32_t lines = 0;
     std::string line;
     while(std::getline(*in, line)) {
+        lines++;
         std::stringstream ssl(line);
         std::string token;
         while(std::getline(ssl, token, ';')) {
             std::stringstream st(line);
-            inst_assembler ia(st, ops);
+            inst_assembler ia(st, ops, lines);
             ia.parse();
         }
     }

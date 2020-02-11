@@ -10,15 +10,15 @@
 
 namespace kcpu {
 
-lang_error::lang_error(const std::string &msg) : bt_error(msg) { }
+arch_error::arch_error(const std::string &msg) : bt_error(msg) { }
 
 static uint16_t uaddr(regval_t inst, ucval_t uc) {
     if(uc > UCVAL_MAX) {
-        throw "uc too great";
+        throw arch_error("uc too great");
     }
 
     if(inst > INST_MAX) {
-        throw "inst too great";
+        throw arch_error("inst too great");
     }
     
     return (inst << UCVAL_WIDTH) | uc;
@@ -58,7 +58,7 @@ static void check_opcode_supports_argcount(opclass op, uint8_t argcount) {
             assert(argcount == 3);
             break;
         }
-        default: throw "unknown opclass";
+        default: throw arch_error("unknown opclass");
     }
 }
 
@@ -77,7 +77,7 @@ regval_t virtual_instruction::build_inst(bool loaddata, std::vector<preg_t> ius)
         case 2: inst |= INST_MK_IU2(ius[1]);
         case 1: inst |= INST_MK_IU1(ius[0]);
         case 0: break;
-        default: throw "too many args!";
+        default: throw arch_error("too many args!");
     }
 
     if(op.cls == opclass::IU3_SINGLE) {
@@ -169,7 +169,7 @@ std::optional<instruction> arch::inst_lookup(regval_t opcode) {
 
 void arch::reg_opcode(regval_t opcode, instruction i) {
     if(ucode_inst[opcode]) {
-        throw "opcode collision: " + ucode_inst[opcode]->name + ", " + i.name;
+        throw arch_error("opcode collision: " + ucode_inst[opcode]->name + ", " + i.name);
     }
 
     ucode_inst[opcode] = i;
@@ -178,7 +178,7 @@ void arch::reg_opcode(regval_t opcode, instruction i) {
     for(std::size_t uc = 0; uc < i.uis.size(); uc++) {
         uint16_t ua = uaddr(opcode, uc);
         if(ucode[ua]) {
-            throw "ucode collision: " + ucode_name[ua] + ", " + i.name;
+            throw arch_error("ucode collision: " + ucode_name[ua] + ", " + i.name);
         }
         
         ucode[ua] = i.uis[uc];
@@ -199,7 +199,7 @@ void arch::reg_inst(instruction i) {
             }
             break;
         }
-        default: throw "unknown opclass!";
+        default: throw arch_error("unknown opclass!");
     }
 
     // This must happen last in order not to trip up the sanity checker
@@ -212,11 +212,11 @@ void arch::reg_alias(alias a) {
     for(auto j = a.insts.begin(); j < a.insts.end(); j++) {
         std::optional<instruction> i = ucode_inst[j->op.resolve_dummy()];
         if(!i) {
-            throw "alias " + a.name + " registers an unknown opcode";
+            throw arch_error("alias " + a.name + " registers an unknown opcode");
         }
 
         if(i->args.count != j->bi.size()) {
-            throw "alias " + a.name + " has the wrong number of arguments for instruction " + i->name;
+            throw arch_error("alias " + a.name + " has the wrong number of arguments for instruction " + i->name);
         }
 
         int const_count = 0;
@@ -226,37 +226,37 @@ void arch::reg_alias(alias a) {
             }
 
             if(j->bi[k].kind == slot::SLOT_ARG && j->bi[k].val.argidx >= a.args.count) {
-                throw "alias " + a.name + " uses a non-existent (too large) arg index for isntruction " + i->name;
+                throw arch_error("alias " + a.name + " uses a non-existent (too large) arg index for isntruction " + i->name);
             }
         }
 
         if(const_count > 1) {
-            throw "alias " + a.name + " uses multiple const args in the same expression for instruction " + i->name;
+            throw arch_error("alias " + a.name + " uses multiple const args in the same expression for instruction " + i->name);
         }
 
         for(int k = 0; k < i->args.count; k++) {
             if (i->args.maybeconst != k) {
                     if(a.args.maybeconst >= 0 && j->bi[k].kind == slot::SLOT_ARG && j->bi[k].val.argidx == a.args.maybeconst) {
-                        throw "alias " + a.name + " might (depending on argument) bind a constant to a nonstandard argument for instruction " + i->name
-                            + ", and this is probably an accident.\n(Maybe we will want this in the future?)";
+                        throw arch_error("alias " + a.name + " might (depending on argument) bind a constant to a nonstandard argument for instruction " + i->name
+                            + ", and this is probably an accident.\n(Maybe we will want this in the future?)");
                     }
                     
                     if(j->bi[k].kind == slot::SLOT_CONSTVAL) {
-                        throw "alias " + a.name + " binds a constant to a nonstandard argument for instruction " + i->name
-                            + ", and this is probably an accident.\n(Maybe we will want this in the future?)";
+                        throw arch_error("alias " + a.name + " binds a constant to a nonstandard argument for instruction " + i->name
+                            + ", and this is probably an accident.\n(Maybe we will want this in the future?)");
                     }
             }
         }
     }
 
     if(aliases.find(a.name) != aliases.end()) {
-        throw "alias " + a.name + " name collision";
+        throw arch_error("alias " + a.name + " name collision");
     }
 
     // Actually try to register the alias.
     std::vector<std::string> tks = split(a.name, ' ');
     if(tks.size() > 2) {
-        throw "too many spaces in name!";
+        throw arch_error("too many spaces in name!");
     }
 
     if(tks.size() == 2) {

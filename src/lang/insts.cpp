@@ -164,7 +164,7 @@ static instruction mk_arith_inst(uinst_t flagbits, const char *name, opclass op,
 
     uinst_t tgt, srcs;
     switch(args.count) {
-        case 0: throw "zero arg arith instruction";
+        case 0: throw arch_error("zero arg arith instruction");
         case 1: {
             srcs = RCTRL_IU1_BUSA_O;
             tgt = RCTRL_IU1_BUSA_I;
@@ -180,7 +180,7 @@ static instruction mk_arith_inst(uinst_t flagbits, const char *name, opclass op,
             tgt = RCTRL_IU3_BUSA_I;
             break;
         }
-        default: throw "too many args!";
+        default: throw arch_error("too many args!");
     }
 
     return instruction(ss.str(), op.add_flag(flagbits ? 0 : P_I_NOFGS), args, {
