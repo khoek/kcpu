@@ -2,20 +2,20 @@
 
 PUSH $0xF1A6
 CALL func1
-POP ra
-CMP $0xF1A6 ra
+POP %ra
+CMP $0xF1A6 %ra
 JNE fail
 
 PUSH $0xF1A6
 CALL func2
-POP ra
-CMP $0xF1A6 ra
+POP %ra
+CMP $0xF1A6 %ra
 JNE fail
 
 PUSH $0xF1A6
 CALL func3
-POP ra
-CMP $0xF1A6 ra
+POP %ra
+CMP $0xF1A6 %ra
 JNE fail
 
 HLT
@@ -30,8 +30,8 @@ func1:
 
     PUSH $0xDEAD
     PUSH $0xBEEF
-    POP ra
-    POP rb
+    POP %ra
+    POP %rb
 
     LEAVE
     RET
@@ -64,14 +64,14 @@ func3:
     PUSH $0xBEEF
     PUSH $0xBEEF
     PUSH $0xBEEF
-    POP ra
-    POP ra
-    POP ra
-    POP ra
-    POP ra
-    POP ra
-    POP ra
-    POP ra
+    POP %ra
+    POP %ra
+    POP %ra
+    POP %ra
+    POP %ra
+    POP %ra
+    POP %ra
+    POP %ra
 
     LEAVE
     RET

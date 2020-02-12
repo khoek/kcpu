@@ -5,14 +5,14 @@
 namespace kcpu {
 
 const char * PREG_NAMES[] = {
-    "rid",
-    "r1",
-    "ra",
-    "rb",
-    "rc",
-    "rd",
-    "rsp",
-    "rbp",
+    "id",
+    "1",
+    "a",
+    "b",
+    "c",
+    "d",
+    "sp",
+    "bp",
 };
 
 mod_reg::mod_reg(vm_logger &logger) : logger(logger) {

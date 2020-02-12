@@ -37,16 +37,22 @@ chunk::chunk(regval_t raw) : concrete(true), val(raw) { }
 
 chunk::chunk(std::string label, bool label_def = false) : concrete(false), label(label), label_def(label_def) { }
 
-class arg_info {
+class bound_parameter {
     public:
-    std::vector<preg_t> args;
-    std::optional<std::pair<uint8_t, chunk>> constval;
+    parameter::kind type;
+    preg_t reg;
+    bool lo_or_hi;
+    std::optional<chunk> constval;
 
-    arg_info(std::vector<preg_t> args, std::optional<std::pair<uint8_t, chunk>> constval);
+    bound_parameter(parameter::kind type, preg_t reg, bool lo_or_hi);
+    bound_parameter(chunk constval);
 };
 
-arg_info::arg_info(std::vector<preg_t> args, std::optional<std::pair<uint8_t, chunk>> constval)
-    : args(args), constval(constval) {}
+bound_parameter::bound_parameter(parameter::kind type, preg_t reg, bool lo_or_hi)
+    : type(type), reg(reg), lo_or_hi(lo_or_hi), constval(std::nullopt) { }
+
+bound_parameter::bound_parameter(chunk constval)
+    : type(parameter::PARAM_CONST), reg(kcpu::REG_ID), constval(constval) { }
 
 class inst_assembler {
     private:
@@ -54,15 +60,18 @@ class inst_assembler {
     std::vector<chunk> &buff;
     uint32_t line;
 
+    [[noreturn]]
     void throw_parse_error(std::string msg);
+
+    [[noreturn]]
     void throw_internal_error(std::string msg);
 
-    std::optional<preg_t> lookup_reg(std::string s);
+    std::optional<bound_parameter> lookup_reg(std::string s);
 
-    std::pair<preg_t, std::optional<chunk>> parse_arg();
+    std::optional<bound_parameter> parse_param();
     void handle_label(std::string &tk);
     void handle_instruction(std::string &tk);
-    void bind_virtual(virtual_instruction uo, arg_info ai);
+    void bind_virtual(virtual_instruction uo, std::vector<bound_parameter> ai);
 
     public:
     inst_assembler(std::istream &in, std::vector<chunk> &buff, uint32_t line);
@@ -79,25 +88,52 @@ void inst_assembler::throw_internal_error(std::string msg) {
     throw assembler::internal_error(line, msg);
 }
 
-std::optional<preg_t> inst_assembler::lookup_reg(std::string s) {
+std::optional<bound_parameter> inst_assembler::lookup_reg(std::string s) {
+    if(s.size() == 0) {
+        return std::nullopt;
+    }
+    
+    if(s[0] != '%') {
+        return std::nullopt;
+    }
+
+    parameter::kind type;
+    bool lo_or_hi;
+    if(s[1] == 'r') {
+        type = parameter::PARAM_WREG;
+        lo_or_hi = false;
+    } else if(s[1] == 'l') {
+        type = parameter::PARAM_BREG;
+        lo_or_hi = false;
+    } else if(s[1] == 'h') {
+        type = parameter::PARAM_BREG;
+        lo_or_hi = true;
+    } else {
+        std::stringstream ss;
+        ss << "unknown register prefix " << s[1] << " in " << s;
+        throw_parse_error(ss.str());
+    }
+
+    std::string trunc = s.substr(2);
     for(int i = 0; i < NUM_PREGS; i++) {
-        if(s == PREG_NAMES[i]) {
+        if(trunc == PREG_NAMES[i]) {
             switch(i) {
                 case REG_ID: throw_parse_error("cannot refer to REG_ID!");
                 case REG_ONE: throw_parse_error("cannot refer to REG_ONE!");
-                default: return (preg_t) i;
+                default: return bound_parameter(type, (preg_t) i, lo_or_hi);
             }
         }
     }
-    return std::nullopt;
+
+    throw_parse_error("unknown register " + s.substr(1));
 }
 
-std::pair<preg_t, std::optional<chunk>> inst_assembler::parse_arg() {
+std::optional<bound_parameter> inst_assembler::parse_param() {
     std::string tk;
     in >> tk;
 
     if(!tk.length()) {
-        throw_parse_error("read empty token!");
+        return std::nullopt;
     }
 
     if(tk[0] == '$') {
@@ -111,15 +147,15 @@ std::pair<preg_t, std::optional<chunk>> inst_assembler::parse_arg() {
         } else {
             val = std::stoi(tk.substr(1));
         }
-        return std::pair(REG_ID, val);
+        return bound_parameter(val);
     }
 
-    std::optional<preg_t> reg = lookup_reg(tk);
+    std::optional<bound_parameter> reg = lookup_reg(tk);
     if(reg) {
-        return std::pair(*reg, std::nullopt);
+        return *reg;
     }
 
-    return std::pair(REG_ID, std::optional(chunk(tk, false)));
+    return bound_parameter(chunk(tk, false));
 }
 
 void inst_assembler::handle_label(std::string &tk) {
@@ -127,7 +163,7 @@ void inst_assembler::handle_label(std::string &tk) {
     buff.push_back(o);
 }
 
-void inst_assembler::bind_virtual(virtual_instruction uo, arg_info ai) {
+void inst_assembler::bind_virtual(virtual_instruction uo, std::vector<bound_parameter> params) {
     std::vector<preg_t> ius(uo.bi.size());
 
     std::optional<chunk> constval;
@@ -142,18 +178,18 @@ void inst_assembler::bind_virtual(virtual_instruction uo, arg_info ai) {
                 break;
             }
             case slot::SLOT_ARG: {
-                if(uo.bi[j].val.argidx >= ai.args.size()) {
+                if(uo.bi[j].val.argidx >= params.size()) {
                     throw_internal_error("can't bind opcode: desired arg number too great");
                 }
 
-                ius[j] = ai.args[uo.bi[j].val.argidx];
+                ius[j] = params[uo.bi[j].val.argidx].reg;
 
-                if(ai.constval && uo.bi[j].val.argidx == ai.constval->first) {
+                if(params[uo.bi[j].val.argidx].type == parameter::PARAM_CONST) {
                     if(constval) {
                         throw_parse_error("attempting to bind user constvalue when constvalue already assigned");
                     }
                     
-                    constval = ai.constval->second;
+                    constval = params[uo.bi[j].val.argidx].constval;
                 }
                 break;
             }
@@ -181,28 +217,41 @@ void inst_assembler::bind_virtual(virtual_instruction uo, arg_info ai) {
 }
 
 void inst_assembler::handle_instruction(std::string &tk) {
-    std::optional<alias> a = arch::self().alias_lookup(tk);
-    if(!a) {
+    std::optional<family> f = arch::self().lookup_family(tk);
+    if(!f) {
         throw_parse_error("no such instruction '" + tk + "'");
     }
 
-    std::vector<preg_t> args;
-    std::optional<std::pair<uint8_t, chunk>> constval;
-    for(uint8_t j = 0; j < a->args.count; j++) {
-        std::pair<preg_t, std::optional<chunk>> arg = parse_arg();
-        if (arg.second) {
-            if(a->args.maybeconst != j) {
-                throw_parse_error("Const arg not allowed in that place!");
-            }
-
-            constval = std::pair(j, *arg.second);
+    std::vector<bound_parameter> params;
+    std::vector<kcpu::parameter::kind> param_kinds;
+    while(true) {
+        std::optional<bound_parameter> arg = parse_param();
+        if(!arg) {
+            break;
         }
+        params.push_back(*arg);
+        param_kinds.push_back(arg->type);
+    }
 
-        args.push_back(arg.first);
+    std::optional<std::string> an = f->match(param_kinds);
+    if(!an) {
+        throw_parse_error("bad argument types for instruction '" + tk + "'");
+    }
+
+    // FIXME issue a warning if a constant > size of a btye has been bound to a byte register parameter.
+
+    // TODO in the error path, try to find a partial match to explain that you can't pass a const somewhere.
+    // if(a->args.maybeconst != j) {
+    //     throw_parse_error("Const arg not allowed in that place!");
+    // }
+
+    std::optional<alias> a = arch::self().lookup_alias(*an);
+    if(!a) {
+        throw_parse_error("no such alias '" + *an + "'");
     }
 
     for(auto j = a->insts.begin(); j < a->insts.end(); j++) {
-        bind_virtual(*j, arg_info(args, constval));
+        bind_virtual(*j, params);
     }
 }
 

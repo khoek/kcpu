@@ -91,6 +91,51 @@ alias::alias(std::string name, argtype args, std::vector<virtual_instruction> in
 alias::alias(std::string name, argtype args, virtual_instruction inst)
     : name(name), args(args), insts({inst}) { }
 
+parameter::parameter(kind type, bool noconst, bool byteconst)
+    : type(type), noconst(noconst), byteconst(byteconst) {}
+    
+bool parameter::accepts(parameter::kind other) {
+    switch(type) {
+        case parameter::PARAM_WREG:  return (other == parameter::PARAM_WREG) || (other == parameter::PARAM_CONST);      
+        case parameter::PARAM_BREG:  return (other == parameter::PARAM_BREG) || (other == parameter::PARAM_CONST);      
+        case parameter::PARAM_CONST: return other == parameter::PARAM_CONST; 
+        default: throw arch_error("unknown parameter type");    
+    }
+}
+
+std::vector<parameter> argtype_to_param_list(argtype args) {
+    std::vector<parameter> params;
+    for(int j = 0; j < args.count; j++) {
+        // FIXME change what argtypes are, so we get nice protections on the standard instructions as well.
+        params.push_back(parameter(parameter::PARAM_WREG, j != args.maybeconst, false));
+    }
+    return params;
+}
+
+family::family(std::string name, std::vector<std::pair<std::vector<parameter>, std::string>> mappings)
+    : name(name), mappings(mappings) { }
+
+std::optional<std::string> family::match(std::vector<parameter::kind> params) {
+    for(auto ps = mappings.begin(); ps < mappings.end(); ps++) {
+        if(ps->first.size() != params.size()) {
+            continue;
+        }
+
+        for(int j = 0; j < ps->first.size(); j++) {
+            if(!ps->first[j].accepts(params[j])) {
+                continue;
+            }
+
+            if(ps->first[j].noconst) {
+                continue;
+            }
+        }
+
+        return ps->second;
+    }
+    return std::nullopt;
+}
+
 void instruction::check_valid() {
     check_opcode_supports_argcount(op, args.count);
 
@@ -145,7 +190,7 @@ static std::vector<std::string> split(const std::string &s, char delim) {
 arch::arch() {
 }
 
-uinst_t arch::ucode_lookup(regval_t inst, ucval_t uc) {
+uinst_t arch::ucode_read(regval_t inst, ucval_t uc) {
     return ucode[uaddr((inst & ~P_I_LOADDATA) >> INST_SHIFT, uc)];
 }
 
@@ -153,12 +198,17 @@ bool arch::inst_is_prefix(std::string str) {
     return prefixes.find(str) != prefixes.end();
 }
 
-std::optional<alias> arch::alias_lookup(std::string name) {
+std::optional<family> arch::lookup_family(std::string name) {
+    auto r = families.find(name);
+    return r == families.end() ? std::nullopt : std::optional(r->second);
+}
+
+std::optional<alias> arch::lookup_alias(std::string name) {
     auto r = aliases.find(name);
     return r == aliases.end() ? std::nullopt : std::optional(r->second);
 }
 
-std::optional<instruction> arch::inst_lookup(regval_t opcode) {
+std::optional<instruction> arch::lookup_inst(regval_t opcode) {
     auto r = insts.find(opcode);
     return r == insts.end() ? std::nullopt : std::optional(r->second);
 }
@@ -199,12 +249,12 @@ void arch::reg_inst(instruction i) {
     }
 
     // This must happen last in order not to trip up the sanity checker
-    // in reg_alias.
+    // in reg_alias().
     reg_alias(alias(i.name, i.args, { virtual_instruction(i.op, i.args) }));
 }
 
 void arch::reg_alias(alias a) {
-    // In this loop we just do some consistency checks.
+    // In this loop we just do some consistency checks between the registered opcodes/argurments and their true arguments.
     for(auto j = a.insts.begin(); j < a.insts.end(); j++) {
         std::optional<instruction> i = ucode_inst[j->op.resolve_dummy()];
         if(!i) {
@@ -249,8 +299,36 @@ void arch::reg_alias(alias a) {
         throw arch_error("alias " + a.name + " name collision");
     }
 
-    // Actually try to register the alias.
-    std::vector<std::string> tks = split(a.name, ' ');
+    // Actually register the alias.
+    aliases.emplace(a.name, a);
+
+    // This must happen last in order not to trip up the sanity checker
+    // in reg_family().
+    reg_family(family(a.name, { std::pair(argtype_to_param_list(a.args), a.name) }));
+}
+
+void arch::reg_family(family f) {
+    // In this loop we just do some consistency checks between the registered aliases/argurments and their true arguments.
+    for(auto an = f.mappings.begin(); an < f.mappings.end(); an++) {
+        std::optional<alias> a = lookup_alias(an->second);
+        if(!a) {
+            throw arch_error("family " + f.name + " registers unknown alias " + an->second);
+        }
+
+        if(a->args.count != an->first.size()) {
+            std::stringstream ss;
+            ss << "family " << f.name << " registers wrong number of arguments (" << a->args.count << ")"
+                 << "for alias " << an->second << " (" << an->first.size() << ")";
+            throw arch_error(ss.str());
+        }
+    }
+
+    if(families.find(f.name) != families.end()) {
+        throw arch_error("family " + f.name + " name collision");
+    }
+
+    // Actually try to register the family.
+    std::vector<std::string> tks = split(f.name, ' ');
     if(tks.size() > 2) {
         throw arch_error("too many spaces in name!");
     }
@@ -259,7 +337,7 @@ void arch::reg_alias(alias a) {
         prefixes.emplace(tks[0]);
     }
 
-    aliases.emplace(a.name, a);
+    families.emplace(f.name, f);
 }
 
 arch & arch::self() {
@@ -269,6 +347,7 @@ arch & arch::self() {
         init = true;
         internal::register_insts();
         internal::register_aliases();
+        internal::register_families();
     }
     return instance;
 }

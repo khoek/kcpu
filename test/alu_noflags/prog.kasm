@@ -1,6 +1,6 @@
-MOV $3 ra
-MOV $-3 rb
-ADD ra rb
+MOV $3 %ra
+MOV $-3 %rb
+ADD %ra %rb
 JZ l1
 ABRT
 
@@ -14,12 +14,12 @@ JNZ l3
 ABRT
 
 l3:
-MOV $-3 rb
+MOV $-3 %rb
 JNZ l4
 ABRT
 
 l4:
-ADDNF ra rb
+ADDNF %ra %rb
 JNZ l5
 ABRT
 

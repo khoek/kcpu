@@ -56,6 +56,7 @@ struct slot {
         SLOT_ARG,
         SLOT_CONSTVAL
     } kind;
+    
     union {
         preg_t reg;
         uint8_t argidx;
@@ -88,6 +89,36 @@ class alias {
     alias(std::string name, argtype args, virtual_instruction inst);
 };
 
+class parameter {
+    public:
+    enum kind {
+        PARAM_WREG,
+        PARAM_BREG,
+        PARAM_CONST,
+    };
+
+    kind type;
+    bool noconst;
+    bool byteconst;
+
+    parameter(kind type, bool noconst, bool byteconst);
+    
+    bool accepts(kind other);
+};
+
+std::vector<parameter> argtype_to_param_list(argtype args);
+
+class family {
+    public:
+
+    std::string name;
+    std::vector<std::pair<std::vector<parameter>, std::string>> mappings;
+
+    family(std::string name, std::vector<std::pair<std::vector<parameter>, std::string>> mappings);
+
+    std::optional<std::string> match(std::vector<parameter::kind> params);
+};
+
 class arch {
     private:
     uinst_t ucode[UCODE_LEN];
@@ -96,6 +127,7 @@ class arch {
 
     std::unordered_set<std::string> prefixes;
     std::unordered_map<std::string, alias> aliases;
+    std::unordered_map<std::string, family> families;
     std::unordered_map<regval_t, instruction> insts;
 
     void reg_opcode(regval_t opcode, instruction i);
@@ -104,12 +136,14 @@ class arch {
     arch();
     void reg_inst(instruction i);
     void reg_alias(alias a);
+    void reg_family(family f);
 
-    uinst_t ucode_lookup(regval_t inst, ucval_t uc);
+    uinst_t ucode_read(regval_t inst, ucval_t uc);
 
     bool inst_is_prefix(std::string str);
-    std::optional<alias> alias_lookup(std::string name);
-    std::optional<instruction> inst_lookup(regval_t opcode);
+    std::optional<family> lookup_family(std::string name);
+    std::optional<alias> lookup_alias(std::string name);
+    std::optional<instruction> lookup_inst(regval_t opcode);
 
     static arch & self();
 };
