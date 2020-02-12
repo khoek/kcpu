@@ -86,7 +86,7 @@ int main() {
   std::vector<std::pair<uint32_t, std::filesystem::path>> failed;
   uint32_t passes = 0;
   for(int i = 0; i < tests.size(); i++) {
-    if(run_test(false, i, tests[i])) {
+    if(run_test(false, i + 1, tests[i])) {
       passes++;
     } else {
       failed.push_back(std::pair(i, tests[i]));
