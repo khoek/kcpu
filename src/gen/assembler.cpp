@@ -103,10 +103,10 @@ std::optional<bound_parameter> inst_assembler::lookup_reg(std::string s) {
         type = parameter::PARAM_WREG;
         lo_or_hi = false;
     } else if(s[1] == 'l') {
-        type = parameter::PARAM_BREG;
+        type = parameter::PARAM_BLREG;
         lo_or_hi = false;
     } else if(s[1] == 'h') {
-        type = parameter::PARAM_BREG;
+        type = parameter::PARAM_BHREG;
         lo_or_hi = true;
     } else {
         std::stringstream ss;

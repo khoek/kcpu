@@ -92,15 +92,48 @@ alias::alias(std::string name, argtype args, virtual_instruction inst)
     : name(name), args(args), insts({inst}) { }
 
 parameter::parameter(kind type, bool noconst, bool byteconst)
-    : type(type), noconst(noconst), byteconst(byteconst) {}
+    : type(type), noconst(noconst), byteconst(byteconst) { }
     
 bool parameter::accepts(parameter::kind other) {
     switch(type) {
-        case parameter::PARAM_WREG:  return (other == parameter::PARAM_WREG) || (other == parameter::PARAM_CONST);      
-        case parameter::PARAM_BREG:  return (other == parameter::PARAM_BREG) || (other == parameter::PARAM_CONST);      
-        case parameter::PARAM_CONST: return other == parameter::PARAM_CONST; 
+        case parameter::PARAM_WREG:  return (other == parameter::PARAM_WREG ) || (!noconst && other == parameter::PARAM_CONST);      
+        case parameter::PARAM_BLREG: return (other == parameter::PARAM_BLREG) || (!noconst && other == parameter::PARAM_CONST);      
+        case parameter::PARAM_BHREG: return (other == parameter::PARAM_BHREG) || (!noconst && other == parameter::PARAM_CONST);      
+        case parameter::PARAM_CONST: return  other == parameter::PARAM_CONST; 
         default: throw arch_error("unknown parameter type");    
     }
+}
+
+parameter param_wreg() {
+    return parameter(parameter::PARAM_WREG, false, false);
+}
+
+parameter param_wreg_noconst() {
+    return parameter(parameter::PARAM_WREG, true, false);
+}
+
+parameter param_breg_lo() {
+    return parameter(parameter::PARAM_BLREG, false, true);
+}
+
+parameter param_breg_lo_noconst() {
+    return parameter(parameter::PARAM_BLREG, true, true);
+}
+
+parameter param_breg_hi() {
+    return parameter(parameter::PARAM_BHREG, false, true);
+}
+
+parameter param_breg_hi_noconst() {
+    return parameter(parameter::PARAM_BHREG, true, true);
+}
+
+parameter param_wconst(bool noconst) {
+    return parameter(parameter::PARAM_CONST, false, false);
+}
+
+parameter param_bconst(bool noconst) {
+    return parameter(parameter::PARAM_CONST, false, true );
 }
 
 std::vector<parameter> argtype_to_param_list(argtype args) {
@@ -112,26 +145,29 @@ std::vector<parameter> argtype_to_param_list(argtype args) {
     return params;
 }
 
-family::family(std::string name, std::vector<std::pair<std::vector<parameter>, std::string>> mappings)
+family::mapping::mapping(std::string name, std::vector<parameter> value)
+    : name(name), params(value) { }
+
+family::family(std::string name, std::vector<family::mapping> mappings)
     : name(name), mappings(mappings) { }
 
 std::optional<std::string> family::match(std::vector<parameter::kind> params) {
     for(auto ps = mappings.begin(); ps < mappings.end(); ps++) {
-        if(ps->first.size() != params.size()) {
+        if(ps->params.size() != params.size()) {
             continue;
         }
 
-        for(int j = 0; j < ps->first.size(); j++) {
-            if(!ps->first[j].accepts(params[j])) {
-                continue;
-            }
-
-            if(ps->first[j].noconst) {
-                continue;
+        bool fail = false;
+        for(int j = 0; j < ps->params.size(); j++) {
+            if(!ps->params[j].accepts(params[j])) {
+                fail = true;
+                break;
             }
         }
 
-        return ps->second;
+        if(!fail) {
+            return ps->name;
+        }
     }
     return std::nullopt;
 }
@@ -304,21 +340,21 @@ void arch::reg_alias(alias a) {
 
     // This must happen last in order not to trip up the sanity checker
     // in reg_family().
-    reg_family(family(a.name, { std::pair(argtype_to_param_list(a.args), a.name) }));
+    reg_family(family(a.name, { family::mapping(a.name, argtype_to_param_list(a.args)) }));
 }
 
 void arch::reg_family(family f) {
     // In this loop we just do some consistency checks between the registered aliases/argurments and their true arguments.
-    for(auto an = f.mappings.begin(); an < f.mappings.end(); an++) {
-        std::optional<alias> a = lookup_alias(an->second);
+    for(auto m = f.mappings.begin(); m < f.mappings.end(); m++) {
+        std::optional<alias> a = lookup_alias(m->name);
         if(!a) {
-            throw arch_error("family " + f.name + " registers unknown alias " + an->second);
+            throw arch_error("family " + f.name + " registers unknown alias " + m->name);
         }
 
-        if(a->args.count != an->first.size()) {
+        if(a->args.count != m->params.size()) {
             std::stringstream ss;
-            ss << "family " << f.name << " registers wrong number of arguments (" << a->args.count << ")"
-                 << "for alias " << an->second << " (" << an->first.size() << ")";
+            ss << "family " << f.name << " registers wrong number of arguments (" << m->params.size() << ")"
+                 << " for alias " << m->name << " (" << ((uint32_t) a->args.count) << ")";
             throw arch_error(ss.str());
         }
     }

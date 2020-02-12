@@ -16,7 +16,7 @@ TOOLLIB := bin/lib/libtools.a
 KASMSRCS := $(shell find test -type f -name "*.kasm")
 KASMOBJS := $(patsubst %.kasm, %.bin, $(KASMSRCS))
 
-CXXFLAGS := -std=c++17 -O3 -rdynamic
+CXXFLAGS := -std=c++17 -rdynamic -O3
 TOOLFLAGS := -I.
 
 all: $(LIB) $(TOOLLIB) $(KASMOBJS) $(TOOLBINS)

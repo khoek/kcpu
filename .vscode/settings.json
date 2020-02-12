@@ -59,5 +59,8 @@
         "ratio": "cpp",
         "iomanip": "cpp",
         "cassert": "cpp"
-    }
+    },
+
+    "editor.trimAutoWhitespace": true,
+    "files.trimTrailingWhitespace": true,
 }

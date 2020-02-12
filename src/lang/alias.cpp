@@ -17,8 +17,6 @@ static void gen_ctl() {
 static void gen_mem() {
     reg_alias(alias("PUSH", ARGS_1        , virtual_instruction(I_X_PUSH, { slot_reg(REG_SP), slot_arg(0) })));
     reg_alias(alias("POP" , ARGS_1_NOCONST, virtual_instruction(I_X_POP , { slot_reg(REG_SP), slot_arg(0) })));
-
-    // LDW OFF
 }
 
 static void gen_alu() {
@@ -29,8 +27,8 @@ static void gen_alu() {
     // FIXME just subtract from zero! need a "sub the other way" instruction for this
     // Negate then add 1
     reg_alias(alias("NEG", ARGS_1_NOCONST, {
-        virtual_instruction(I_XOR, { slot_reg(REG_ONE), slot_arg(0) }),
-        virtual_instruction(I_ADD, { slot_constval(0x0001), slot_arg(0) }),
+        virtual_instruction(I_XOR , { slot_reg(REG_ONE), slot_arg(0) }),
+        virtual_instruction(I_ADD2, { slot_constval(0x0001), slot_arg(0) }),
     }));
 
     // FIXME use a "nodata" version of an arithmetic instruction instead

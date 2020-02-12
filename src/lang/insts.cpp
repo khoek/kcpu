@@ -190,7 +190,7 @@ static instruction mk_arith_inst(uinst_t flagbits, const char *name, opclass op,
 }
 
 static void gen_alu_flagables(uinst_t flagbits) {
-    reg_inst(mk_arith_inst(flagbits, "ADD" , I_ADD , ARGS_2_1CONST , ACTRL_MODE_ADD ));
+    reg_inst(mk_arith_inst(flagbits, "ADD2", I_ADD2, ARGS_2_1CONST , ACTRL_MODE_ADD )); // c.f. the ADD3 variant
     reg_inst(mk_arith_inst(flagbits, "SUB" , I_SUB , ARGS_2_1CONST , ACTRL_MODE_SUB ));
     reg_inst(mk_arith_inst(flagbits, "AND" , I_AND , ARGS_2_1CONST , ACTRL_MODE_AND ));
     reg_inst(mk_arith_inst(flagbits, "OR"  , I_OR  , ARGS_2_1CONST , ACTRL_MODE_OR  ));

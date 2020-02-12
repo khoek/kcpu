@@ -93,7 +93,8 @@ class parameter {
     public:
     enum kind {
         PARAM_WREG,
-        PARAM_BREG,
+        PARAM_BLREG,
+        PARAM_BHREG,
         PARAM_CONST,
     };
 
@@ -106,15 +107,31 @@ class parameter {
     bool accepts(kind other);
 };
 
+parameter param_wreg();
+parameter param_wreg_noconst();
+parameter param_breg_lo();
+parameter param_breg_lo_noconst();
+parameter param_breg_hi();
+parameter param_breg_hi_noconst();
+parameter param_wconst();
+parameter param_bconst();
+
 std::vector<parameter> argtype_to_param_list(argtype args);
 
 class family {
     public:
+    class mapping {
+        public:
+        std::string name;
+        std::vector<parameter> params;
+
+        mapping(std::string name, std::vector<parameter> value);
+    };
 
     std::string name;
-    std::vector<std::pair<std::vector<parameter>, std::string>> mappings;
+    std::vector<mapping> mappings;
 
-    family(std::string name, std::vector<std::pair<std::vector<parameter>, std::string>> mappings);
+    family(std::string name, std::vector<mapping> mappings);
 
     std::optional<std::string> match(std::vector<parameter::kind> params);
 };

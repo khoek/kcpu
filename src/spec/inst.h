@@ -59,7 +59,7 @@ namespace kcpu {
 #define I_MOV   0b00101111
 
 // ALU
-#define I_ADD   0b01000000
+#define I_ADD2  0b01000000
 #define I_SUB   0b01000001
 #define I_AND   0b01000010
 #define I_OR    0b01000011
