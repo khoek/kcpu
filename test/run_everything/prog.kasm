@@ -1,0 +1,59 @@
+# run_everything (mostly, except jumps)
+STPFX $0x0080
+FAR STPFX $0x0080
+
+ADD2 %ra %rb
+ADD2NF %ra %rb
+ADD3 %ra %rb %rc
+ADD3NF %ra %rb %rc
+AND %ra %rb
+ANDNF %ra %rb
+CMP %ra %rb
+ENTER
+ENTERFR %ra
+FAR LDBH %ra %rb
+FAR LDBHZ %ra %rb
+FAR LDBL %ra %rb
+FAR LDBLZ %ra %rb
+FAR LDW %ra %rb
+FAR LDWO %ra %rb %rc
+FAR STBH %ra %rb
+FAR STBL %ra %rb
+FAR STW %ra %rb
+FAR STWO %ra %rb %rc
+LDBH %ra %rb
+LDBHZ %ra %rb
+LDBL %ra %rb
+LDBLZ %ra %rb
+LDW %ra %rb
+LDWO %ra %rb %rc
+LEAVE
+LSFT %ra
+LSFTNF %ra
+MOV %ra %rb
+NEG %ra
+NOP
+NOT %ra
+OR %ra %rb
+ORNF %ra %rb
+POP %ra
+PUSH %ra
+RSFT %ra
+RSFTNF %ra
+STBH %ra %rb
+STBL %ra %rb
+STW %ra %rb
+STWO %ra %rb %rc
+SUB %ra %rb
+SUBNF %ra %rb
+TST %ra
+TSTNF %ra
+XOR %ra %rb
+XORNF %ra %rb
+X_ENTER %ra %rb
+X_ENTERFR %ra %rb
+X_LEAVE %ra %rb
+X_POP %ra %rb
+X_PUSH %ra %rb
+HLT
+ABRT

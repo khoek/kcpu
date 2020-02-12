@@ -162,6 +162,10 @@ class arch {
     std::optional<alias> lookup_alias(std::string name);
     std::optional<instruction> lookup_inst(regval_t opcode);
 
+    std::vector<family> list_families();
+    std::vector<alias> list_aliases();
+    std::vector<instruction> list_insts();
+
     static arch & self();
 };
 

@@ -4,6 +4,8 @@ SOFT/FIRMWARE:
   VM UI:
     * Write a post-processor for the disassembler to try to collapse aliases.---this isn't super hard, just search
       for aliases which begin with the first actual opcode, and then continue checking ahead for matches.
+            ---> It would probably be best to do this after loading and before executing the binary, so that
+                 we don't get confused when we are in the middle of a few instructions all part of the same alias.
 
 
   In the VM:

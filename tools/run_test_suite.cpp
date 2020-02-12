@@ -1,14 +1,11 @@
 #include <filesystem>
 #include <algorithm>
-#include <execinfo.h>
-#include <signal.h>
-#include <unistd.h>
 
 #include "lib/compiler.hpp"
 #include "src/lang/arch.hpp"
 #include "src/vm/kcpu.hpp"
 
-#define PADDING_WIDTH 17
+#define PADDING_WIDTH 20
 #define MAX_USTEPS 5000000
 
 static std::filesystem::path suite_path("test");
@@ -110,6 +107,4 @@ int main() {
   }
 
   return !(tests.size() == passes);
-
-  return 1;
 }

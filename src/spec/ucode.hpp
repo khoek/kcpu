@@ -10,6 +10,8 @@ namespace kcpu {
 #define GCTRL_BASE 0
 #define GCTRL_END (GCTRL_BASE + 8)
 
+// BEGIN BITS
+
 // `fetchtransitions` (FTs) and `jumpmodes` (JMs) share the same bits.
 
 #define GCTRL_FT_NONE      (0b000LL << (0 + GCTRL_BASE))
@@ -127,6 +129,13 @@ namespace kcpu {
 // NONBIT: ACTRL decoding
 #define MASK_ACTRL_MODE (0b111LL << (3 + ACTRL_BASE))
 #define DECODE_ACTRL_MODE(ui) (((ui & MASK_ACTRL_MODE) >> (3 + ACTRL_BASE)))
+
+// END BITS
+
+// Bits which are active low, and thus we should invert during
+// instruction registration (to prevent having to include them in
+// every uinst in which they should be disabled).
+#define MASK_I_INVERT (MCTRL_N_MAIN_OUT | MCTRL_N_FIDD_OUT)
 
 #define UCODE_END ACTRL_END
 

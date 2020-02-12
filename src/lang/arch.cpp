@@ -200,8 +200,16 @@ void instruction::check_valid() {
     }
 }
 
+static std::vector<uinst_t> invert_active_low_bits(std::vector<uinst_t> uis) {
+    std::vector<uinst_t> fixed_uis;
+    for(auto ui = uis.begin(); ui < uis.end(); ui++) {
+        fixed_uis.push_back(*ui ^ MASK_I_INVERT);
+    }
+    return fixed_uis;
+}
+
 instruction::instruction(std::string name, opclass op, argtype args, std::vector<uinst_t> uis)
-    : name(name), op(op), args(args), uis(uis) {
+    : name(name), op(op), args(args), uis(invert_active_low_bits(uis)) {
     check_valid();
 }
 
@@ -374,6 +382,28 @@ void arch::reg_family(family f) {
     }
 
     families.emplace(f.name, f);
+}
+
+template<typename the_map>
+static std::vector<typename the_map::mapped_type> get_map_values(const the_map &m) {
+    std::vector<typename the_map::mapped_type> r;
+    r.reserve(m.size());
+    for (const auto &kvp : m) {
+        r.push_back(kvp.second);
+    }
+    return r;
+}
+
+std::vector<family> arch::list_families() {
+    return get_map_values(families);
+}
+
+std::vector<alias> arch::list_aliases(){
+    return get_map_values(aliases);
+}
+
+std::vector<instruction> arch::list_insts() {
+    return get_map_values(insts);
 }
 
 arch & arch::self() {

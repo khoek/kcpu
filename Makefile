@@ -1,4 +1,4 @@
-.PHONY: all test clean cloc run run-step run-quiet
+.PHONY: all clean cloc run run-step run-quiet test dump
 
 SRCS := $(shell find src -type f -name "*.cpp")
 OBJS := $(SRCS:.cpp=.o)
@@ -28,9 +28,6 @@ TOOLFLAGS := -I.
 
 all: $(LIB) $(TOOLLIB) $(KASMOBJS) $(TOOLBINS)
 
-test: all
-	bin/run_test_suite
-
 clean:
 	rm -f $(OBJS) $(TOOLLIBOBJS) $(SANDBOXKASMOBJS) $(TESTKASMOBJS)
 	rm -rf bin
@@ -49,6 +46,12 @@ run-verbose: $(SANDBOXKASMOBJS) $(TOOLBINS)
 
 run-quiet: $(SANDBOXKASMOBJS) $(TOOLBINS)
 	bin/run_vm $(SANDBOXARGS)
+
+test: $(TOOLBINS) $(TESTKASMOBJS)
+	bin/run_test_suite
+
+dump: $(TOOLBINS)
+	bin/arch_dump
 
 bin/bios.bin: asm/bios.kasm $(TOOLBINS)
 	bin/kasm asm/bios.kasm bin/bios.bin
