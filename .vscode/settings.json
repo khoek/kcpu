@@ -58,7 +58,17 @@
         "filesystem": "cpp",
         "ratio": "cpp",
         "iomanip": "cpp",
-        "cassert": "cpp"
+        "cassert": "cpp",
+        "csignal": "cpp",
+        "bitset": "cpp",
+        "complex": "cpp",
+        "condition_variable": "cpp",
+        "mutex": "cpp",
+        "thread": "cpp",
+        "cfenv": "cpp",
+        "typeindex": "cpp",
+        "variant": "cpp",
+        "*.ipp": "cpp"
     },
 
     "editor.trimAutoWhitespace": true,

@@ -10,15 +10,17 @@
 
 namespace kcpu {
 
+namespace codegen {
+
 static std::string format_line_msg(uint32_t line, const std::string &msg) {
     std::stringstream ss;
     ss << "Line " << line << ": " << msg;
     return ss.str();
 }
 
-assembler::parse_error::parse_error(uint32_t line, const std::string &msg) : bt_error(format_line_msg(line, msg)) { }
+codegen::parse_error::parse_error(uint32_t line, const std::string &msg) : bt_error(format_line_msg(line, msg)) { }
 
-assembler::internal_error::internal_error(uint32_t line, const std::string &msg) : bt_error(format_line_msg(line, msg)) { }
+codegen::internal_error::internal_error(uint32_t line, const std::string &msg) : bt_error(format_line_msg(line, msg)) { }
 
 // FIXME make sure labels don't collide with register names
 
@@ -81,11 +83,11 @@ class inst_assembler {
 inst_assembler::inst_assembler(std::istream &in, std::vector<chunk> &buff, uint32_t line) : in(in), buff(buff), line(line) { }
 
 void inst_assembler::throw_parse_error(std::string msg) {
-    throw assembler::parse_error(line, msg);
+    throw codegen::parse_error(line, msg);
 }
 
 void inst_assembler::throw_internal_error(std::string msg) {
-    throw assembler::internal_error(line, msg);
+    throw codegen::internal_error(line, msg);
 }
 
 std::optional<bound_parameter> inst_assembler::lookup_reg(std::string s) {
@@ -238,7 +240,7 @@ void inst_assembler::handle_instruction(std::string &tk) {
         throw_parse_error("bad argument types for instruction '" + tk + "'");
     }
 
-    // FIXME issue a warning if a constant > size of a btye has been bound to a byte register parameter.
+    // FIXME issue a warning if a constant > size of a byte has been bound to a byte register parameter.
 
     // TODO in the error path, try to find a partial match to explain that you can't pass a const somewhere.
     // if(a->args.maybeconst != j) {
@@ -318,7 +320,7 @@ static std::vector<regval_t> resolve_labels(std::unordered_map<std::string, regv
 
         auto lbl = labels.find(i->label);
         if(lbl == labels.end()) {
-            throw assembler::parse_error(0 /* FIXME store, then recall lineno */, "unknown label: " + i->label);
+            throw codegen::parse_error(0 /* FIXME store, then recall lineno */, "unknown label: " + i->label);
         }
 
         ret.push_back(lbl->second);
@@ -346,5 +348,7 @@ std::vector<regval_t> assemble(std::istream *in) {
     return resolve_labels(build_label_table(ops), ops);
 }
 
+
+}
 
 }

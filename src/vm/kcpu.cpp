@@ -1,7 +1,7 @@
 #include <sstream>
 #include "kcpu.hpp"
 #include "../spec/inst.hpp"
-#include "../gen/disassembler.hpp"
+#include "../codegen/disassembler.hpp"
 
 namespace kcpu {
 
@@ -70,13 +70,13 @@ vm::STATE vm::ustep() {
 
 void vm::disassemble_current() {
     regval_t ip = ctl.reg[REG_IP] - ((ctl.cbits[CBIT_INSTMASK] ? 0 : 1) * (INST_GET_LOADDATA(ctl.reg[REG_IR]) ? 4 : 2));
-    std::pair<inst_pieces, std::string> d = disassemble_peek(ip, mem.get_bank(false));
+    codegen::bound_instruction b = codegen::disassemble_peek(ip, mem.get_bank(false));
 
     std::stringstream ss;
-    ss << "(0x" << std::hex << std::uppercase << ip << ")  ";
+    ss << "(0x" << std::hex << std::uppercase << ip << ")  " << codegen::pretty_print(b) << std::endl;
 
     logger.logf("---------------------\n");
-    logger.logf((ss.str() + d.second + "\n").c_str());
+    logger.logf(ss.str().c_str());
     if(!logger.dump_registers) {
         dump_registers();
     }

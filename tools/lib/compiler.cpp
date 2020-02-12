@@ -1,10 +1,10 @@
 #include <fstream>
 #include "compiler.hpp"
 
-#include "src/gen/assembler.hpp"
+#include "src/codegen/assembler.hpp"
 
 void build(std::istream &in, std::ostream &out) {
-  auto ops = kcpu::assemble(&in);
+  auto ops = kcpu::codegen::assemble(&in);
   out.write((const char *) ops.data(), ops.size() * (sizeof(regval_t) / sizeof(uint8_t)));
 }
 
