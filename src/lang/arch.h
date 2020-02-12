@@ -114,6 +114,14 @@ class arch {
     static arch & self();
 };
 
+namespace internal {
+
+void register_insts();
+void register_aliases();
+void register_families();
+
+}
+
 }
 
 #endif

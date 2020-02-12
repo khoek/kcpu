@@ -5,8 +5,6 @@
 #include "../spec/inst.h"
 #include "../spec/ucode.h"
 #include "arch.h"
-#include "insts.h"
-#include "alias.h"
 
 namespace kcpu {
 
@@ -145,8 +143,6 @@ static std::vector<std::string> split(const std::string &s, char delim) {
 }
 
 arch::arch() {
-    register_insts(*this);
-    register_aliases(*this);
 }
 
 uinst_t arch::ucode_lookup(regval_t inst, ucval_t uc) {
@@ -268,6 +264,12 @@ void arch::reg_alias(alias a) {
 
 arch & arch::self() {
     static arch instance;
+    static bool init = false;
+    if(!init) {
+        init = true;
+        internal::register_insts();
+        internal::register_aliases();
+    }
     return instance;
 }
 

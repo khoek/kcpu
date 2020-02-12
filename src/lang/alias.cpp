@@ -4,9 +4,9 @@
 
 namespace kcpu {
 
-#define reg_alias arch.reg_alias
+#define reg_alias arch::self().reg_alias
 
-static void gen_ctl(arch &arch) {
+static void gen_ctl() {
     reg_alias(alias("CALL"   , ARGS_1, virtual_instruction(I_X_CALL ,   { slot_reg(REG_SP), slot_arg(0) })));
     reg_alias(alias("RET"    , ARGS_0, virtual_instruction(I_X_RET  ,   { slot_reg(REG_SP) })));
     reg_alias(alias("ENTER"  , ARGS_0, virtual_instruction(I_X_ENTER,   { slot_reg(REG_SP), slot_reg(REG_BP) })));
@@ -14,14 +14,14 @@ static void gen_ctl(arch &arch) {
     reg_alias(alias("ENTERFR", ARGS_1, virtual_instruction(I_X_ENTERFR, { slot_reg(REG_BP), slot_arg(0) })));
 }
 
-static void gen_mem(arch &arch) {
+static void gen_mem() {
     reg_alias(alias("PUSH", ARGS_1        , virtual_instruction(I_X_PUSH, { slot_reg(REG_SP), slot_arg(0) })));
     reg_alias(alias("POP" , ARGS_1_NOCONST, virtual_instruction(I_X_POP , { slot_reg(REG_SP), slot_arg(0) })));
 
     // LDW OFF
 }
 
-static void gen_alu(arch &arch) {
+static void gen_alu() {
     // XOR with all 1s
     reg_alias(alias("NOT", ARGS_1_NOCONST,
         virtual_instruction(I_XOR, { slot_reg(REG_ONE), slot_arg(0) })));
@@ -52,10 +52,10 @@ static void gen_alu(arch &arch) {
     // reg_alias(alias("JG" , ARGS_1, unbound_opcode(I_JNS, { slot_arg(0) })));
 }
 
-void register_aliases(arch &arch) {
-    gen_ctl(arch);
-    gen_mem(arch);
-    gen_alu(arch);
+void internal::register_aliases() {
+    gen_ctl();
+    gen_mem();
+    gen_alu();
 }
 
 }
