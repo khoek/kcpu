@@ -1,9 +1,9 @@
 #include <sstream>
 #include <cassert>
 
-#include "opclass.h"
-#include "inst.h"
-#include "../lang/arch.h"
+#include "opclass.hpp"
+#include "inst.hpp"
+#include "../lang/arch.hpp"
 
 namespace kcpu {
 

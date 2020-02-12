@@ -2,9 +2,9 @@
 #include <sstream>
 #include <iterator>
 
-#include "../spec/inst.h"
-#include "../spec/ucode.h"
-#include "arch.h"
+#include "../spec/inst.hpp"
+#include "../spec/ucode.hpp"
+#include "arch.hpp"
 
 namespace kcpu {
 
@@ -18,7 +18,7 @@ static uint16_t uaddr(regval_t inst, ucval_t uc) {
     if(inst > INST_MAX) {
         throw arch_error("inst too great");
     }
-    
+
     return (inst << UCVAL_WIDTH) | uc;
 }
 
@@ -93,14 +93,14 @@ alias::alias(std::string name, argtype args, virtual_instruction inst)
 
 parameter::parameter(kind type, bool noconst, bool byteconst)
     : type(type), noconst(noconst), byteconst(byteconst) { }
-    
+
 bool parameter::accepts(parameter::kind other) {
     switch(type) {
-        case parameter::PARAM_WREG:  return (other == parameter::PARAM_WREG ) || (!noconst && other == parameter::PARAM_CONST);      
-        case parameter::PARAM_BLREG: return (other == parameter::PARAM_BLREG) || (!noconst && other == parameter::PARAM_CONST);      
-        case parameter::PARAM_BHREG: return (other == parameter::PARAM_BHREG) || (!noconst && other == parameter::PARAM_CONST);      
-        case parameter::PARAM_CONST: return  other == parameter::PARAM_CONST; 
-        default: throw arch_error("unknown parameter type");    
+        case parameter::PARAM_WREG:  return (other == parameter::PARAM_WREG ) || (!noconst && other == parameter::PARAM_CONST);
+        case parameter::PARAM_BLREG: return (other == parameter::PARAM_BLREG) || (!noconst && other == parameter::PARAM_CONST);
+        case parameter::PARAM_BHREG: return (other == parameter::PARAM_BHREG) || (!noconst && other == parameter::PARAM_CONST);
+        case parameter::PARAM_CONST: return  other == parameter::PARAM_CONST;
+        default: throw arch_error("unknown parameter type");
     }
 }
 
@@ -180,7 +180,7 @@ void instruction::check_valid() {
         ss << "ucode for instruction " << name << " too long (" << uis.size() << " > " << UCODE_LEN << ")";
         throw ss.str();
     }
-    
+
     for(int i = 0; i < uis.size(); i++) {
         if((uis[i] & MASK_GCTRL_FTJM) == GCTRL_FT_ENTER) {
             if(name != "NOP" && i + 1 != uis.size()) {
@@ -262,7 +262,7 @@ void arch::reg_opcode(regval_t opcode, instruction i) {
         if(ucode[ua]) {
             throw arch_error("ucode collision: " + ucode_name[ua] + ", " + i.name);
         }
-        
+
         ucode[ua] = i.uis[uc];
         ucode_name[ua] = i.name;
     }
@@ -322,7 +322,7 @@ void arch::reg_alias(alias a) {
                         throw arch_error("alias " + a.name + " might (depending on argument) bind a constant to a nonstandard argument for instruction " + i->name
                             + ", and this is probably an accident.\n(Maybe we will want this in the future?)");
                     }
-                    
+
                     if(j->bi[k].kind == slot::SLOT_CONSTVAL) {
                         throw arch_error("alias " + a.name + " binds a constant to a nonstandard argument for instruction " + i->name
                             + ", and this is probably an accident.\n(Maybe we will want this in the future?)");

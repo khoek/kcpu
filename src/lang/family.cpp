@@ -1,4 +1,4 @@
-#include "arch.h"
+#include "arch.hpp"
 
 namespace kcpu {
 

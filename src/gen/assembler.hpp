@@ -3,8 +3,8 @@
 
 #include <vector>
 #include <istream>
-#include "../types.h"
-#include "../except.h"
+#include "../types.hpp"
+#include "../except.hpp"
 
 namespace kcpu {
 

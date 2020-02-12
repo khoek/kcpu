@@ -1,9 +1,9 @@
 #ifndef VM_COMMON_H
 #define VM_COMMON_H
 
-#include "../types.h"
-#include "../except.h"
-#include "../spec/hw.h"
+#include "../types.hpp"
+#include "../except.hpp"
+#include "../spec/hw.hpp"
 
 namespace kcpu {
 
@@ -19,7 +19,7 @@ class vm_logger {
     bool dump_bus;
 
     vm_logger(bool disassemble = false, bool dump_registers = false, bool dump_bus = false);
-    
+
     void logf(const char *fmt, ...);
 };
 
@@ -39,7 +39,7 @@ class bus_state {
 
     public:
     bus_state(vm_logger &logger);
-    
+
     void freeze();
     void assign(bus_t b, regval_t val);
     bool is_assigned(bus_t b);

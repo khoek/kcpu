@@ -1,7 +1,7 @@
 #ifndef VM_MOD_CTL_H
 #define VM_MOD_CTL_H
 
-#include "../common.h"
+#include "../common.hpp"
 
 namespace kcpu {
 

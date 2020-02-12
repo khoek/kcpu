@@ -1,8 +1,8 @@
 #include <sstream>
 
-#include "../spec/inst.h"
-#include "../spec/ucode.h"
-#include "arch.h"
+#include "../spec/inst.hpp"
+#include "../spec/ucode.hpp"
+#include "arch.hpp"
 
 namespace kcpu {
 
@@ -67,12 +67,12 @@ static instruction mk_mem_byte_instruction(regval_t farbit, const char * const n
 static void gen_mem_variants(regval_t farbit) {
     reg_inst(mk_distanced_instruction(farbit, "STPFX", I_STPFX, ARGS_1,
         MCTRL_PREFIX_STORE | MCTRL_N_MAIN_OUT | MCTRL_N_FIDD_OUT | RCTRL_IU1_BUSB_O | GCTRL_FT_ENTER));
-    
+
     reg_inst(mk_distanced_instruction(farbit, "LDW", I_LDW, ARGS_2_1CONST, {
         MCTRL_FIDD_STORE | MCTRL_N_FIDD_OUT | MCTRL_BUSMODE_CONW_BUSM | RCTRL_IU1_BUSA_O,
                            MCTRL_N_MAIN_OUT | MCTRL_BUSMODE_CONW_BUSB | RCTRL_IU2_BUSB_I | GCTRL_FT_ENTER
     }));
-    
+
     reg_inst(mk_distanced_instruction(farbit, "LDWO", I_LDWO, ARGS_3_2CONST, {
         MCTRL_N_FIDD_OUT | MCTRL_N_MAIN_OUT | ACTRL_INPUT_EN | ACTRL_MODE_ADD | RCTRL_IU1_BUSA_O | RCTRL_IU2_BUSB_O,
         MCTRL_FIDD_STORE | MCTRL_N_FIDD_OUT | MCTRL_BUSMODE_CONW_BUSM | ACTRL_DATA_OUT,
@@ -83,7 +83,7 @@ static void gen_mem_variants(regval_t farbit) {
     reg_inst(mk_mem_byte_instruction(farbit, "LDBH" , I_LDBH , ARGS_2_1CONST, false, true , false));
     reg_inst(mk_mem_byte_instruction(farbit, "LDBLZ", I_LDBLZ, ARGS_2_1CONST, false, false, true ));
     reg_inst(mk_mem_byte_instruction(farbit, "LDBHZ", I_LDBHZ, ARGS_2_1CONST, false, true , true ));
-    
+
     reg_inst(mk_distanced_instruction(farbit, "STWO", I_STWO, ARGS_3_2CONST, {
         MCTRL_N_FIDD_OUT | MCTRL_N_MAIN_OUT | ACTRL_INPUT_EN | ACTRL_MODE_ADD | RCTRL_IU1_BUSA_O | RCTRL_IU2_BUSB_O,
         MCTRL_FIDD_STORE | MCTRL_N_FIDD_OUT | MCTRL_N_MAIN_OUT | MCTRL_BUSMODE_CONW_BUSB | ACTRL_DATA_OUT | RCTRL_IU3_BUSB_O,
@@ -263,18 +263,18 @@ static void gen_x() {
 
     reg_inst(instruction("X_RET", I_X_RET, ARGS_1_NOCONST, {
         // IU1 = MUST BE RSP, IU2 = CALL ADDRESS
-        // Effectively: X_POP RSP RIP          
+        // Effectively: X_POP RSP RIP
         MCTRL_FIDD_STORE | MCTRL_N_FIDD_OUT |                    MCTRL_BUSMODE_CONW_BUSM | RCTRL_IU1_BUSA_O,
                                               MCTRL_N_MAIN_OUT | MCTRL_BUSMODE_CONW_BUSB | RCTRL_RSP_INC | GCTRL_JM_YES,
     }));
 }
 
 void kcpu::internal::register_insts() {
-    /* If we want to go to 8~10 general purpose registers, I think we could make do with only 
+    /* If we want to go to 8~10 general purpose registers, I think we could make do with only
        7 instruction bits compared to 9. */
 
     // TODO none of our instructions have more than 4 microcode instructions! Trim the "dead zone".
-       
+
     gen_sys();
     gen_ctl();
     gen_reg();

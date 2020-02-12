@@ -3,7 +3,7 @@
 
 #include <vector>
 
-#include "../common.h"
+#include "../common.hpp"
 
 namespace kcpu {
 
@@ -18,7 +18,7 @@ class mem_bank {
     public:
 
     mem_bank(uint32_t bytes, bool rom);
-    
+
     void store(regval_t addr, regval_t val);
     regval_t load(regval_t addr);
     regval_t * data();

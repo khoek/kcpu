@@ -4,9 +4,9 @@
 #include <signal.h>
 #include <unistd.h>
 
-#include "lib/compiler.h"
-#include "src/lang/arch.h"
-#include "src/vm/kcpu.h"
+#include "lib/compiler.hpp"
+#include "src/lang/arch.hpp"
+#include "src/vm/kcpu.hpp"
 
 #define PADDING_WIDTH 17
 #define MAX_USTEPS 5000000
@@ -85,7 +85,7 @@ int main() {
   }
 
   std::sort(tests.begin(), tests.end());
-  
+
   std::vector<std::pair<uint32_t, std::filesystem::path>> failed;
   uint32_t passes = 0;
   for(int i = 0; i < tests.size(); i++) {

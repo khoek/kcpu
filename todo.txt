@@ -15,7 +15,7 @@ SOFT/FIRMWARE:
 
     * DEAL with the hardware design comment in the push_pop test
 
-    
+
 
     * Allow a const in either argument in e.g. a STW (but not e.g. LDW)
 
@@ -32,7 +32,7 @@ SOFT/FIRMWARE:
       Where: alias_name is just the name of the alias which is being bound
              args is just an argtype
              arg_kinds is, for each arg in argtype, a statement of which of (CONST|REG|LBREG|HBREG) are acceptable.
-             
+
       for each such entry we should do a sanity check of whether the alias_name
       exists, and if so whether it takes the same args.
 

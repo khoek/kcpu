@@ -1,7 +1,7 @@
 #include <fstream>
-#include "compiler.h"
+#include "compiler.hpp"
 
-#include "src/gen/assembler.h"
+#include "src/gen/assembler.hpp"
 
 void build(std::istream &in, std::ostream &out) {
   auto ops = kcpu::assemble(&in);
@@ -15,16 +15,16 @@ void build(const char *inpath, const char *outpath) {
 }
 
 void load_binary(const char *name, std::filesystem::path path, size_t max_len, void *buff) {
-  std::ifstream f(path);  
+  std::ifstream f(path);
 
-  f.seekg(0, std::ios::end);  
-  size_t len = f.tellg();  
+  f.seekg(0, std::ios::end);
+  size_t len = f.tellg();
   f.seekg(0, std::ios::beg);
 
   if(len > max_len) {
     printf("%s binary too long!", name);
   }
 
-  f.read((char *) buff, len);  
+  f.read((char *) buff, len);
   f.close();
 }

@@ -14,7 +14,7 @@ AMPLE
     3rd_gen_scale 2.00
 ANTLR Grammar
     filter rm_comments_in_strings " /* */
-    filter rm_comments_in_strings " // 
+    filter rm_comments_in_strings " //
     filter call_regexp_common C++
     extension g
     extension g4
@@ -27,7 +27,7 @@ ASP
     end_of_line_continuation \\$
 ASP.NET
     filter rm_comments_in_strings " /* */
-    filter rm_comments_in_strings " // 
+    filter rm_comments_in_strings " //
     filter call_regexp_common C
     extension asax
     extension ascx
@@ -40,7 +40,7 @@ ASP.NET
     end_of_line_continuation \\$
 ActionScript
     filter rm_comments_in_strings " /* */
-    filter rm_comments_in_strings " // 
+    filter rm_comments_in_strings " //
     filter call_regexp_common C++
     extension as
     3rd_gen_scale 1.36
@@ -70,19 +70,19 @@ Ant/XML
     3rd_gen_scale 1.90
 Apex Class
     filter rm_comments_in_strings " /* */
-    filter rm_comments_in_strings " // 
+    filter rm_comments_in_strings " //
     filter call_regexp_common C++
     3rd_gen_scale 1.50
 Apex Trigger
     filter rm_comments_in_strings " /* */
-    filter rm_comments_in_strings " // 
+    filter rm_comments_in_strings " //
     filter call_regexp_common C++
     extension trigger
     3rd_gen_scale 1.40
 Arduino Sketch
-    filter replace_regex \xa0  
+    filter replace_regex \xa0
     filter rm_comments_in_strings " /* */
-    filter rm_comments_in_strings " // 
+    filter rm_comments_in_strings " //
     filter call_regexp_common C++
     extension ino
     extension pde
@@ -95,7 +95,7 @@ AsciiDoc
     3rd_gen_scale 1.50
 AspectJ
     filter rm_comments_in_strings " /* */
-    filter rm_comments_in_strings " // 
+    filter rm_comments_in_strings " //
     filter call_regexp_common C++
     extension aj
     3rd_gen_scale 1.36
@@ -151,7 +151,7 @@ BrightScript
     3rd_gen_scale 2.00
 C
     filter rm_comments_in_strings " /* */
-    filter rm_comments_in_strings " // 
+    filter rm_comments_in_strings " //
     filter call_regexp_common C++
     extension c
     extension ec
@@ -169,13 +169,13 @@ C Shell
     end_of_line_continuation \\$
 C#
     filter rm_comments_in_strings " /* */
-    filter rm_comments_in_strings " // 
+    filter rm_comments_in_strings " //
     filter call_regexp_common C++
     3rd_gen_scale 1.36
     end_of_line_continuation \\$
 C++
     filter rm_comments_in_strings " /* */
-    filter rm_comments_in_strings " // 
+    filter rm_comments_in_strings " //
     filter call_regexp_common C++
     extension C
     extension CPP
@@ -189,7 +189,7 @@ C++
     end_of_line_continuation \\$
 C/C++ Header
     filter rm_comments_in_strings " /* */
-    filter rm_comments_in_strings " // 
+    filter rm_comments_in_strings " //
     filter call_regexp_common C++
     extension H
     extension h
@@ -200,7 +200,7 @@ C/C++ Header
     end_of_line_continuation \\$
 CCS
     filter rm_comments_in_strings " /* */
-    filter rm_comments_in_strings " // 
+    filter rm_comments_in_strings " //
     filter call_regexp_common C
     extension ccs
     3rd_gen_scale 5.33
@@ -226,26 +226,26 @@ CSON
     3rd_gen_scale 2.50
 CSS
     filter rm_comments_in_strings " /* */
-    filter rm_comments_in_strings " // 
+    filter rm_comments_in_strings " //
     filter call_regexp_common C
     extension css
     3rd_gen_scale 1.00
 CUDA
     filter rm_comments_in_strings " /* */
-    filter rm_comments_in_strings " // 
+    filter rm_comments_in_strings " //
     filter call_regexp_common C++
     extension cu
     extension cuh
     3rd_gen_scale 1.00
 Chapel
     filter rm_comments_in_strings " /* */
-    filter rm_comments_in_strings " // 
+    filter rm_comments_in_strings " //
     filter call_regexp_common C++
     extension chpl
     3rd_gen_scale 2.96
 Clean
     filter rm_comments_in_strings " /* */
-    filter rm_comments_in_strings " // 
+    filter rm_comments_in_strings " //
     filter call_regexp_common C++
     extension dcl
     extension icl
@@ -270,13 +270,13 @@ CoffeeScript
 ColdFusion
     filter remove_html_comments
     filter rm_comments_in_strings " /* */
-    filter rm_comments_in_strings " // 
+    filter rm_comments_in_strings " //
     filter call_regexp_common HTML
     extension cfm
     3rd_gen_scale 4.00
 ColdFusion CFScript
     filter rm_comments_in_strings " /* */
-    filter rm_comments_in_strings " // 
+    filter rm_comments_in_strings " //
     filter call_regexp_common C++
     extension cfc
     3rd_gen_scale 4.00
@@ -298,7 +298,7 @@ Cucumber
     3rd_gen_scale 3.00
 Cython
     filter rm_comments_in_strings " /* */
-    filter rm_comments_in_strings " // 
+    filter rm_comments_in_strings " //
     filter remove_matches ^\s*#
     filter docstring_to_C
     filter call_regexp_common C
@@ -308,7 +308,7 @@ Cython
     end_of_line_continuation \\$
 D
     filter rm_comments_in_strings " /* */
-    filter rm_comments_in_strings " // 
+    filter rm_comments_in_strings " //
     filter rm_comments_in_strings " /+ +/
     filter remove_between_general /+ +/
     filter call_regexp_common C++
@@ -328,13 +328,13 @@ DIET
 DITA
     filter remove_html_comments
     filter rm_comments_in_strings " /* */
-    filter rm_comments_in_strings " // 
+    filter rm_comments_in_strings " //
     filter call_regexp_common HTML
     extension dita
     3rd_gen_scale 1.90
 DOORS Extension Language
     filter rm_comments_in_strings " /* */
-    filter rm_comments_in_strings " // 
+    filter rm_comments_in_strings " //
     filter call_regexp_common C++
     extension dxl
     3rd_gen_scale 1.50
@@ -354,7 +354,7 @@ DTD
     3rd_gen_scale 1.90
 Dart
     filter rm_comments_in_strings " /* */
-    filter rm_comments_in_strings " // 
+    filter rm_comments_in_strings " //
     filter call_regexp_common C++
     extension dart
     3rd_gen_scale 2.00
@@ -368,7 +368,7 @@ Dockerfile
     3rd_gen_scale 2.00
 Drools
     filter rm_comments_in_strings " /* */
-    filter rm_comments_in_strings " // 
+    filter rm_comments_in_strings " //
     filter call_regexp_common C++
     extension drl
     3rd_gen_scale 2.00
@@ -454,7 +454,7 @@ Forth
     filter remove_matches ^\s*\\.*$
     filter Forth_paren_to_C
     filter rm_comments_in_strings " /* */
-    filter rm_comments_in_strings " // 
+    filter rm_comments_in_strings " //
     filter call_regexp_common C++
     filter remove_inline \\.*$
     extension 4th
@@ -505,7 +505,7 @@ GDScript
     3rd_gen_scale 2.50
 GLSL
     filter rm_comments_in_strings " /* */
-    filter rm_comments_in_strings " // 
+    filter rm_comments_in_strings " //
     filter call_regexp_common C++
     extension comp
     extension frag
@@ -527,7 +527,7 @@ Glade
     3rd_gen_scale 2.00
 Go
     filter rm_comments_in_strings " /* */
-    filter rm_comments_in_strings " // 
+    filter rm_comments_in_strings " //
     filter call_regexp_common C++
     filter remove_inline //.*$
     extension go
@@ -546,7 +546,7 @@ Grails
     filter remove_jsp_comments
     filter add_newlines
     filter rm_comments_in_strings " /* */
-    filter rm_comments_in_strings " // 
+    filter rm_comments_in_strings " //
     filter call_regexp_common C++
     extension gsp
     3rd_gen_scale 1.48
@@ -567,7 +567,7 @@ Groovy
 HCL
     filter remove_matches ^\s*#
     filter rm_comments_in_strings " /* */
-    filter rm_comments_in_strings " // 
+    filter rm_comments_in_strings " //
     filter call_regexp_common C++
     extension hcl
     extension nomad
@@ -576,7 +576,7 @@ HCL
 HLSL
     filter remove_inline //.*$
     filter rm_comments_in_strings " /* */
-    filter rm_comments_in_strings " // 
+    filter rm_comments_in_strings " //
     filter call_regexp_common C++
     extension cg
     extension cginc
@@ -612,7 +612,7 @@ Harbour
     filter remove_inline //.*$
     filter remove_inline \&\&.*$
     filter rm_comments_in_strings " /* */
-    filter rm_comments_in_strings " // 
+    filter rm_comments_in_strings " //
     filter call_regexp_common C++
     extension hb
     3rd_gen_scale 2.00
@@ -623,7 +623,7 @@ Haskell
     3rd_gen_scale 2.11
 Haxe
     filter rm_comments_in_strings " /* */
-    filter rm_comments_in_strings " // 
+    filter rm_comments_in_strings " //
     filter call_regexp_common C++
     extension hx
     3rd_gen_scale 2.00
@@ -668,7 +668,7 @@ JSON
     3rd_gen_scale 2.50
 JSON5
     filter rm_comments_in_strings " /* */
-    filter rm_comments_in_strings " // 
+    filter rm_comments_in_strings " //
     filter call_regexp_common C++
     extension json5
     3rd_gen_scale 2.50
@@ -685,7 +685,7 @@ JSP
     3rd_gen_scale 1.48
 JSX
     filter rm_comments_in_strings " /* */
-    filter rm_comments_in_strings " // 
+    filter rm_comments_in_strings " //
     filter call_regexp_common C++
     extension jsx
     3rd_gen_scale 1.48
@@ -697,7 +697,7 @@ Jam
     filename Jamrules
     3rd_gen_scale 2.00
 Java
-    filter replace_regex \\$  
+    filter replace_regex \\$
     filter replace_between_regex (["'])(.*?/\*)\g1 (.*?) "xx"
     filter replace_between_regex (["'])(.*?\*/)\g1 (.*?) "xx"
     filter call_regexp_common C++
@@ -705,7 +705,7 @@ Java
     3rd_gen_scale 1.36
 JavaScript
     filter rm_comments_in_strings " /* */
-    filter rm_comments_in_strings " // 
+    filter rm_comments_in_strings " //
     filter call_regexp_common C++
     extension es6
     extension js
@@ -713,7 +713,7 @@ JavaScript
     end_of_line_continuation \\$
 JavaServer Faces
     filter rm_comments_in_strings " /* */
-    filter rm_comments_in_strings " // 
+    filter rm_comments_in_strings " //
     filter call_regexp_common C++
     extension jsf
     3rd_gen_scale 1.50
@@ -744,14 +744,14 @@ Korn Shell
     end_of_line_continuation \\$
 Kotlin
     filter rm_comments_in_strings " /* */
-    filter rm_comments_in_strings " // 
+    filter rm_comments_in_strings " //
     filter call_regexp_common C++
     extension kt
     extension kts
     3rd_gen_scale 2.00
 LESS
     filter rm_comments_in_strings " /* */
-    filter rm_comments_in_strings " // 
+    filter rm_comments_in_strings " //
     filter call_regexp_common C++
     extension less
     3rd_gen_scale 1.50
@@ -881,7 +881,7 @@ NAnt script
     3rd_gen_scale 1.90
 Nemerle
     filter rm_comments_in_strings " /* */
-    filter rm_comments_in_strings " // 
+    filter rm_comments_in_strings " //
     filter call_regexp_common C++
     extension n
     3rd_gen_scale 2.50
@@ -907,13 +907,13 @@ OCaml
     end_of_line_continuation \\$
 Objective C
     filter rm_comments_in_strings " /* */
-    filter rm_comments_in_strings " // 
+    filter rm_comments_in_strings " //
     filter call_regexp_common C++
     3rd_gen_scale 2.96
     end_of_line_continuation \\$
 Objective C++
     filter rm_comments_in_strings " /* */
-    filter rm_comments_in_strings " // 
+    filter rm_comments_in_strings " //
     filter call_regexp_common C++
     extension mm
     3rd_gen_scale 2.96
@@ -926,7 +926,7 @@ Octave
     end_of_line_continuation \.\.\.\s*$
 OpenCL
     filter rm_comments_in_strings " /* */
-    filter rm_comments_in_strings " // 
+    filter rm_comments_in_strings " //
     filter call_regexp_common C++
     3rd_gen_scale 1.50
 Oracle Forms
@@ -948,7 +948,7 @@ Oracle Reports
 PHP
     filter remove_matches ^\s*#
     filter rm_comments_in_strings " /* */
-    filter rm_comments_in_strings " // 
+    filter rm_comments_in_strings " //
     filter call_regexp_common C++
     filter remove_inline #.*$
     extension php
@@ -1011,7 +1011,7 @@ Pig Latin
     3rd_gen_scale 1.00
 PowerBuilder
     filter rm_comments_in_strings " /* */
-    filter rm_comments_in_strings " // 
+    filter rm_comments_in_strings " //
     filter call_regexp_common C++
     extension sra
     extension srf
@@ -1044,7 +1044,7 @@ Prolog
     3rd_gen_scale 1.25
 Protocol Buffers
     filter rm_comments_in_strings " /* */
-    filter rm_comments_in_strings " // 
+    filter rm_comments_in_strings " //
     filter call_regexp_common C++
     extension proto
     3rd_gen_scale 2.00
@@ -1083,7 +1083,7 @@ Python
     end_of_line_continuation \\$
 QML
     filter rm_comments_in_strings " /* */
-    filter rm_comments_in_strings " // 
+    filter rm_comments_in_strings " //
     filter call_regexp_common C++
     filter remove_inline //.*$
     extension qml
@@ -1130,7 +1130,7 @@ RapydScript
 Razor
     filter remove_between_general @* *@
     filter rm_comments_in_strings " /* */
-    filter rm_comments_in_strings " // 
+    filter rm_comments_in_strings " //
     filter call_regexp_common C++
     extension cshtml
     3rd_gen_scale 2.00
@@ -1180,7 +1180,7 @@ Ruby HTML
     3rd_gen_scale 4.00
 Rust
     filter rm_comments_in_strings " /* */
-    filter rm_comments_in_strings " // 
+    filter rm_comments_in_strings " //
     filter call_regexp_common C++
     extension rs
     3rd_gen_scale 1.00
@@ -1230,7 +1230,7 @@ SVG
     3rd_gen_scale 1.00
 SWIG
     filter rm_comments_in_strings " /* */
-    filter rm_comments_in_strings " // 
+    filter rm_comments_in_strings " //
     filter call_regexp_common C++
     extension i
     3rd_gen_scale 2.50
@@ -1242,7 +1242,7 @@ Sass
     3rd_gen_scale 1.50
 Scala
     filter rm_comments_in_strings " /* */
-    filter rm_comments_in_strings " // 
+    filter rm_comments_in_strings " //
     filter call_regexp_common C++
     extension scala
     3rd_gen_scale 4.10
@@ -1258,7 +1258,7 @@ Scheme
     3rd_gen_scale 1.51
 Slice
     filter rm_comments_in_strings " /* */
-    filter rm_comments_in_strings " // 
+    filter rm_comments_in_strings " //
     filter call_regexp_common C++
     extension ice
     3rd_gen_scale 1.50
@@ -1285,7 +1285,7 @@ Softbridge Basic
     3rd_gen_scale 2.76
 Solidity
     filter rm_comments_in_strings " /* */
-    filter rm_comments_in_strings " // 
+    filter rm_comments_in_strings " //
     filter call_regexp_common C++
     extension sol
     3rd_gen_scale 1.48
@@ -1299,7 +1299,7 @@ Specman e
     filter pre_post_fix '> <'
     filter remove_between_general ^'> ^<'
     filter rm_comments_in_strings " /* */
-    filter rm_comments_in_strings " // 
+    filter rm_comments_in_strings " //
     filter call_regexp_common C++
     filter remove_matches ^\s*--
     filter rm_last_line
@@ -1321,7 +1321,7 @@ Starlark
     end_of_line_continuation \\$
 Stata
     filter rm_comments_in_strings " /* */
-    filter rm_comments_in_strings " // 
+    filter rm_comments_in_strings " //
     filter call_regexp_common C++
     extension DO
     extension do
@@ -1329,14 +1329,14 @@ Stata
     end_of_line_continuation ///$
 Stylus
     filter rm_comments_in_strings " /* */
-    filter rm_comments_in_strings " // 
+    filter rm_comments_in_strings " //
     filter call_regexp_common C++
     extension styl
     3rd_gen_scale 1.48
     end_of_line_continuation \\$
 Swift
     filter rm_comments_in_strings " /* */
-    filter rm_comments_in_strings " // 
+    filter rm_comments_in_strings " //
     filter call_regexp_common C++
     extension swift
     3rd_gen_scale 2.50
@@ -1353,7 +1353,7 @@ TOML
     3rd_gen_scale 2.76
 TTCN
     filter rm_comments_in_strings " /* */
-    filter rm_comments_in_strings " // 
+    filter rm_comments_in_strings " //
     filter call_regexp_common C++
     extension ttcn
     extension ttcn2
@@ -1403,7 +1403,7 @@ Twig
     3rd_gen_scale 2.00
 TypeScript
     filter rm_comments_in_strings " /* */
-    filter rm_comments_in_strings " // 
+    filter rm_comments_in_strings " //
     filter call_regexp_common C++
     extension tsx
     3rd_gen_scale 2.00
@@ -1417,7 +1417,7 @@ Unity-Prefab
 VHDL
     filter remove_matches ^\s*--
     filter rm_comments_in_strings " /* */
-    filter rm_comments_in_strings " // 
+    filter rm_comments_in_strings " //
     filter call_regexp_common C++
     filter remove_inline --.*$
     extension VHD
@@ -1427,14 +1427,14 @@ VHDL
     3rd_gen_scale 4.21
 Vala
     filter rm_comments_in_strings " /* */
-    filter rm_comments_in_strings " // 
+    filter rm_comments_in_strings " //
     filter call_regexp_common C++
     extension vala
     3rd_gen_scale 1.50
     end_of_line_continuation \\$
 Vala Header
     filter rm_comments_in_strings " /* */
-    filter rm_comments_in_strings " // 
+    filter rm_comments_in_strings " //
     filter call_regexp_common C++
     extension vapi
     3rd_gen_scale 1.40
@@ -1450,7 +1450,7 @@ Velocity Template Language
     3rd_gen_scale 1.00
 Verilog-SystemVerilog
     filter rm_comments_in_strings " /* */
-    filter rm_comments_in_strings " // 
+    filter rm_comments_in_strings " //
     filter call_regexp_common C++
     extension sv
     extension svh
@@ -1492,7 +1492,7 @@ Vuejs Component
     filter remove_html_comments
     filter call_regexp_common HTML
     filter rm_comments_in_strings " /* */
-    filter rm_comments_in_strings " // 
+    filter rm_comments_in_strings " //
     filter call_regexp_common C++
     extension vue
     3rd_gen_scale 2.00
@@ -1529,7 +1529,7 @@ Windows Module Definition
     3rd_gen_scale 1.00
 Windows Resource File
     filter rm_comments_in_strings " /* */
-    filter rm_comments_in_strings " // 
+    filter rm_comments_in_strings " //
     filter call_regexp_common C++
     extension rc
     extension rc2
@@ -1671,7 +1671,7 @@ xBase
     filter remove_matches ^\s*Note
     filter remove_inline \&\&.*$
     filter rm_comments_in_strings " /* */
-    filter rm_comments_in_strings " // 
+    filter rm_comments_in_strings " //
     filter call_regexp_common C++
     extension prg
     3rd_gen_scale 2.00
@@ -1683,13 +1683,13 @@ xBase Header
     filter remove_matches ^\s*Note
     filter remove_inline \&\&.*$
     filter rm_comments_in_strings " /* */
-    filter rm_comments_in_strings " // 
+    filter rm_comments_in_strings " //
     filter call_regexp_common C++
     extension ch
     3rd_gen_scale 2.00
 yacc
     filter rm_comments_in_strings " /* */
-    filter rm_comments_in_strings " // 
+    filter rm_comments_in_strings " //
     filter call_regexp_common C++
     extension y
     3rd_gen_scale 1.51

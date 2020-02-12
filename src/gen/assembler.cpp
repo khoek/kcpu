@@ -4,9 +4,9 @@
 #include <iostream>
 #include <unordered_map>
 
-#include "../spec/inst.h"
-#include "../lang/arch.h"
-#include "assembler.h"
+#include "../spec/inst.hpp"
+#include "../lang/arch.hpp"
+#include "assembler.hpp"
 
 namespace kcpu {
 
@@ -92,7 +92,7 @@ std::optional<bound_parameter> inst_assembler::lookup_reg(std::string s) {
     if(s.size() == 0) {
         return std::nullopt;
     }
-    
+
     if(s[0] != '%') {
         return std::nullopt;
     }
@@ -188,7 +188,7 @@ void inst_assembler::bind_virtual(virtual_instruction uo, std::vector<bound_para
                     if(constval) {
                         throw_parse_error("attempting to bind user constvalue when constvalue already assigned");
                     }
-                    
+
                     constval = params[uo.bi[j].val.argidx].constval;
                 }
                 break;
@@ -260,7 +260,7 @@ void inst_assembler::parse() {
     if(!(in >> tk)) {
         throw_parse_error("no token");
     }
-    
+
     if(!tk.length()) {
         return;
     }
@@ -273,7 +273,7 @@ void inst_assembler::parse() {
         handle_label(tk);
         return;
     }
-    
+
     if(arch::self().inst_is_prefix(tk)) {
         std::string tk2;
         if(!(in >> tk2)) {
@@ -315,7 +315,7 @@ static std::vector<regval_t> resolve_labels(std::unordered_map<std::string, regv
         if(i->label_def) {
             continue;
         }
-        
+
         auto lbl = labels.find(i->label);
         if(lbl == labels.end()) {
             throw assembler::parse_error(0 /* FIXME store, then recall lineno */, "unknown label: " + i->label);

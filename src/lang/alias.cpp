@@ -1,6 +1,6 @@
-#include "../spec/inst.h"
-#include "../spec/ucode.h"
-#include "arch.h"
+#include "../spec/inst.hpp"
+#include "../spec/ucode.hpp"
+#include "arch.hpp"
 
 namespace kcpu {
 

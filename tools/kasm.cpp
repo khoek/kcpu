@@ -3,8 +3,8 @@
 #include <fstream>
 #include <fstream>
 
-#include "lib/compiler.h"
-#include "src/lang/arch.h"
+#include "lib/compiler.hpp"
+#include "src/lang/arch.hpp"
 
 int main(int argc, char **argv) {
     if(argc != 3) {
@@ -19,7 +19,7 @@ int main(int argc, char **argv) {
         std::cerr << msg << '\n';
     } catch(const char * msg) {
         std::cerr << msg << "\n";
-        
+
     }
 
     return 1;

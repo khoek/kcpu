@@ -1,6 +1,6 @@
 #include <cassert>
-#include "../../spec/ucode.h"
-#include "mem.h"
+#include "../../spec/ucode.hpp"
+#include "mem.hpp"
 
 namespace kcpu {
 

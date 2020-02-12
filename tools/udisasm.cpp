@@ -1,8 +1,8 @@
 #include <cstdio>
 
-#include "src/spec/hw.h"
-#include "src/spec/ucode.h"
-#include "src/spec/ucode.h"
+#include "src/spec/hw.hpp"
+#include "src/spec/ucode.hpp"
+#include "src/spec/ucode.hpp"
 
 bool check_cond_onlytrue(bool cond, const char *desc, bool do_nl = true) {
     if(cond) {

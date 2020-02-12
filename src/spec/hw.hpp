@@ -1,7 +1,7 @@
 #ifndef SPEC_HW_H
 #define SPEC_HW_H
 
-#include "../types.h"
+#include "../types.hpp"
 
 namespace kcpu {
 
@@ -40,7 +40,7 @@ enum bus_t {
 
 #define NUM_PREGS 8
 enum preg_t {
-    // If these are modified, be sure to update the IU3 values in "inst.h"
+    // If these are modified, be sure to update the IU3 values in "inst.hpp"
     REG_ID = 0,
     REG_ONE = 1,
     REG_A = 2,

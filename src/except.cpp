@@ -8,9 +8,9 @@
 #include <execinfo.h>
 #include <cxxabi.h>
 
-#include "except.h"
+#include "except.hpp"
 
-/** Print a demangled stack backtrace of the caller function stringstream. */ 
+/** Print a demangled stack backtrace of the caller function stringstream. */
 static void dump_stacktrace(std::ostream &out, unsigned int skip = 1, unsigned int max_frames = 63) {
     out << "Stack trace:" << std::endl;
 

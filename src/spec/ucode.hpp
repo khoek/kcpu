@@ -1,7 +1,7 @@
 #ifndef SPEC_UCODE_H
 #define SPEC_UCODE_H
 
-#include "../types.h"
+#include "../types.hpp"
 
 namespace kcpu {
 

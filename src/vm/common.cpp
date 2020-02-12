@@ -1,8 +1,8 @@
 #include <cstdio>
 #include <cstdarg>
 #include <sstream>
-#include "../except.h"
-#include "common.h"
+#include "../except.hpp"
+#include "common.hpp"
 
 namespace kcpu {
 
@@ -24,7 +24,7 @@ const char * BUS_NAMES[] = {
     "BUS_M",
     "BUS_F",
 };
-    
+
 bus_state::bus_state(vm_logger &logger) : logger(logger) {
     frozen = false;
     for(int i = 0; i < NUM_BUSES; i++) {
@@ -72,11 +72,11 @@ void bus_state::connect(bus_t b1, bus_t b2) {
     if(set[b1] && set[b2]) {
         throw vm_error("connect collision!");
     }
-    
+
     if(!set[b1] && !set[b2]) {
         throw vm_error("IMPLEMENT THIS! (one could have a default)");
     }
-    
+
     if(set[b1]) {
         assign(b2, early_read(b1));
     } else {

@@ -1,7 +1,7 @@
 #ifndef SPEC_INST_H
 #define SPEC_INST_H
 
-#include "opclass.h"
+#include "opclass.hpp"
 
 namespace kcpu {
 

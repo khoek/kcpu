@@ -2,8 +2,8 @@
 #include <vector>
 #include <sstream>
 
-#include "disassembler.h"
-#include "../spec/inst.h"
+#include "disassembler.hpp"
+#include "../spec/inst.hpp"
 
 namespace kcpu {
 

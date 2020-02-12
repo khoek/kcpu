@@ -8,10 +8,10 @@
 #include <unordered_set>
 #include <unordered_map>
 
-#include "../types.h"
-#include "../except.h"
-#include "../spec/hw.h"
-#include "../spec/inst.h"
+#include "../types.hpp"
+#include "../except.hpp"
+#include "../spec/hw.hpp"
+#include "../spec/inst.hpp"
 
 namespace kcpu {
 
@@ -56,7 +56,7 @@ struct slot {
         SLOT_ARG,
         SLOT_CONSTVAL
     } kind;
-    
+
     union {
         preg_t reg;
         uint8_t argidx;
@@ -103,7 +103,7 @@ class parameter {
     bool byteconst;
 
     parameter(kind type, bool noconst, bool byteconst);
-    
+
     bool accepts(kind other);
 };
 

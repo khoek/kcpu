@@ -2,7 +2,7 @@
 
 SRCS := $(shell find src -type f -name "*.cpp")
 OBJS := $(SRCS:.cpp=.o)
-HDRS := $(shell find src -type f -name "*.h")
+HDRS := $(shell find src -type f -name "*.hpp")
 LIB := bin/lib/libkcpu.a
 
 TOOLSRCS := $(shell find tools -maxdepth 1 -type f -name "*.cpp")
@@ -10,7 +10,7 @@ TOOLBINS := $(patsubst tools/%.cpp, bin/%, $(TOOLSRCS))
 
 TOOLLIBSRCS := $(shell find tools/lib -type f -name "*.cpp")
 TOOLLIBOBJS := $(patsubst %.cpp, %.o, $(TOOLLIBSRCS))
-TOOLLIBHDRS := $(shell find tools/lib -type f -name "*.h")
+TOOLLIBHDRS := $(shell find tools/lib -type f -name "*.hpp")
 TOOLLIB := bin/lib/libtools.a
 
 KASMSRCS := $(shell find test -type f -name "*.kasm")
@@ -20,10 +20,10 @@ CXXFLAGS := -std=c++17 -rdynamic -O3
 TOOLFLAGS := -I.
 
 all: $(LIB) $(TOOLLIB) $(KASMOBJS) $(TOOLBINS)
-    
+
 test: all
 	@bin/run_test_suite
-	
+
 clean:
 	rm -f $(OBJS) $(TOOLLIBOBJS) $(KASMOBJS)
 	rm -rf bin
@@ -39,7 +39,7 @@ run-step: bin/bios.bin bin/prog.bin $(TOOLBINS)
 
 run-verbose: bin/bios.bin bin/prog.bin $(TOOLBINS)
 	bin/main -s -v
-    
+
 run-quiet: bin/bios.bin bin/prog.bin $(TOOLBINS)
 	bin/main
 
@@ -60,11 +60,11 @@ $(TOOLLIBOBJS): %.o: %.cpp $(HDRS) $(TOOLLIBHDRS) Makefile
 
 $(TOOLBINS): bin/%: tools/%.cpp $(HDRS) $(LIB) $(TOOLLIB) Makefile
 	g++ $(TOOLFLAGS) $(CXXFLAGS) $< $(TOOLLIB) $(LIB) -o $@
-    
+
 $(LIB): $(OBJS) Makefile
 	mkdir -p bin/lib
 	ar rvs $(LIB) $(OBJS)
-    
+
 $(TOOLLIB): $(TOOLLIBOBJS) Makefile
 	mkdir -p bin/lib
 	ar rvs $(TOOLLIB) $(TOOLLIBOBJS)

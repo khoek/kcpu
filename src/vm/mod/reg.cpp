@@ -1,5 +1,5 @@
-#include "../../spec/ucode.h"
-#include "reg.h"
+#include "../../spec/ucode.hpp"
+#include "reg.hpp"
 #include <cassert>
 
 namespace kcpu {

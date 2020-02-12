@@ -1,7 +1,7 @@
 #include <sstream>
-#include "kcpu.h"
-#include "../spec/inst.h"
-#include "../gen/disassembler.h"
+#include "kcpu.hpp"
+#include "../spec/inst.hpp"
+#include "../gen/disassembler.hpp"
 
 namespace kcpu {
 
@@ -74,7 +74,7 @@ void vm::disassemble_current() {
 
     std::stringstream ss;
     ss << "(0x" << std::hex << std::uppercase << ip << ")  ";
-    
+
     logger.logf("---------------------\n");
     logger.logf((ss.str() + d.second + "\n").c_str());
     if(!logger.dump_registers) {
@@ -105,7 +105,7 @@ vm::STATE vm::run(std::optional<uint32_t> max_clocks) {
         if(max_clocks && *max_clocks < (total_clocks - then)) {
             return vm::STATE_TIMEOUT;
         }
-        
+
         step();
     }
 

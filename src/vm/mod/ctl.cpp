@@ -1,7 +1,7 @@
-#include "../../lang/arch.h"
-#include "../../spec/inst.h"
-#include "../../spec/ucode.h"
-#include "ctl.h"
+#include "../../lang/arch.hpp"
+#include "../../spec/inst.hpp"
+#include "../../spec/ucode.hpp"
+#include "ctl.hpp"
 
 namespace kcpu {
 

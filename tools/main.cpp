@@ -1,7 +1,7 @@
-#include "lib/compiler.h"
-#include "src/lang/arch.h"
-#include "src/spec/ucode.h"
-#include "src/vm/kcpu.h"
+#include "lib/compiler.hpp"
+#include "src/lang/arch.hpp"
+#include "src/spec/ucode.hpp"
+#include "src/vm/kcpu.hpp"
 
 int main(int argc, char **argv) {
     std::cout << "There are " << UCODE_END << " control bits." << std::endl;
@@ -30,7 +30,7 @@ int main(int argc, char **argv) {
     load_binary("PROG", "bin/prog.bin", PROG_SIZE, cpu.mem.prog.data());
 
     printf("CPU Start\n");
-    
+
     do {
       kcpu::vm::STATE s = step_mode ? cpu.step() : cpu.run();
       if(step_mode && cpu.ctl.cbits[CBIT_INSTMASK]) {

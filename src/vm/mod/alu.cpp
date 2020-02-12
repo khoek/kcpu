@@ -1,7 +1,7 @@
 #include <cassert>
 #include <stdexcept>
-#include "../../spec/ucode.h"
-#include "alu.h"
+#include "../../spec/ucode.hpp"
+#include "alu.hpp"
 
 namespace kcpu {
 

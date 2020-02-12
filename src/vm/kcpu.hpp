@@ -2,11 +2,11 @@
 #define VM_KCPU_H
 
 #include <optional>
-#include "common.h"
-#include "mod/ctl.h"
-#include "mod/reg.h"
-#include "mod/mem.h"
-#include "mod/alu.h"
+#include "common.hpp"
+#include "mod/ctl.hpp"
+#include "mod/reg.hpp"
+#include "mod/mem.hpp"
+#include "mod/alu.hpp"
 
 namespace kcpu {
 
@@ -14,7 +14,7 @@ class vm {
     private:
     uint32_t total_clocks;
     vm_logger logger;
-    
+
     void dump_registers();
     void disassemble_current();
 
@@ -32,7 +32,7 @@ class vm {
     mod_reg reg;
     mod_mem mem;
     mod_alu alu;
-  
+
     vm();
     vm(vm_logger logger);
     uint32_t get_total_clocks();
