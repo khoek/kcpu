@@ -28,6 +28,7 @@ HARDWARE:
   Remember for designs:
     * Remember, BUS_A and BUS_B should both be pulled low.
     * WE ADDED A HARDWARE INC COMMAND TO RSP. (CAN WE DEC IN ONE INST TOO??? Are there chips which do that? (unlikely?))
+    * We are hardware latching a mask or something in mod_ctl
 
 
   Bugs in current revisions:
