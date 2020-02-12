@@ -13,8 +13,15 @@ TOOLLIBOBJS := $(patsubst %.cpp, %.o, $(TOOLLIBSRCS))
 TOOLLIBHDRS := $(shell find tools/lib -type f -name "*.hpp")
 TOOLLIB := bin/lib/libtools.a
 
-KASMSRCS := $(shell find test -type f -name "*.kasm")
-KASMOBJS := $(patsubst %.kasm, %.bin, $(KASMSRCS))
+TESTKASMSRCS := $(shell find test -type f -name "*.kasm")
+TESTKASMOBJS := $(patsubst %.kasm, %.bin, $(TESTKASMSRCS))
+
+SANDBOXKASMSRCS := $(shell find sandbox -type f -name "*.kasm")
+SANDBOXKASMOBJS := $(patsubst %.kasm, %.bin, $(SANDBOXKASMSRCS))
+
+KASMOBJS := $(TESTKASMOBJS) $(SANDBOXKASMOBJS)
+
+SANDBOXARGS := sandbox/bios.bin sandbox/prog.bin
 
 CXXFLAGS := -std=c++17 -rdynamic -O3
 TOOLFLAGS := -I.
@@ -22,26 +29,26 @@ TOOLFLAGS := -I.
 all: $(LIB) $(TOOLLIB) $(KASMOBJS) $(TOOLBINS)
 
 test: all
-	@bin/run_test_suite
+	bin/run_test_suite
 
 clean:
-	rm -f $(OBJS) $(TOOLLIBOBJS) $(KASMOBJS)
+	rm -f $(OBJS) $(TOOLLIBOBJS) $(SANDBOXKASMOBJS) $(TESTKASMOBJS)
 	rm -rf bin
 
 cloc:
 	cloc --read-lang-def=.cloc_lang_def.txt src asm test tools
 
-run: bin/bios.bin bin/prog.bin $(TOOLBINS)
-	bin/main -d
+run: $(SANDBOXKASMOBJS) $(TOOLBINS)
+	bin/run_vm -d $(SANDBOXARGS)
 
-run-step: bin/bios.bin bin/prog.bin $(TOOLBINS)
-	bin/main -s
+run-step: $(SANDBOXKASMOBJS) $(TOOLBINS)
+	bin/run_vm -s $(SANDBOXARGS)
 
-run-verbose: bin/bios.bin bin/prog.bin $(TOOLBINS)
-	bin/main -s -v
+run-verbose: $(SANDBOXKASMOBJS) $(TOOLBINS)
+	bin/run_vm -s -v $(SANDBOXARGS)
 
-run-quiet: bin/bios.bin bin/prog.bin $(TOOLBINS)
-	bin/main
+run-quiet: $(SANDBOXKASMOBJS) $(TOOLBINS)
+	bin/run_vm $(SANDBOXARGS)
 
 bin/bios.bin: asm/bios.kasm $(TOOLBINS)
 	bin/kasm asm/bios.kasm bin/bios.bin

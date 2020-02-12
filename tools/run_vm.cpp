@@ -10,6 +10,7 @@ int main(int argc, char **argv) {
     bool disasm_mode = false;
     bool step_mode = false;
 
+    std::vector<std::string> args;
     for(int i = 1; i < argc; i++) {
       std::string arg(argv[i]);
       if(arg == "-v") {
@@ -20,14 +21,18 @@ int main(int argc, char **argv) {
         step_mode = true;
         disasm_mode = true;
       } else {
-        std::cerr << "Unknown cmdline option: " << arg << std::endl;
-        return 1;
+        args.push_back(argv[i]);
       }
     }
 
+    if(args.size() != 2) {
+        std::cerr << "Need two arguments, the bios and prog bin paths." << std::endl;
+        return 1;
+    }
+
     kcpu::vm cpu(kcpu::vm_logger{disasm_mode, verbose, verbose});
-    load_binary("BIOS", "bin/bios.bin", BIOS_SIZE, cpu.mem.bios.data());
-    load_binary("PROG", "bin/prog.bin", PROG_SIZE, cpu.mem.prog.data());
+    load_binary("BIOS", args[0], BIOS_SIZE, cpu.mem.bios.data());
+    load_binary("PROG", args[1], PROG_SIZE, cpu.mem.prog.data());
 
     printf("CPU Start\n");
 

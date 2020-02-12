@@ -7,45 +7,17 @@ SOFT/FIRMWARE:
 
 
   In the VM:
-    * ENTERFR is currently untested
-
     * FLAG-ONLY versions of the ALU insts (we already value-only versions).
-
-
 
     * DEAL with the hardware design comment in the push_pop test
 
-
-
     * Allow a const in either argument in e.g. a STW (but not e.g. LDW)
-
-
-
-    * Does ADD3 need any friends?
-
-    * Assemble byte versions of instructions properly!---as part of this, allow the specification of "families",
-      e.g. so you can just write "ST hra rb" and "STZ hra rb" and have the size-related meaning inferred for you.
-      A "family" should be made up of a number of acceptable aliases.
-
-      To be specific, each mapping in a "family" should be of the form
-             (alias_name) (args) (arg_kinds)
-      Where: alias_name is just the name of the alias which is being bound
-             args is just an argtype
-             arg_kinds is, for each arg in argtype, a statement of which of (CONST|REG|LBREG|HBREG) are acceptable.
-
-      for each such entry we should do a sanity check of whether the alias_name
-      exists, and if so whether it takes the same args.
 
     * Could turn RCTRL_RSP_DEC (no need for RCTRL_RSP_INC) into a bit passed during the fetch phase, like LOADDATA is right now.
 
     * Compress flags!
 
     * MOAR TESTS
-
-
-
-DESIGN:
-    * Did we ever end up using IU3? Only for REG_ID? (so simplify?)
 
 
 
