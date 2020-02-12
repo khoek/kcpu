@@ -266,8 +266,6 @@ void kcpu::internal::register_insts() {
     /* If we want to go to 8~10 general purpose registers, I think we could make do with only
        7 instruction bits compared to 9. */
 
-    // TODO none of our instructions have more than 4 microcode instructions! Trim the "dead zone".
-
     gen_sys();
     gen_ctl();
     gen_reg();

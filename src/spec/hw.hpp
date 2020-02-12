@@ -5,13 +5,14 @@
 
 namespace kcpu {
 
-#define UCVAL_WIDTH 4
 #define ADDR_WIDTH 13
+#define UCVAL_WIDTH 2
+#define INST_WIDTH 9
+#define CHIP_SELECT_WIDTH (ADDR_WIDTH - (UCVAL_WIDTH + INST_WIDTH))
 
 #define NUM_IUS 3
 #define IU_WIDTH 3
 
-#define INST_WIDTH (ADDR_WIDTH - UCVAL_WIDTH)
 #define UCVAL_MAX ((1 << UCVAL_WIDTH) - 1)
 #define INST_MAX ((1 << INST_WIDTH) - 1)
 #define UCODE_LEN (1 << ADDR_WIDTH)
