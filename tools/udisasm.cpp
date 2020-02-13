@@ -72,7 +72,7 @@ void diasm(regval_t ir, uinst_t ui) {
     check_option(ui, MASK_GCTRL_FTJM, ACTION_CTRL_NONE,       "ACTION_NONE");
     check_option(ui, MASK_GCTRL_FTJM, ACTION_GCTRL_RFG_BUSB_I, "ACTION_RFG_BUSB_I");
     check_option(ui, MASK_GCTRL_FTJM, ACTION_RCTRL_RSP_INC,    "ACTION_RSP_INC");
-    check_option(ui, MASK_GCTRL_FTJM, ACTION_RCTRL_RSP_DEC,    "ACTION_RSP_DEC");
+    // check_option(ui, MASK_GCTRL_FTJM, ACTION_RCTRL_RSP_DEC,    "ACTION_RSP_DEC");
 
     gap();
 

@@ -85,8 +85,7 @@ void mod_ctl::clock_inputs(uinst_t ui, bus_state &s) {
             break;
         }
         case ACTION_CTRL_NONE:
-        case ACTION_RCTRL_RSP_INC:
-        case ACTION_RCTRL_RSP_DEC: {
+        case ACTION_RCTRL_RSP_INC: {
             break;
         }
         default: throw vm_error("unknown GCTRL_ACTION");

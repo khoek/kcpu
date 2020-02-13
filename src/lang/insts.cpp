@@ -208,7 +208,6 @@ static void gen_x() {
 
     // Faster version of: PUSH rbp; MOV rsp rbp;, i.e. (X_PUSH rsp rbp; MOV rsp rbp;)
     reg_inst(instruction("X_ENTER", I_X_ENTER, ARGS_2_NOCONST, {
-        ACTION_RCTRL_RSP_DEC,
         MCTRL_FIDD_STORE                    | MCTRL_BUSMODE_CONW_BUSB | RCTRL_IU1_BUSA_O | RCTRL_IU2_BUSB_O,
         MCTRL_MAIN_STORE | MCTRL_N_FIDD_OUT | MCTRL_BUSMODE_CONW_BUSM | RCTRL_IU1_BUSA_O | RCTRL_IU2_BUSA_I | GCTRL_FT_ENTER,
     }));
@@ -218,7 +217,6 @@ static void gen_x() {
     // FIXME if we move to non-hardcoded IU3s, then change this to 3 args.
     reg_inst(instruction("X_ENTERFR", I_X_ENTERFR, ARGS_2_2CONST, {
         //PUSH rbp; MOV rsp rbp;
-        ACTION_RCTRL_RSP_DEC,
         MCTRL_FIDD_STORE                    | MCTRL_BUSMODE_CONW_BUSB | RCTRL_IU3_BUSA_O | RCTRL_IU1_BUSB_O,
         MCTRL_MAIN_STORE | MCTRL_N_FIDD_OUT | MCTRL_BUSMODE_CONW_BUSM | RCTRL_IU3_BUSB_O | RCTRL_IU1_BUSB_I
         //SUBNF $CONST, rsp
@@ -238,7 +236,6 @@ static void gen_x() {
 
     reg_inst(instruction("X_PUSH", I_X_PUSH, ARGS_2_2CONST, {
         //IU1 = MUST BE RSP, IU2 = REG to PUSH
-        ACTION_RCTRL_RSP_DEC,
         MCTRL_FIDD_STORE                    | MCTRL_BUSMODE_CONW_BUSB | RCTRL_IU1_BUSA_O | RCTRL_IU2_BUSB_O,
         MCTRL_MAIN_STORE | MCTRL_N_FIDD_OUT | MCTRL_BUSMODE_CONW_BUSM | GCTRL_FT_ENTER,
     }));
@@ -252,7 +249,6 @@ static void gen_x() {
     reg_inst(instruction("X_CALL", I_X_CALL, ARGS_2_2CONST, {
         // IU1 = MUST BE RSP, IU2 = CALL ADDRESS
         // Effectively: X_PUSH RSP RIP
-        ACTION_RCTRL_RSP_DEC,
         MCTRL_FIDD_STORE                    | MCTRL_BUSMODE_CONW_BUSB | RCTRL_IU1_BUSA_O | GCTRL_JM_P_RIP_BUSB_O,
         MCTRL_MAIN_STORE | MCTRL_N_FIDD_OUT | MCTRL_BUSMODE_CONW_BUSM | RCTRL_IU2_BUSB_O | GCTRL_JM_YES,
     }));

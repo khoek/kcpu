@@ -15,12 +15,34 @@ SOFT/FIRMWARE:
 
     * Allow a const in either argument in e.g. a STW (but not e.g. LDW)
 
-    * Could turn RCTRL_RSP_DEC (no need for RCTRL_RSP_INC) into a bit passed during the fetch phase, like LOADDATA is right now.
-
     * Compress flags!
 
 
-    * Does an ordinary NOP in some code cause a 1-uop stutter when REG_UC gets reset?
+    * PROHIBIT MOV %rx %rx in software? (it would be a short)
+            -> one way to prohibit this in hardware reasonably cheaply is to compare the IUn_I
+               command 3 bits with the IUn_O 3 command 3 bits for each fixed ups---if they are equal, inhibit the input.
+
+
+
+    * Space in the UCODE bits to support a very basic port-based IO interface
+    (I think two ucode control bits, read and write (read will need two states, input port and output data), takes port from BUSA and data from BUSB)
+            -> Implement a "wait" condition until the IO bus returns?
+
+
+    * How are we going to do interrupts??? (I think another instmask---just to 0x1 instead of 0x0)
+            -> 1. (MOV(BUSA) RIP RID | MOV(BUSB) RISP RIP)
+            -> 2. MOV RIHP RIP (equivalent)
+            -> (need to save flags, stack pointer (in a fixed location), old RIP stashed in RID,
+                plus load new stack, save all registers, etc. in __code__ then)
+
+            -> implement the interrupt code, and EOI signalling, using the IO bus.
+
+            -> required new control features: RISP BUSB output
+
+    * THUS, NEED A PUSH_FLAGS and POP_FLAGS instruction. Need 1 control bit/free action to support flags output. (already have input).
+
+
+    * Does an ordinary NOP in some code cause a 1-uop stutter when REG_UC gets reset?-- no! just the "NOP" itself takes 1 uop!
 
 
     * MOAR TESTS
@@ -33,7 +55,7 @@ HARDWARE:
 
   Remember for designs:
     * Remember, BUS_A and BUS_B should both be pulled low.
-    * WE ADDED A HARDWARE INC COMMAND TO RSP. (CAN WE DEC IN ONE INST TOO??? Are there chips which do that? (unlikely?))
+    * WE ADDED HARDWARE INC AND DEC COMMANDS TO RSP. AND THE RSP DEC MECHANISM IS COMPLEX, OCCURING A HALF CYCLE BEFORE (check the timings work out).
     * We are hardware latching a mask or something in mod_ctl
 
 
@@ -43,7 +65,7 @@ HARDWARE:
     ALU: It also has two floating gates!!!
 
   Improvements future revisions:
-  * remove the zero registers from the REG module? (can we change the VM code so that we never use a pull-down behaviour?)
+  * remove the zero registers from the REG module? (or, can we change the VM code so that we never use a pull-down behaviour?)
   * remote the one register and deal with it in the microcode?---once we fix NEG, we only need REG_ONE for NOT.
     ---much more useful would be a constant=2 reg, we should see where these are and see if we can fix by adding hardware decrements (do these exist?),
        and if they don't maybe consider adding a "2" register.

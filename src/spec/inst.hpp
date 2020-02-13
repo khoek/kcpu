@@ -40,8 +40,9 @@ namespace kcpu {
 // actual position in the 16-bit opcode.
 #define P_I_LOADDATA (1 << 15)
 
-// TODO implement:
-// #define P_I_RSPDEC   (1 << 14)
+// FIXME, the existence of both of these is a hack
+#define P_I_RSPDEC   (1 << 14)
+#define P_PRE_I_RSPDEC (1 << 8)
 
 //
 // itype ranges (AAAA):
@@ -77,13 +78,13 @@ namespace kcpu {
 #define I_HLT       OC(IT_SYS, 0b0100)
 #define I_ABRT      OC(IT_SYS, 0b0101)
 
-#define I_X_PUSH    OC(IT_SYS, 0b1000)
+#define I_X_PUSH    OC(IT_SYS, 0b1000).add_flag(P_PRE_I_RSPDEC) // FIXME hack
 #define I_X_POP     OC(IT_SYS, 0b1001)
-#define I_X_CALL    OC(IT_SYS, 0b1010)
+#define I_X_CALL    OC(IT_SYS, 0b1010).add_flag(P_PRE_I_RSPDEC) // FIXME hack
 #define I_X_RET     OC(IT_SYS, 0b1011)
 
-#define I_X_ENTER   OC(IT_SYS, 0b1100)
-#define I_X_LEAVE   OC(IT_SYS, 0b1101)
+#define I_X_ENTER   OC(IT_SYS, 0b1100).add_flag(P_PRE_I_RSPDEC) // FIXME hack
+#define I_X_LEAVE   OC(IT_SYS, 0b1101).add_flag(P_PRE_I_RSPDEC) // FIXME hack
 
 // ALU
 #define I_ADD2      OC(IT_ALU, 0b0000)
@@ -125,7 +126,7 @@ namespace kcpu {
 #define I_STWO_FAR  OCANY_IU3(IT_IU3_ALL_GRP3, 0b1) // REMINDER UNREFERENCED, use I_LDWO and ICFLAG_MEM_IU3_FAR instead.
 
 // IU3_SINGLE
-#define I_X_ENTERFR OCSINGLE_IU3(IT_IU3_SINGLE_GRP1, 0b0, REG_SP)
+#define I_X_ENTERFR OCSINGLE_IU3(IT_IU3_SINGLE_GRP1, 0b0, REG_SP).add_flag(P_PRE_I_RSPDEC) // FIXME hack
 
 // END DECLS
 

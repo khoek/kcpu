@@ -51,9 +51,11 @@ vm::STATE vm::ustep() {
     bus_state state(logger);
 
     ctl.clock_outputs(ui, state);
-    // `mod_reg` must appear before `mod_mem`
     alu.clock_outputs(ui, state);
-    reg.clock_outputs(i, ui, state);
+    // `mod_reg` must appear after `mod_ctl` and before `mod_mem`
+    // FIXME hand over the high four RCTRL registers to GCTRL, for a better model
+    // of the real situation.
+    reg.clock_outputs(i, ui, !ctl.cbits[CBIT_INSTMASK] && (ctl.reg[REG_UC] == 0x0), state);
     mem.clock_outputs(ui, state);
 
     mem.clock_connects(ui, state);

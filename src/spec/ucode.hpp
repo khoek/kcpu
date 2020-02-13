@@ -15,7 +15,8 @@ namespace kcpu {
 #define ACTION_CTRL_NONE        (0b00ULL << (0 + CTRL_BASE))
 #define ACTION_GCTRL_RFG_BUSB_I (0b01ULL << (0 + CTRL_BASE))
 #define ACTION_RCTRL_RSP_INC    (0b10ULL << (0 + CTRL_BASE))
-#define ACTION_RCTRL_RSP_DEC    (0b11ULL << (0 + CTRL_BASE))
+// FREE ACTION! Could be `PREFIX_STORE` from MM?
+#define ACTION__UNUSED          (0b11ULL << (0 + CTRL_BASE))
 
 // NONBIT: CTRL decoding
 #define MASK_CTRL_ACTION (0b11ULL << (0 + CTRL_BASE))
