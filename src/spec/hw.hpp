@@ -41,19 +41,28 @@ enum bus_t {
 
 #define NUM_PREGS 8
 enum preg_t {
-    // If these are modified, be sure to update the IU3 values in "inst.hpp"
+// NOTE PREG_NAMES must be kept in-sync with this list.
     REG_ID = 0,
     REG_ONE = 1,
-    REG_A = 2,
-    REG_B = 3,
-    REG_C = 4,
-    REG_D = 5,
-    REG_SP = 6,
-    REG_BP = 7,
+    REG_SP = 2,
+    REG_BP = 3,
+    REG_A = 4,
+    REG_B = 5,
+    REG_C = 6,
+    REG_D = 7,
 };
 #define PREG_NUL ((preg_t) 0)
 
-extern const char * PREG_NAMES[];
+static const char * PREG_NAMES[] = {
+    "id",
+    "1",
+    "sp",
+    "bp",
+    "a",
+    "b",
+    "c",
+    "d",
+};
 
 #define NUM_SREGS 5
 enum sreg_t {

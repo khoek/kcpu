@@ -13,78 +13,121 @@ namespace kcpu {
 #define INST_GET_OPCODE(inst) (((inst) & ~P_I_LOADDATA) >> INST_SHIFT)
 #define INST_MK(loaddata, opcode, iu1, iu2, iu3) (((loaddata) ? P_I_LOADDATA : 0) | (opcode << INST_SHIFT) | INST_MK_IU1(iu1) | INST_MK_IU2(iu2) | INST_MK_IU3(iu3))
 
-#define SINGLE_IU3(raw, iu3) opclass_iu3_single((raw) | (iu3), (iu3))
-#define ANY_IU3(raw) opclass_iu3_all((raw))
+#define ITYPE_SHIFT 4
+
+#define ITFLAG(bits) ((bits) << ITYPE_SHIFT)
+#define ICFLAG(bits) ((bits) << 0)
+
+#define OC(ic, raw) opclass(((ic) << ITYPE_SHIFT) | (raw))
+#define OCSINGLE_IU3(ic, raw, iu3) opclass_iu3_single(((ic) << ITYPE_SHIFT) | ((raw) << IU_WIDTH) | (iu3), (iu3))
+#define OCANY_IU3(ic, raw) opclass_iu3_all(((ic) << ITYPE_SHIFT) | ((raw) << IU_WIDTH))
 
 // END PREAMBLE
 
+// There are 10 opcode bits excliding IU1 and IU2. We allocate
+// the highest two for LOADDATA and RSPDEC, leaving 8. (We are
+// happy at the moment to overlap IU3 into the opcode range.)
+//
+// We divide the opcode space into 0bCCAAAABBBB, with AAAA the
+// "itype" and BBBB the "icode". Typically the low 3 bits
+// of icode are required for a fixed itype, and the fourth
+// bit specifies a flag. If for a fixed semantic "instruction
+// type" we need more then 4 bits for the options (say, for
+// a flag), then we just use two icodes.
+//
+// prefix flags (CC):
+// NOTE unlike the following, these must be shifted to their
+// actual position in the 16-bit opcode.
 #define P_I_LOADDATA (1 << 15)
 
-// SYS
-#define I_NOP   0b00000000
-#define I_HLT   0b01111110
-#define I_ABRT  0b01111111
+// TODO implement:
+// #define P_I_RSPDEC   (1 << 14)
 
-// MEM
-#define I_STPFX 0b00000001
-#define I_LDW   0b00000011
-#define I_LDBL  0b00000100
-#define I_LDBH  0b00000110
-#define I_LDBLZ 0b00000101
-#define I_LDBHZ 0b00000111
-#define I_STW   0b00001011
-#define I_STBL  0b00001100
-#define I_STBH  0b00001110
-#define I_STBLZ 0b00001101
-#define I_STBHZ 0b00001111
-// Use Farmem Prefix
-#define P_I_FAR 0b00100000
+//
+// itype ranges (AAAA):
+#define IT_SYS              0b0000 // SYS (NOP must occupy last, currently includes X_xxxx codes)
+#define IT_ALU              0b0001 // ALU
+#define IT__MEMC            0b0010 // MEM (CLOSE, don't use directly, use IT_MEM and ITFLAG_MEM_FAR instead)
+#define IT__MEMF            0b0011 // MEM (FAR, don't use directly, use IT_MEM and ITFLAG_MEM_FAR instead)
+#define IT__JMP             0b0100 // JMP (don't use directly, use IT_JMP and ITFLAG_JMP_LD instead)
+#define IT__JMPLD           0b0101 // JMP (don't use directly, use IT_JMP and ITFLAG_JMP_LD instead)
+// reserved itypes for IU3_ALL/_SINGLE opclasses
+#define IT_IU3_SINGLE_GRP1  0b0110 // It is very wasteful to have a separate itype for IU3_SINGLEs, but lets just be lazy for now.
+#define IT_IU3_ALL_GRP1     0b1000
+#define IT_IU3_ALL_GRP2     0b1001
+#define IT_IU3_ALL_GRP3     0b1010
 
-// CTL
-#define I_JMP     0b101101000
-#define I_JC      0b101100000
-#define I_JNC     0b101100100
-#define I_JZ      0b101100001
-#define I_JNZ     0b101100101
-#define I_JS      0b101100010
-#define I_JNS     0b101100110
-#define I_JO      0b101100011
-#define I_JNO     0b101100111
-// LD JMP Prefix
-#define P_I_LDJMP 0b00010000
+// Fake ICs (to implement flags) and flags at the itype/icode level
+#define IT_MEM 0b0010
+#define IT_JMP 0b0100
+#define ITFLAG_MEM_FAR     ITFLAG(0b0001)
+#define ITFLAG_JMP_LD      ITFLAG(0b0001)
+#define ICFLAG_ALU_NOFGS   ICFLAG(0b1000)
+#define ICFLAG_LJMP_LD     ICFLAG(0b0001)
+#define ICFLAG_MEM_IU3_FAR ICFLAG(0b1000)
 
-#define I_LJMP    0b00101001
+// BEGIN DECLS
 
-// REG
-#define I_MOV   0b00101111
+// SYS/MISC
+#define I_NOP       OC(IT_SYS, 0b0000)
+#define I_MOV       OC(IT_SYS, 0b0001)
+
+#define I_LJMP      OC(IT_SYS, 0b0010)
+#define I_LDLJMP    OC(IT_SYS, 0b0011)
+#define I_HLT       OC(IT_SYS, 0b0100)
+#define I_ABRT      OC(IT_SYS, 0b0101)
+
+#define I_X_PUSH    OC(IT_SYS, 0b1000)
+#define I_X_POP     OC(IT_SYS, 0b1001)
+#define I_X_CALL    OC(IT_SYS, 0b1010)
+#define I_X_RET     OC(IT_SYS, 0b1011)
+
+#define I_X_ENTER   OC(IT_SYS, 0b1100)
+#define I_X_LEAVE   OC(IT_SYS, 0b1101)
 
 // ALU
-#define I_ADD2  0b01000000
-#define I_SUB   0b01000001
-#define I_AND   0b01000010
-#define I_OR    0b01000011
-#define I_XOR   0b01000100
-#define I_LSFT  0b01000101
-#define I_RSFT  0b01000110
-#define I_TST   0b01000111
-// No Flags Prefix
-#define P_I_NOFGS 0b00100000
+#define I_ADD2      OC(IT_ALU, 0b0000)
+#define I_SUB       OC(IT_ALU, 0b0001)
+#define I_AND       OC(IT_ALU, 0b0010)
+#define I_OR        OC(IT_ALU, 0b0011)
+#define I_XOR       OC(IT_ALU, 0b0100)
+#define I_LSFT      OC(IT_ALU, 0b0101)
+#define I_RSFT      OC(IT_ALU, 0b0110)
+#define I_TST       OC(IT_ALU, 0b0111)
 
-// X
-// FIXME? make all of these use IU3 = REG_RSP? not fully sold on IU3 yet.
-// TBH its probably best to shrink the microcode count space and then just reserve enough bits for an IU3 as well
-#define I_X_PUSH                0b10101000
-#define I_X_POP                 0b10101001
-#define I_X_CALL                0b10101010
-#define I_X_RET                 0b10101011
+// MEM
+#define I_STPFX     OC(IT_MEM, 0b0001)
+#define I_LDW       OC(IT_MEM, 0b0011)
+#define I_LDBL      OC(IT_MEM, 0b0100)
+#define I_LDBH      OC(IT_MEM, 0b0110)
+#define I_LDBLZ     OC(IT_MEM, 0b0101)
+#define I_LDBHZ     OC(IT_MEM, 0b0111)
+#define I_STW       OC(IT_MEM, 0b1011)
+#define I_STBL      OC(IT_MEM, 0b1100)
+#define I_STBH      OC(IT_MEM, 0b1110)
 
-#define I_X_ENTER               0b10101100
-#define I_X_LEAVE               0b10101101
-#define I_X_ENTERFR  SINGLE_IU3(0b10101000, REG_SP)
+// JMP
+#define I_JMP       OC(IT_JMP, 0b1000)
+#define I_JC        OC(IT_JMP, 0b0000)
+#define I_JNC       OC(IT_JMP, 0b0100)
+#define I_JZ        OC(IT_JMP, 0b0001)
+#define I_JNZ       OC(IT_JMP, 0b0101)
+#define I_JS        OC(IT_JMP, 0b0010)
+#define I_JNS       OC(IT_JMP, 0b0110)
+#define I_JO        OC(IT_JMP, 0b0011)
+#define I_JNO       OC(IT_JMP, 0b0111)
 
-#define I_ADD3          ANY_IU3(0b11000000)
-#define I_LDWO          ANY_IU3(0b11001000)
-#define I_STWO          ANY_IU3(0b11011000)
+// IU3_ALL
+#define I_ADD3      OCANY_IU3(IT_IU3_ALL_GRP1, 0b0)
+#define I_LDWO      OCANY_IU3(IT_IU3_ALL_GRP2, 0b0)
+#define I_LDWO_FAR  OCANY_IU3(IT_IU3_ALL_GRP2, 0b1) // REMINDER UNREFERENCED, use I_LDWO and ICFLAG_MEM_IU3_FAR instead.
+#define I_STWO      OCANY_IU3(IT_IU3_ALL_GRP3, 0b0)
+#define I_STWO_FAR  OCANY_IU3(IT_IU3_ALL_GRP3, 0b1) // REMINDER UNREFERENCED, use I_LDWO and ICFLAG_MEM_IU3_FAR instead.
+
+// IU3_SINGLE
+#define I_X_ENTERFR OCSINGLE_IU3(IT_IU3_SINGLE_GRP1, 0b0, REG_SP)
+
+// END DECLS
 
 }
 

@@ -4,17 +4,6 @@
 
 namespace kcpu {
 
-const char * PREG_NAMES[] = {
-    "id",
-    "1",
-    "a",
-    "b",
-    "c",
-    "d",
-    "sp",
-    "bp",
-};
-
 mod_reg::mod_reg(vm_logger &logger) : logger(logger) {
     for(int i = 0; i < NUM_PREGS; i++) {
         reg[i] = 0;
