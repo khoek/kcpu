@@ -37,15 +37,11 @@ uinst_t mod_ctl::get_uinst() {
 }
 
 void mod_ctl::clock_outputs(uinst_t ui, bus_state &s) {
-    switch(ui & MASK_GCTRL_ACTION) {
-        case GCTRL_ACTION_RIP_BUSA_O: {
-            s.assign(BUS_A, reg[REG_IP]);
-            break;
-        }
-        case GCTRL_ACTION_NONE: break;
-        case GCTRL_ACTION_RFG_BUSB_I: break;
-        case GCTRL_ACTION_STOP: break;
-        default: throw vm_error("unkown GCTRL_ACTION");
+    // HARDWARE NOTE: in real life this could be toggled-on during a
+    // cycle (I think only if we enter a NOP without the mask up),
+    // so make sure we wont get a short/bus collision if that happens.
+    if(cbits[CBIT_INSTMASK] && !(reg[REG_UC] & 0x1)) {
+        s.assign(BUS_A, reg[REG_IP]);
     }
 
     if((ui & MASK_GCTRL_FTJM) == GCTRL_JM_P_RIP_BUSB_O) {
@@ -65,7 +61,7 @@ void mod_ctl::set_instmask_enabled(bool state) {
 }
 
 static regval_t decode_jcond_mask(uinst_t ui) {
-    switch(ui & MASK_GCTRL_JCOND) {
+    switch((ui & MASK_GCTRL_FTJM) & ~GCTRL_JM_INVERTCOND) {
         case GCTRL_JCOND_CARRY:   return (1 << 0);
         case GCTRL_JCOND_N_ZERO:  return (1 << 1);
         case GCTRL_JCOND_SIGN:    return (1 << 2);
@@ -79,28 +75,22 @@ void mod_ctl::ft_enter() {
 }
 
 void mod_ctl::clock_inputs(uinst_t ui, bus_state &s) {
-    switch(ui & MASK_GCTRL_ACTION) {
-        case GCTRL_ACTION_RFG_BUSB_I: {
+    // HARDWARE NOTE This register can be simultaneously reset under the GCTRL_FT_ENTER/MAYBEEXIT/EXIT conditions, but we
+    // assume that (presumably async) reset signal dominates this increment.
+    reg[REG_UC]++;
+
+    switch(ui & MASK_CTRL_ACTION) {
+        case ACTION_GCTRL_RFG_BUSB_I: {
             reg[REG_FG] = /* FIXME low mask? */ s.read(BUS_B);
             break;
         }
-        case GCTRL_ACTION_STOP: {
-            cbits[CBIT_HALTED] = true;
-
-            if((ui & MASK_GCTRL_FTJM) == GCTRL_FT_ENTER) {
-                cbits[CBIT_ABORTED] = true;
-            }
-
+        case ACTION_CTRL_NONE:
+        case ACTION_RCTRL_RSP_INC:
+        case ACTION_RCTRL_RSP_DEC: {
             break;
         }
-        case GCTRL_ACTION_NONE: break;
-        case GCTRL_ACTION_RIP_BUSA_O: break;
-        default: throw vm_error("unkown GCTRL_ACTION");
+        default: throw vm_error("unknown GCTRL_ACTION");
     }
-
-    // NOTE This register can be simultaneously reset under the GCTRL_FT_ENTER/MAYBEEXIT/EXIT conditions, but we
-    // assume that (presumably async) reset signal dominates this increment.
-    reg[REG_UC]++;
 
     switch(ui & MASK_GCTRL_FTJM) {
         case GCTRL_FT_NONE: {
@@ -126,25 +116,24 @@ void mod_ctl::clock_inputs(uinst_t ui, bus_state &s) {
             ft_enter();
             break;
         }
-        case GCTRL_JM_ON_TRUE: {
-            if(reg[REG_FG] & decode_jcond_mask(ui)) {
-                reg[REG_IP] = s.read(BUS_B);
-            }
-            ft_enter();
-            break;
-        }
-        case GCTRL_JM_ON_FALSE: {
-            if(!(reg[REG_FG] & decode_jcond_mask(ui))) {
-                reg[REG_IP] = s.read(BUS_B);
-            }
-            ft_enter();
-            break;
-        }
         case GCTRL_JM_P_RIP_BUSB_O: {
             break;
         }
+        case GCTRL_JM_HALT: {
+            cbits[CBIT_HALTED] = true;
+            break;
+        }
+        case GCTRL_JM_ABRT: {
+            cbits[CBIT_HALTED] = true;
+            cbits[CBIT_ABORTED] = true;
+            break;
+        }
         default: {
-            throw vm_error("unknown FT/JM!");
+            // It was one of the 8 JCOND codes
+            if((!!(reg[REG_FG] & decode_jcond_mask(ui))) ^ (!!(ui & GCTRL_JM_INVERTCOND))) {
+                reg[REG_IP] = s.read(BUS_B);
+            }
+            ft_enter();
         }
     }
 }

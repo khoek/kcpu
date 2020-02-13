@@ -19,11 +19,17 @@ SOFT/FIRMWARE:
 
     * Compress flags!
 
+
+    * Does an ordinary NOP in some code cause a 1-uop stutter when REG_UC gets reset?
+
+
     * MOAR TESTS
 
 
 
 HARDWARE:
+
+  USE 74HC193 for COUNTERS!!!!
 
   Remember for designs:
     * Remember, BUS_A and BUS_B should both be pulled low.

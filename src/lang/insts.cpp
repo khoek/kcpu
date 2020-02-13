@@ -14,15 +14,15 @@ namespace kcpu {
 
 static void gen_sys() {
     reg_inst(instruction("NOP" , I_NOP, ARGS_0, {
-        MCTRL_FIDD_STORE | MCTRL_N_MAIN_OUT | MCTRL_BUSMODE_CONW_BUSM | GCTRL_ACTION_RIP_BUSA_O | GCTRL_FT_ENTER,
-                           MCTRL_N_FIDD_OUT | MCTRL_BUSMODE_CONW_BUSB | GCTRL_FT_MAYBEEXIT,
-        MCTRL_FIDD_STORE | MCTRL_N_MAIN_OUT | MCTRL_BUSMODE_CONW_BUSM | GCTRL_ACTION_RIP_BUSA_O,
+        MCTRL_FIDD_STORE | MCTRL_N_MAIN_OUT | MCTRL_BUSMODE_CONW_BUSM /*| GCTRL_ACTION_RIP_BUSA_O*/ | GCTRL_FT_ENTER,
+                           MCTRL_N_FIDD_OUT | MCTRL_BUSMODE_CONW_BUSB   | GCTRL_FT_MAYBEEXIT,
+        MCTRL_FIDD_STORE | MCTRL_N_MAIN_OUT | MCTRL_BUSMODE_CONW_BUSM /*| GCTRL_ACTION_RIP_BUSA_O*/,
         // NOTE: the busmasking will ensure that IU1 = 0, i.e. REG_ID
                            MCTRL_N_FIDD_OUT | MCTRL_BUSMODE_CONW_BUSB | RCTRL_IU1_BUSB_I | GCTRL_FT_EXIT,
     }));
 
-    reg_inst(instruction("HLT" , I_HLT , ARGS_0, GCTRL_ACTION_STOP));
-    reg_inst(instruction("ABRT", I_ABRT, ARGS_0, GCTRL_ACTION_STOP | GCTRL_FT_ENTER));
+    reg_inst(instruction("HLT" , I_HLT , ARGS_0, GCTRL_JM_HALT));
+    reg_inst(instruction("ABRT", I_ABRT, ARGS_0, GCTRL_JM_ABRT));
 }
 
 #define FARPREFIX "FAR "
@@ -124,17 +124,17 @@ static instruction mk_loadable_instruction(regval_t ldbit, const char * const na
 static void gen_ctl_loadables(regval_t ldbit) {
     reg_inst(mk_loadable_instruction(ldbit, "JMP" , I_JMP , false, GCTRL_JM_YES));
 
-    reg_inst(mk_loadable_instruction(ldbit, "JC"  , I_JC  , false, GCTRL_JM_ON_TRUE  | GCTRL_JCOND_CARRY  ));
-    reg_inst(mk_loadable_instruction(ldbit, "JNC" , I_JNC , false, GCTRL_JM_ON_FALSE | GCTRL_JCOND_CARRY  ));
+    reg_inst(mk_loadable_instruction(ldbit, "JC"  , I_JC  , false,                       GCTRL_JCOND_CARRY  ));
+    reg_inst(mk_loadable_instruction(ldbit, "JNC" , I_JNC , false, GCTRL_JM_INVERTCOND | GCTRL_JCOND_CARRY  ));
 
-    reg_inst(mk_loadable_instruction(ldbit, "JZ"  , I_JZ  , false, GCTRL_JM_ON_FALSE | GCTRL_JCOND_N_ZERO ));
-    reg_inst(mk_loadable_instruction(ldbit, "JNZ" , I_JNZ , false, GCTRL_JM_ON_TRUE  | GCTRL_JCOND_N_ZERO ));
+    reg_inst(mk_loadable_instruction(ldbit, "JZ"  , I_JZ  , false, GCTRL_JM_INVERTCOND | GCTRL_JCOND_N_ZERO ));
+    reg_inst(mk_loadable_instruction(ldbit, "JNZ" , I_JNZ , false,                       GCTRL_JCOND_N_ZERO ));
 
-    reg_inst(mk_loadable_instruction(ldbit, "JS"  , I_JS  , false, GCTRL_JM_ON_TRUE  | GCTRL_JCOND_SIGN   ));
-    reg_inst(mk_loadable_instruction(ldbit, "JNS" , I_JNS , false, GCTRL_JM_ON_FALSE | GCTRL_JCOND_SIGN   ));
+    reg_inst(mk_loadable_instruction(ldbit, "JS"  , I_JS  , false,                       GCTRL_JCOND_SIGN   ));
+    reg_inst(mk_loadable_instruction(ldbit, "JNS" , I_JNS , false, GCTRL_JM_INVERTCOND | GCTRL_JCOND_SIGN   ));
 
-    reg_inst(mk_loadable_instruction(ldbit, "JO"  , I_JO  , false, GCTRL_JM_ON_FALSE | GCTRL_JCOND_N_OVFLW));
-    reg_inst(mk_loadable_instruction(ldbit, "JNO" , I_JNO , false, GCTRL_JM_ON_TRUE  | GCTRL_JCOND_N_OVFLW));
+    reg_inst(mk_loadable_instruction(ldbit, "JO"  , I_JO  , false, GCTRL_JM_INVERTCOND | GCTRL_JCOND_N_OVFLW));
+    reg_inst(mk_loadable_instruction(ldbit, "JNO" , I_JNO , false,                       GCTRL_JCOND_N_OVFLW));
 
     reg_inst(mk_loadable_instruction(ldbit, "LJMP", I_LJMP, true , GCTRL_JM_YES,
         { MCTRL_PREFIX_STORE | RCTRL_IU1_BUSB_O, }));
@@ -197,7 +197,7 @@ static void gen_alu_flagables(uinst_t flagbits) {
 
 static void gen_alu() {
     gen_alu_flagables(0);
-    gen_alu_flagables(ACTRL_FLAGS_OUT | GCTRL_ACTION_RFG_BUSB_I);
+    gen_alu_flagables(ACTRL_FLAGS_OUT | ACTION_GCTRL_RFG_BUSB_I);
 }
 
 static void gen_x() {
@@ -205,7 +205,7 @@ static void gen_x() {
 
     // Faster version of: PUSH rbp; MOV rsp rbp;, i.e. (X_PUSH rsp rbp; MOV rsp rbp;)
     reg_inst(instruction("X_ENTER", I_X_ENTER, ARGS_2_NOCONST, {
-        RCTRL_RSP_DEC,
+        ACTION_RCTRL_RSP_DEC,
         MCTRL_FIDD_STORE                    | MCTRL_BUSMODE_CONW_BUSB | RCTRL_IU1_BUSA_O | RCTRL_IU2_BUSB_O,
         MCTRL_MAIN_STORE | MCTRL_N_FIDD_OUT | MCTRL_BUSMODE_CONW_BUSM | RCTRL_IU1_BUSA_O | RCTRL_IU2_BUSA_I | GCTRL_FT_ENTER,
     }));
@@ -215,7 +215,7 @@ static void gen_x() {
     // FIXME if we move to non-hardcoded IU3s, then change this to 3 args.
     reg_inst(instruction("X_ENTERFR", I_X_ENTERFR, ARGS_2_2CONST, {
         //PUSH rbp; MOV rsp rbp;
-        RCTRL_RSP_DEC,
+        ACTION_RCTRL_RSP_DEC,
         MCTRL_FIDD_STORE                    | MCTRL_BUSMODE_CONW_BUSB | RCTRL_IU3_BUSA_O | RCTRL_IU1_BUSB_O,
         MCTRL_MAIN_STORE | MCTRL_N_FIDD_OUT | MCTRL_BUSMODE_CONW_BUSM | RCTRL_IU3_BUSB_O | RCTRL_IU1_BUSB_I
         //SUBNF $CONST, rsp
@@ -227,7 +227,7 @@ static void gen_x() {
     // instead we do them both simultaneously.
     reg_inst(instruction("X_LEAVE", I_X_LEAVE, ARGS_2_NOCONST, {
         MCTRL_FIDD_STORE | MCTRL_N_MAIN_OUT | MCTRL_BUSMODE_CONW_BUSM | RCTRL_IU1_BUSA_I | RCTRL_IU2_BUSA_O,
-                           MCTRL_N_FIDD_OUT | MCTRL_BUSMODE_CONW_BUSB | RCTRL_IU2_BUSB_I | RCTRL_RSP_INC | GCTRL_FT_ENTER,
+                           MCTRL_N_FIDD_OUT | MCTRL_BUSMODE_CONW_BUSB | RCTRL_IU2_BUSB_I | ACTION_RCTRL_RSP_INC | GCTRL_FT_ENTER,
     }));
 
     // FIXME Note that right now bad things will happen if the first argument of these is not RSP
@@ -235,7 +235,7 @@ static void gen_x() {
 
     reg_inst(instruction("X_PUSH", I_X_PUSH, ARGS_2_2CONST, {
         //IU1 = MUST BE RSP, IU2 = REG to PUSH
-        RCTRL_RSP_DEC,
+        ACTION_RCTRL_RSP_DEC,
         MCTRL_FIDD_STORE                    | MCTRL_BUSMODE_CONW_BUSB | RCTRL_IU1_BUSA_O | RCTRL_IU2_BUSB_O,
         MCTRL_MAIN_STORE | MCTRL_N_FIDD_OUT | MCTRL_BUSMODE_CONW_BUSM | GCTRL_FT_ENTER,
     }));
@@ -243,13 +243,13 @@ static void gen_x() {
     reg_inst(instruction("X_POP", I_X_POP, ARGS_2_NOCONST, {
         //IU1 = MUST BE RSP, IU2 = REG to POP
         MCTRL_FIDD_STORE | MCTRL_N_MAIN_OUT | MCTRL_BUSMODE_CONW_BUSM | RCTRL_IU1_BUSA_O,
-                           MCTRL_N_FIDD_OUT | MCTRL_BUSMODE_CONW_BUSB | RCTRL_IU2_BUSB_I | RCTRL_RSP_INC | GCTRL_FT_ENTER,
+                           MCTRL_N_FIDD_OUT | MCTRL_BUSMODE_CONW_BUSB | RCTRL_IU2_BUSB_I | ACTION_RCTRL_RSP_INC | GCTRL_FT_ENTER,
     }));
 
     reg_inst(instruction("X_CALL", I_X_CALL, ARGS_2_2CONST, {
         // IU1 = MUST BE RSP, IU2 = CALL ADDRESS
         // Effectively: X_PUSH RSP RIP
-        RCTRL_RSP_DEC,
+        ACTION_RCTRL_RSP_DEC,
         MCTRL_FIDD_STORE                    | MCTRL_BUSMODE_CONW_BUSB | RCTRL_IU1_BUSA_O | GCTRL_JM_P_RIP_BUSB_O,
         MCTRL_MAIN_STORE | MCTRL_N_FIDD_OUT | MCTRL_BUSMODE_CONW_BUSM | RCTRL_IU2_BUSB_O | GCTRL_JM_YES,
     }));
@@ -258,7 +258,7 @@ static void gen_x() {
         // IU1 = MUST BE RSP, IU2 = CALL ADDRESS
         // Effectively: X_POP RSP RIP
         MCTRL_FIDD_STORE | MCTRL_N_MAIN_OUT | MCTRL_BUSMODE_CONW_BUSM | RCTRL_IU1_BUSA_O,
-                           MCTRL_N_FIDD_OUT | MCTRL_BUSMODE_CONW_BUSB | RCTRL_RSP_INC | GCTRL_JM_YES,
+                           MCTRL_N_FIDD_OUT | MCTRL_BUSMODE_CONW_BUSB | ACTION_RCTRL_RSP_INC | GCTRL_JM_YES,
     }));
 }
 

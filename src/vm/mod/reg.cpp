@@ -43,8 +43,8 @@ void mod_reg::maybe_assign(bus_state &s, uinst_t ui, uint8_t iunum, uint8_t iu, 
         s.assign(RCTRL_IU_GET_BUS(iu), reg[r]);
 
         if(r == REG_SP) {
-            assert(!(ui & RCTRL_RSP_INC));
-            assert(!(ui & RCTRL_RSP_DEC));
+            assert((ui & MASK_CTRL_ACTION) != ACTION_RCTRL_RSP_INC);
+            assert((ui & MASK_CTRL_ACTION) != ACTION_RCTRL_RSP_DEC);
         }
     }
 }
@@ -55,8 +55,8 @@ void mod_reg::maybe_read(bus_state &s, uinst_t ui, uint8_t iunum, uint8_t iu, pr
         reg[r] = s.read(RCTRL_IU_GET_BUS(iu));
 
         if(r == REG_SP) {
-            assert(!(ui & RCTRL_RSP_INC));
-            assert(!(ui & RCTRL_RSP_DEC));
+            assert((ui & MASK_CTRL_ACTION) != ACTION_RCTRL_RSP_INC);
+            assert((ui & MASK_CTRL_ACTION) != ACTION_RCTRL_RSP_DEC);
         }
     }
 }
@@ -72,14 +72,20 @@ void mod_reg::clock_inputs(regval_t inst, uinst_t ui, bus_state &s) {
     maybe_read(s, ui, 2, RCTRL_DECODE_IU2(ui), INST_GET_IU2(inst));
     maybe_read(s, ui, 3, RCTRL_DECODE_IU3(ui), INST_GET_IU3(inst));
 
-    if(ui & RCTRL_RSP_INC) {
-        assert(!(ui & RCTRL_RSP_DEC));
-        reg[REG_SP] += 2;
-    }
-
-    if(ui & RCTRL_RSP_DEC) {
-        assert(!(ui & RCTRL_RSP_INC));
-        reg[REG_SP] -= 2;
+    switch(ui & MASK_CTRL_ACTION) {
+        case ACTION_CTRL_NONE:
+        case ACTION_GCTRL_RFG_BUSB_I: {
+            break;
+        }
+        case ACTION_RCTRL_RSP_INC: {
+            reg[REG_SP] += 2;
+            break;
+        }
+        case ACTION_RCTRL_RSP_DEC: {
+            reg[REG_SP] -= 2;
+            break;
+        }
+        default: throw vm_error("unknown GCTRL_ACTION");
     }
 }
 

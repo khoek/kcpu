@@ -48,29 +48,31 @@ void diasm(regval_t ir, uinst_t ui) {
 
     printf("disasm: %04X(%04X:%01X:%01X) %04lX\n\n", ir, i, INST_GET_IU1(ir), INST_GET_IU2(ir), ui);
 
+    // FIXME This is not up to date with everything
+
     // GCTRL
     check_option(ui, MASK_GCTRL_FTJM, GCTRL_FT_NONE,         "FT_NONE");
     check_option(ui, MASK_GCTRL_FTJM, GCTRL_FT_ENTER,        "FT_ENTER");
     check_option(ui, MASK_GCTRL_FTJM, GCTRL_FT_MAYBEEXIT,    "FT_MAYBEEXIT");
     check_option(ui, MASK_GCTRL_FTJM, GCTRL_FT_EXIT,         "FT_EXIT");
     check_option(ui, MASK_GCTRL_FTJM, GCTRL_JM_YES,          "JM_YES");
-    check_option(ui, MASK_GCTRL_FTJM, GCTRL_JM_ON_TRUE,      "JM_ON_TRUE");
-    check_option(ui, MASK_GCTRL_FTJM, GCTRL_JM_ON_FALSE,     "JM_ON_FALSE");
     check_option(ui, MASK_GCTRL_FTJM, GCTRL_JM_P_RIP_BUSB_O, "JM_P_RIP_BUSB_O");
+    check_option(ui, MASK_GCTRL_FTJM, GCTRL_JM_HALT,         "JM_HALT");
+    check_option(ui, MASK_GCTRL_FTJM, GCTRL_JM_ABRT,         "JM_ABRT");
 
-    if((ui & MASK_GCTRL_FTJM) == GCTRL_JM_YES
-        || (ui & MASK_GCTRL_FTJM) == GCTRL_JM_ON_TRUE
-        || (ui & MASK_GCTRL_FTJM) == GCTRL_JM_ON_FALSE) {
-        check_option(ui, MASK_GCTRL_JCOND, GCTRL_JCOND_CARRY,   "JCOND_CARRY");
-        check_option(ui, MASK_GCTRL_JCOND, GCTRL_JCOND_N_ZERO,  "JCOND_N_ZERO");
-        check_option(ui, MASK_GCTRL_JCOND, GCTRL_JCOND_SIGN,    "JCOND_SIGN");
-        check_option(ui, MASK_GCTRL_JCOND, GCTRL_JCOND_N_OVFLW, "JCOND_N_OVFLW");
-    }
+    check_option(ui, MASK_GCTRL_FTJM, GCTRL_JCOND_CARRY,     "JM_CARRY");
+    check_option(ui, MASK_GCTRL_FTJM, GCTRL_JCOND_N_ZERO,    "JM_N_ZERO");
+    check_option(ui, MASK_GCTRL_FTJM, GCTRL_JCOND_SIGN,      "JM_SIGN");
+    check_option(ui, MASK_GCTRL_FTJM, GCTRL_JCOND_N_OVFLW,   "JM_N_OVFLW");
+    check_option(ui, MASK_GCTRL_FTJM, GCTRL_JM_INVERTCOND | GCTRL_JCOND_CARRY,     "JM_INV_CARRY");
+    check_option(ui, MASK_GCTRL_FTJM, GCTRL_JM_INVERTCOND | GCTRL_JCOND_N_ZERO,    "JM_INV_N_ZERO");
+    check_option(ui, MASK_GCTRL_FTJM, GCTRL_JM_INVERTCOND | GCTRL_JCOND_SIGN,      "JM_INV_SIGN");
+    check_option(ui, MASK_GCTRL_FTJM, GCTRL_JM_INVERTCOND | GCTRL_JCOND_N_OVFLW,   "JM_INV_N_OVFLW");
 
-    check_nbit(ui, GCTRL_ACTION_NONE,       "ACTION_NONE");
-    check_nbit(ui, GCTRL_ACTION_RFG_BUSB_I, "ACTION_RFG_BUSB_I");
-    check_nbit(ui, GCTRL_ACTION_RIP_BUSA_O, "ACTION_RIP_BUSA_O");
-    check_nbit(ui, GCTRL_ACTION_STOP,       "ACTION_STOP");
+    check_option(ui, MASK_GCTRL_FTJM, ACTION_CTRL_NONE,       "ACTION_NONE");
+    check_option(ui, MASK_GCTRL_FTJM, ACTION_GCTRL_RFG_BUSB_I, "ACTION_RFG_BUSB_I");
+    check_option(ui, MASK_GCTRL_FTJM, ACTION_RCTRL_RSP_INC,    "ACTION_RSP_INC");
+    check_option(ui, MASK_GCTRL_FTJM, ACTION_RCTRL_RSP_DEC,    "ACTION_RSP_DEC");
 
     gap();
 
@@ -116,7 +118,6 @@ void diasm(regval_t ir, uinst_t ui) {
     match += check_option(ui, MASK_MCTRL_BUSMODE, MCTRL_BUSMODE_CONW_BUSM, "BUSMODE_CONW_BUSM");
     match += check_option(ui, MASK_MCTRL_BUSMODE, MCTRL_BUSMODE_CONW_BUSB, "BUSMODE_CONW_BUSB");
     match += check_option(ui, MASK_MCTRL_BUSMODE, MCTRL_BUSMODE_CONW_BUSB_MAYBEFLIP, "BUSMODEW_BUSB_MAYBEFLIP");
-    match += check_option(ui, MASK_MCTRL_BUSMODE, 0, "BUSMODE_DISCONNECT");
     check_cond_onlytrue(match != 1, "XX  INVALID BUSMODE");
 
     gap();
@@ -136,5 +137,5 @@ void diasm(regval_t ir, uinst_t ui) {
 }
 
 int main() {
-    diasm(0x0000, 0x6080007);
+    diasm(0x0000, 0x120C00);
 }

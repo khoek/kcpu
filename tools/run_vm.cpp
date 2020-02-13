@@ -4,8 +4,6 @@
 #include "src/vm/kcpu.hpp"
 
 int main(int argc, char **argv) {
-    std::cout << "There are " << UCODE_END << " control bits." << std::endl;
-
     bool verbose = false;
     bool disasm_mode = false;
     bool step_mode = false;
