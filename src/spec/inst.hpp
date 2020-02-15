@@ -46,14 +46,15 @@ namespace kcpu {
 
 //
 // itype ranges (AAAA):
-#define IT_SYS              0b0000 // SYS (NOP must occupy last, currently includes X_xxxx codes)
-#define IT_ALU              0b0001 // ALU
+#define IT_SYS              0b0000 // SYS (NOP, INT1, INT2 must occupy hardcoded positions)
+#define IT_X                0b0001 // X   (X_xxxx codes)
 #define IT__MEMC            0b0010 // MEM (CLOSE, don't use directly, use IT_MEM and ITFLAG_MEM_FAR instead)
 #define IT__MEMF            0b0011 // MEM (FAR, don't use directly, use IT_MEM and ITFLAG_MEM_FAR instead)
 #define IT__JMP             0b0100 // JMP (don't use directly, use IT_JMP and ITFLAG_JMP_LD instead)
 #define IT__JMPLD           0b0101 // JMP (don't use directly, use IT_JMP and ITFLAG_JMP_LD instead)
+#define IT_ALU              0b0110 // ALU
 // reserved itypes for IU3_ALL/_SINGLE opclasses
-#define IT_IU3_SINGLE_GRP1  0b0110 // It is very wasteful to have a separate itype for IU3_SINGLEs, but lets just be lazy for now.
+#define IT_IU3_SINGLE_GRP1  0b0111 // It is very wasteful to have a separate itype for IU3_SINGLEs, but lets just be lazy for now.
 #define IT_IU3_ALL_GRP1     0b1000
 #define IT_IU3_ALL_GRP2     0b1001
 #define IT_IU3_ALL_GRP3     0b1010
@@ -64,27 +65,38 @@ namespace kcpu {
 #define ITFLAG_MEM_FAR     ITFLAG(0b0001)
 #define ITFLAG_JMP_LD      ITFLAG(0b0001)
 #define ICFLAG_ALU_NOFGS   ICFLAG(0b1000)
-#define ICFLAG_LJMP_LD     ICFLAG(0b0001)
 #define ICFLAG_MEM_IU3_FAR ICFLAG(0b1000)
 
 // BEGIN DECLS
 
 // SYS/MISC
 #define I_NOP       OC(IT_SYS, 0b0000)
-#define I_MOV       OC(IT_SYS, 0b0001)
+#define I_INT1      OC(IT_SYS, 0b0001)
+#define I_INT2      OC(IT_SYS, 0b0010)
 
-#define I_LJMP      OC(IT_SYS, 0b0010)
-#define I_LDLJMP    OC(IT_SYS, 0b0011)
-#define I_HLT       OC(IT_SYS, 0b0100)
-#define I_ABRT      OC(IT_SYS, 0b0101)
+#define I_MOV       OC(IT_SYS, 0b0011)
+#define I_LCFG      OC(IT_SYS, 0b0100)
+#define I_LFG       OC(IT_SYS, 0b0101)
+#define I_LIHP1     OC(IT_SYS, 0b0110)
+#define I_LIHP2     OC(IT_SYS, 0b0111)
 
-#define I_X_PUSH    OC(IT_SYS, 0b1000).add_flag(P_PRE_I_RSPDEC) // FIXME hack
-#define I_X_POP     OC(IT_SYS, 0b1001)
-#define I_X_CALL    OC(IT_SYS, 0b1010).add_flag(P_PRE_I_RSPDEC) // FIXME hack
-#define I_X_RET     OC(IT_SYS, 0b1011)
+#define I_IOR       OC(IT_SYS, 0b1000)
+#define I_IOW       OC(IT_SYS, 0b1001)
 
-#define I_X_ENTER   OC(IT_SYS, 0b1100).add_flag(P_PRE_I_RSPDEC) // FIXME hack
-#define I_X_LEAVE   OC(IT_SYS, 0b1101).add_flag(P_PRE_I_RSPDEC) // FIXME hack
+#define I_HLT       OC(IT_SYS, 0b1110)
+#define I_ABRT      OC(IT_SYS, 0b1111)
+
+// X
+#define I_X_ENTER   OC(IT_X  , 0b0000).add_flag(P_PRE_I_RSPDEC) // FIXME hack
+#define I_X_LEAVE   OC(IT_X  , 0b0001).add_flag(P_PRE_I_RSPDEC) // FIXME hack
+
+#define I_X_PUSH    OC(IT_X  , 0b0010).add_flag(P_PRE_I_RSPDEC) // FIXME hack
+#define I_X_POP     OC(IT_X  , 0b0011)
+#define I_X_CALL    OC(IT_X  , 0b0100).add_flag(P_PRE_I_RSPDEC) // FIXME hack
+#define I_X_RET     OC(IT_X  , 0b0101)
+
+#define I_X_PUSHFG  OC(IT_X  , 0b0110).add_flag(P_PRE_I_RSPDEC) // FIXME hack
+#define I_X_POPFG   OC(IT_X  , 0b0111)
 
 // ALU
 #define I_ADD2      OC(IT_ALU, 0b0000)
@@ -117,6 +129,9 @@ namespace kcpu {
 #define I_JNS       OC(IT_JMP, 0b0110)
 #define I_JO        OC(IT_JMP, 0b0011)
 #define I_JNO       OC(IT_JMP, 0b0111)
+
+#define I_LJMP      OC(IT_JMP, 0b1001)
+#define I_LDLJMP    OC(IT_JMP, 0b1011)
 
 // IU3_ALL
 #define I_ADD3      OCANY_IU3(IT_IU3_ALL_GRP1, 0b0)

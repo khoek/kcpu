@@ -64,12 +64,19 @@ static const char * PREG_NAMES[] = {
     "d",
 };
 
-#define NUM_SREGS 5
+#define NUM_SREGS 7
 enum sreg_t {
-    REG_IP = 0,
-    REG_UC = 1,
-    REG_IR = 2,
-    REG_FG = 3,
+// First 4 are "c(ontrol)reg"s, remainder are private.
+// HARDWARE NOTE: the CREG-codes in the ucode depend
+//                on this order of the first 4.
+    REG_CFG  = 0,
+    REG_FG   = 1,
+    REG_IHP1 = 2,
+    REG_IHP2 = 3,
+    REG_IP   = 4,
+    REG_UC   = 5,
+    REG_IR   = 6,
+// HARDWARE NOTE: unused register!
 };
 
 }

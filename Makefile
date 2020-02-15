@@ -23,7 +23,7 @@ KASMOBJS := $(TESTKASMOBJS) $(SANDBOXKASMOBJS)
 
 SANDBOXARGS := sandbox/bios.bin sandbox/prog.bin
 
-CXXFLAGS := -std=c++17 -rdynamic -O3
+CXXFLAGS := -std=c++17 -rdynamic -g
 TOOLFLAGS := -I.
 
 all: $(LIB) $(TOOLLIB) $(KASMOBJS) $(TOOLBINS)

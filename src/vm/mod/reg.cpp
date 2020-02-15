@@ -33,7 +33,7 @@ void mod_reg::maybe_assign(bus_state &s, regval_t inst, uinst_t ui, uint8_t iunu
         s.assign(RCTRL_IU_GET_BUS(iu), reg[r]);
 
         if(r == REG_SP) {
-            assert((ui & MASK_CTRL_ACTION) != ACTION_RCTRL_RSP_INC);
+            assert((ui & MASK_CTRL_COMMAND) != COMMAND_RCTRL_RSP_INC);
             // NOTE don't need to check for P_I_RSPDEC here, since there
             // would be no timing problem (the DEC occurs during the FT LOAD).
         }
@@ -46,7 +46,7 @@ void mod_reg::maybe_read(bus_state &s, regval_t inst, uinst_t ui, uint8_t iunum,
         reg[r] = s.read(RCTRL_IU_GET_BUS(iu));
 
         if(r == REG_SP) {
-            assert((ui & MASK_CTRL_ACTION) != ACTION_RCTRL_RSP_INC);
+            assert((ui & MASK_CTRL_COMMAND) != COMMAND_RCTRL_RSP_INC);
             // NOTE don't need to check for P_I_RSPDEC here, since there
             // would be no timing problem (the DEC occurs during the FT LOAD).
         }
@@ -70,16 +70,17 @@ void mod_reg::clock_inputs(regval_t inst, uinst_t ui, bus_state &s) {
     maybe_read(s, inst, ui, 2, RCTRL_DECODE_IU2(ui), INST_GET_IU2(inst));
     maybe_read(s, inst, ui, 3, RCTRL_DECODE_IU3(ui), INST_GET_IU3(inst));
 
-    switch(ui & MASK_CTRL_ACTION) {
-        case ACTION_CTRL_NONE:
-        case ACTION_GCTRL_RFG_BUSB_I: {
+    switch(ui & MASK_CTRL_COMMAND) {
+        case COMMAND_NONE:
+        case COMMAND_IO_READ:
+        case COMMAND_IO_WRITE: {
             break;
         }
-        case ACTION_RCTRL_RSP_INC: {
+        case COMMAND_RCTRL_RSP_INC: {
             reg[REG_SP] += 2;
             break;
         }
-        default: throw vm_error("unknown GCTRL_ACTION");
+        default: throw vm_error("unknown GCTRL_COMMAND");
     }
 }
 

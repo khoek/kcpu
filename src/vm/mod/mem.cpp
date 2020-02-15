@@ -48,30 +48,58 @@ mem_bank & mod_mem::get_bank(bool far) {
     return (prefix[far ? 1 : 0] & F_BANK_SELECT) ? prog : bios;
 }
 
-#define SHOULD_USE_PREFIX_FAR(ui) (!!(ui & MCTRL_USE_PREFIX_FAR))
+#define SHOULD_USE_PREFIX_FAR(ui) (!(ui & MCTRL_FLAG_MODE_N_FAR))
 
 void mod_mem::clock_outputs(uinst_t ui, bus_state &s) {
-    if(ui & MCTRL_FIDD_STORE) {
-        // Note we are just doing "early" address latching,
-        // with `fidd_val` to be updated at the normal time in the inputcall.
-        fidd_adr = s.early_read(BUS_A);
+    if((ui & MASK_MCTRL_BUSMODE) == MCTRL_BUSMODE_DISABLE) {
+        return;
     }
 
-    if(!(ui & MCTRL_N_FIDD_OUT)) {
-        assert(!(ui & MCTRL_FIDD_STORE));
-        s.assign(BUS_F, fidd_val);
-    }
+    switch(ui & MASK_MCTRL_MODE) {
+        case MCTRL_MODE_STPFX:
+        case MCTRL_MODE_STPFX_FAR: {
+            break;
+        }
+        case MCTRL_MODE_FO:
+        case MCTRL_MODE_FO_MI:
+        case MCTRL_MODE_FO_MI_FAR: {
+            s.assign(BUS_F, fidd_val);
+            break;
+        }
+        case MCTRL_MODE_FI:
+        case MCTRL_MODE_FI_MO:
+        case MCTRL_MODE_FI_MO_FAR: {
+            // Note we are just doing "early" address latching,
+            // with `fidd_val` to be updated at the normal time in the inputcall.
+            fidd_adr = s.early_read(BUS_A);
 
-    if(!(ui & MCTRL_N_MAIN_OUT)) {
-        assert(!(ui & MCTRL_MAIN_STORE));
-        if(logger.dump_bus) logger.logf("  MB(%d) -> %04X@%04X\n", SHOULD_USE_PREFIX_FAR(ui), fidd_adr, get_bank(SHOULD_USE_PREFIX_FAR(ui)).load(fidd_adr));
-        s.assign(BUS_M, get_bank(SHOULD_USE_PREFIX_FAR(ui)).load(fidd_adr));
+            if((ui & MASK_MCTRL_MODE) == MCTRL_MODE_FI_MO || (ui & MASK_MCTRL_MODE) == MCTRL_MODE_FI_MO_FAR) {
+                if(logger.dump_bus) {
+                    logger.logf("  MB(%d) -> %04X@%04X\n", SHOULD_USE_PREFIX_FAR(ui), fidd_adr, get_bank(SHOULD_USE_PREFIX_FAR(ui)).load(fidd_adr));
+                }
+                s.assign(BUS_M, get_bank(SHOULD_USE_PREFIX_FAR(ui)).load(fidd_adr));
+            }
+            break;
+        }
+        default: throw vm_error("unknown memmode");
     }
 }
 
 void mod_mem::clock_connects(uinst_t ui, bus_state &s) {
+    if((ui & MASK_MCTRL_BUSMODE) == MCTRL_BUSMODE_DISABLE) {
+        return;
+    }
+
+    // HARDWARE NOTE: remember this!!
+    if((ui & MASK_MCTRL_BUSMODE) == MCTRL_BUSMODE_CONW_BUSB && (
+           (ui & MASK_MCTRL_MODE) == MCTRL_MODE_STPFX
+        || (ui & MASK_MCTRL_MODE) == MCTRL_MODE_STPFX_FAR
+    )) {
+        return;
+    }
+
     bool bm_write = ui & MCTRL_BUSMODE_WRITE;
-    bool bm_x = ui & MCTRL_BUSMODE_X;
+    bool bm_x = (ui & MASK_CTRL_ACTION) == ACTION_MCTRL_BUSMODE_X;
     bool low_bit_set = fidd_adr & 0x1;
 
     bool connect_m_hi = low_bit_set != bm_write;
@@ -79,9 +107,6 @@ void mod_mem::clock_connects(uinst_t ui, bus_state &s) {
     bool connect_b_lo = bm_write != bm_x;
 
     switch(ui & MASK_MCTRL_BUSMODE) {
-        case MCTRL_BUSMODE_NONE: {
-            break;
-        }
         case MCTRL_BUSMODE_CONW_BUSM: {
             s.connect(BUS_F, BUS_M);
             break;
@@ -106,7 +131,7 @@ void mod_mem::clock_connects(uinst_t ui, bus_state &s) {
             }
             break;
         }
-        case MCTRL_BUSMODE_CONH: {
+        default: {
             // Similar to the previous, we only use this busmode to *load*
             // the fiddle register, hence our assumptions here are again
             // safe.
@@ -139,26 +164,44 @@ void mod_mem::clock_connects(uinst_t ui, bus_state &s) {
             s.assign(BUS_F, res);
             break;
         }
-        default: throw vm_error("invalid busmode!");
     }
 }
 
 void mod_mem::clock_inputs(uinst_t ui, bus_state &s) {
-    if(ui & MCTRL_PREFIX_STORE) {
-        assert(!(ui & MCTRL_FIDD_STORE));
-        assert(!(ui & MCTRL_MAIN_STORE));
-        prefix[SHOULD_USE_PREFIX_FAR(ui)] = s.read(BUS_B);
+    if((ui & MASK_MCTRL_BUSMODE) == MCTRL_BUSMODE_DISABLE) {
+        return;
     }
 
-    if(ui & MCTRL_FIDD_STORE) {
-        // Note the address latching happens "early" in the outputcall,
-        // so we are just left to update the actual value here.
-        fidd_val = s.read(BUS_F);
-    }
+    switch(ui & MASK_MCTRL_MODE) {
+        case MCTRL_MODE_STPFX: {
+            prefix[0] = s.read(BUS_B);
+            break;
+        }
+        case MCTRL_MODE_STPFX_FAR: {
+            prefix[1] = s.read(BUS_B);
+            break;
+        }
+        case MCTRL_MODE_FO: {
+            break;
+        }
+        case MCTRL_MODE_FO_MI:
+        case MCTRL_MODE_FO_MI_FAR: {
+            if(logger.dump_bus) {
+                logger.logf("  MB(%d) <- %04X@%04X\n", SHOULD_USE_PREFIX_FAR(ui), fidd_adr, s.read(BUS_M));
+            }
+            get_bank(SHOULD_USE_PREFIX_FAR(ui)).store(fidd_adr, s.read(BUS_M));
 
-    if(ui & MCTRL_MAIN_STORE) {
-        if(logger.dump_bus) logger.logf("  MB(%d) <- %04X@%04X\n", SHOULD_USE_PREFIX_FAR(ui), fidd_adr, s.read(BUS_M));
-        get_bank(SHOULD_USE_PREFIX_FAR(ui)).store(fidd_adr, s.read(BUS_M));
+            break;
+        }
+        case MCTRL_MODE_FI:
+        case MCTRL_MODE_FI_MO:
+        case MCTRL_MODE_FI_MO_FAR: {
+            // Note the address latching happens "early" in the outputcall,
+            // so we are just left to update the actual value here.
+            fidd_val = s.read(BUS_F);
+            break;
+        }
+        default: throw vm_error("unknown memmode");
     }
 }
 

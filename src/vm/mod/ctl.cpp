@@ -47,6 +47,21 @@ void mod_ctl::clock_outputs(uinst_t ui, bus_state &s) {
     if((ui & MASK_GCTRL_FTJM) == GCTRL_JM_P_RIP_BUSB_O) {
         s.assign(BUS_B, reg[REG_IP]);
     }
+
+    switch(ui & MASK_CTRL_ACTION) {
+        case ACTION_CTRL_NONE:
+        case ACTION__UNUSED:
+        case ACTION_MCTRL_BUSMODE_X: {
+            break;
+        }
+        case ACTION_GCTRL_CREG_EN: {
+            if(GCTRL_CREG_IS_OUTPUT(ui)) {
+                s.assign(BUS_B, reg[GCTRL_DECODE_CREG(ui)]);
+            }
+            break;
+        }
+        default: throw vm_error("unknown GCTRL_ACTION");
+    }
 }
 
 void mod_ctl::set_instmask_enabled(bool state) {
@@ -80,12 +95,15 @@ void mod_ctl::clock_inputs(uinst_t ui, bus_state &s) {
     reg[REG_UC]++;
 
     switch(ui & MASK_CTRL_ACTION) {
-        case ACTION_GCTRL_RFG_BUSB_I: {
-            reg[REG_FG] = /* FIXME low mask? */ s.read(BUS_B);
+        case ACTION_CTRL_NONE:
+        case ACTION__UNUSED:
+        case ACTION_MCTRL_BUSMODE_X: {
             break;
         }
-        case ACTION_CTRL_NONE:
-        case ACTION_RCTRL_RSP_INC: {
+        case ACTION_GCTRL_CREG_EN: {
+            if(GCTRL_CREG_IS_INPUT(ui)) {
+                reg[GCTRL_DECODE_CREG(ui)] = s.read(BUS_B);
+            }
             break;
         }
         default: throw vm_error("unknown GCTRL_ACTION");

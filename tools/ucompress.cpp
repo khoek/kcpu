@@ -49,7 +49,7 @@ int main() {
 
     std::cout << (log(ACTRL_FLAGS_OUT) / log(2)) << std::endl;
     std::cout << RCTRL_BASE << std::endl;
-    std::cout << MCTRL_BASE << std::endl;
+    std::cout << ACTRL_BASE << std::endl;
 
     for(uint32_t i = 0; i < UCODE_END; i++) {
         for(uint32_t j = 0; j < UCODE_END; j++) {
@@ -66,7 +66,7 @@ int main() {
                         }
                     }
                     if(!fail) {
-                        std::cout << i << " && " << j << " -> " << k << std::endl;
+                        std::cout << i << " && !" << j << " = " << k << std::endl;
                     }
                 // }
             }

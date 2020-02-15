@@ -69,9 +69,9 @@ void diasm(regval_t ir, uinst_t ui) {
     check_option(ui, MASK_GCTRL_FTJM, GCTRL_JM_INVERTCOND | GCTRL_JCOND_SIGN,      "JM_INV_SIGN");
     check_option(ui, MASK_GCTRL_FTJM, GCTRL_JM_INVERTCOND | GCTRL_JCOND_N_OVFLW,   "JM_INV_N_OVFLW");
 
-    check_option(ui, MASK_GCTRL_FTJM, ACTION_CTRL_NONE,       "ACTION_NONE");
-    check_option(ui, MASK_GCTRL_FTJM, ACTION_GCTRL_RFG_BUSB_I, "ACTION_RFG_BUSB_I");
-    check_option(ui, MASK_GCTRL_FTJM, ACTION_RCTRL_RSP_INC,    "ACTION_RSP_INC");
+    // check_option(ui, MASK_GCTRL_FTJM, ACTION_CTRL_NONE,       "ACTION_NONE");
+    // check_option(ui, MASK_GCTRL_FTJM, ACTION_GCTRL_RFG_BUSB_I, "ACTION_RFG_BUSB_I");
+    // check_option(ui, MASK_GCTRL_FTJM, ACTION_RCTRL_RSP_INC,    "ACTION_RSP_INC");
     // check_option(ui, MASK_GCTRL_FTJM, ACTION_RCTRL_RSP_DEC,    "ACTION_RSP_DEC");
 
     gap();
@@ -100,20 +100,19 @@ void diasm(regval_t ir, uinst_t ui) {
     gap();
 
     // MCTRL
-    check_nbit(ui, MCTRL_USE_PREFIX_FAR, "USE FAR");
-    check_nbit(ui, MCTRL_PREFIX_STORE  , "PRFX STORE");
-    check_ibit(ui, MCTRL_N_MAIN_OUT    , "MAIN OUT");
-    check_nbit(ui, MCTRL_MAIN_STORE    , "MAIN STORE");
-    check_nbit(ui, MCTRL_FIDD_STORE    , "FIDD STORE");
-    check_ibit(ui, MCTRL_N_FIDD_OUT    , "FIDD OUT");
-    check_nbit(ui, MCTRL_BUSMODE_WRITE , "BM_W");
-    check_nbit(ui, MCTRL_BUSMODE_X     , "BM_X");
+    // check_nbit(ui, MCTRL_USE_PREFIX_FAR, "USE FAR");
+    // check_nbit(ui, MCTRL_PREFIX_STORE  , "PRFX STORE");
+    // check_ibit(ui, MCTRL_N_MAIN_OUT    , "MAIN OUT");
+    // check_nbit(ui, MCTRL_MAIN_STORE    , "MAIN STORE");
+    // check_nbit(ui, MCTRL_FIDD_STORE    , "FIDD STORE");
+    // check_ibit(ui, MCTRL_N_FIDD_OUT    , "FIDD OUT");
+    // check_nbit(ui, MCTRL_BUSMODE_WRITE , "BM_W");
+    // check_nbit(ui, MCTRL_BUSMODE_X     , "BM_X");
 
     gap();
 
     // MCTRL BUSMODE
     int match = 0;
-    match += check_option(ui, MASK_MCTRL_BUSMODE, MCTRL_BUSMODE_NONE, "BUSMODE_NONE");
     match += check_option(ui, MASK_MCTRL_BUSMODE, MCTRL_BUSMODE_CONH, "BUSMODE_CONH");
     match += check_option(ui, MASK_MCTRL_BUSMODE, MCTRL_BUSMODE_CONW_BUSM, "BUSMODE_CONW_BUSM");
     match += check_option(ui, MASK_MCTRL_BUSMODE, MCTRL_BUSMODE_CONW_BUSB, "BUSMODE_CONW_BUSB");
