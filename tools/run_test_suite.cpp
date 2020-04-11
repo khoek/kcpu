@@ -71,7 +71,24 @@ static bool run_test(bool verbose, uint32_t num, const std::filesystem::path pat
     throw std::runtime_error("abnormal test end condition!");
 }
 
-int main() {
+int main(int argc, char **argv) {
+    bool noninteractive_mode = false;
+
+    std::vector<std::string> args;
+    for(int i = 1; i < argc; i++) {
+        std::string arg(argv[i]);
+        if(arg == "-n") {
+            noninteractive_mode = true;
+        } else {
+            args.push_back(argv[i]);
+        }
+    }
+
+    if(args.size() > 0) {
+        std::cerr << "Unexpected argument: " << args[0] << std::endl;
+        return 1;
+    }
+    
     std::cout << "--------------------------------------------" << std::endl;
 
     std::vector<std::filesystem::path> tests;
@@ -97,7 +114,7 @@ int main() {
     std::cout << "Test Suite Result: " << colour_str(((tests.size() == passes) ? "SUCCESS" : "FAILED"), tests.size() == passes)
               << ", " << passes << "/" << tests.size() << " passes" << std::endl;
 
-    if(failed.size()) {
+    if(!noninteractive_mode && failed.size()) {
         std::cout << std::endl << "Press any key to re-run " << colour_str("failed", false) << " test '"
                   << failed[0].second.filename().string() << "' verbosely..." << std::endl;
 

@@ -1,6 +1,6 @@
 CXX ?= g++
 
-.PHONY: all clean cloc run run-step run-quiet test dump
+.PHONY: all clean cloc run run-step run-quiet test test-noninteractive dump
 
 SRCS := $(shell find src -type f -name "*.cpp")
 OBJS := $(SRCS:.cpp=.o)
@@ -51,6 +51,9 @@ run-quiet: $(SANDBOXKASMOBJS) $(TOOLBINS)
 
 test: $(TOOLBINS) $(TESTKASMOBJS)
 	bin/run_test_suite
+
+test-noninteractive: $(TOOLBINS) $(TESTKASMOBJS)
+	bin/run_test_suite -n
 
 dump: $(TOOLBINS)
 	bin/arch_dump

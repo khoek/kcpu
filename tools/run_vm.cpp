@@ -24,7 +24,7 @@ int main(int argc, char **argv) {
     }
 
     if(args.size() != 2) {
-        std::cerr << "Need two arguments, the bios and prog bin paths." << std::endl;
+        std::cerr << "Need two non-switch arguments, the bios and prog bin paths." << std::endl;
         return 1;
     }
 
