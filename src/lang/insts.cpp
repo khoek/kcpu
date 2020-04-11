@@ -21,6 +21,16 @@ static void gen_sys() {
         MCTRL_MODE_FO    | MCTRL_BUSMODE_CONW_BUSB | RCTRL_IU1_BUSB_I | GCTRL_FT_EXIT,
     }));
 
+    reg_inst(instruction("INT1" , I_INT1, ARGS_0, {
+        RCTRL_IU1_BUSB_I | GCTRL_JM_P_RIP_BUSB_O,
+        ACTION_GCTRL_CREG_EN | GCTRL_CREG_IHPR1 | GCTRL_CREG_BUSB_O | GCTRL_JM_YES
+    }));
+
+    reg_inst(instruction("INT2" , I_INT2, ARGS_0, {
+        RCTRL_IU1_BUSB_I | GCTRL_JM_P_RIP_BUSB_O,
+        ACTION_GCTRL_CREG_EN | GCTRL_CREG_IHPR2 | GCTRL_CREG_BUSB_O | GCTRL_JM_YES
+    }));
+
     reg_inst(instruction("HLT" , I_HLT , ARGS_0, GCTRL_JM_HALT));
     reg_inst(instruction("ABRT", I_ABRT, ARGS_0, GCTRL_JM_ABRT));
 }
@@ -151,10 +161,10 @@ static void gen_ctl() {
 static void gen_reg() {
     reg_inst(instruction("MOV", I_MOV, ARGS_2_1CONST, RCTRL_IU1_BUSA_O | RCTRL_IU2_BUSA_I | GCTRL_FT_ENTER));
 
-    reg_inst(instruction("LCFG" , I_LCFG,  ARGS_1, RCTRL_IU1_BUSB_O | ACTION_GCTRL_CREG_EN | GCTRL_CREG_CFG   | GCTRL_CREG_BUSB_I));
-    reg_inst(instruction("LFG"  , I_LFG,   ARGS_1, RCTRL_IU1_BUSB_O | ACTION_GCTRL_CREG_EN | GCTRL_CREG_FG    | GCTRL_CREG_BUSB_I));
-    reg_inst(instruction("LIHP1", I_LIHP1, ARGS_1, RCTRL_IU1_BUSB_O | ACTION_GCTRL_CREG_EN | GCTRL_CREG_IHPR1 | GCTRL_CREG_BUSB_I));
-    reg_inst(instruction("LIHP2", I_LIHP2, ARGS_1, RCTRL_IU1_BUSB_O | ACTION_GCTRL_CREG_EN | GCTRL_CREG_IHPR2 | GCTRL_CREG_BUSB_I));
+    reg_inst(instruction("LCFG" , I_LCFG,  ARGS_1, RCTRL_IU1_BUSB_O | ACTION_GCTRL_CREG_EN | GCTRL_CREG_CFG   | GCTRL_CREG_BUSB_I | GCTRL_FT_ENTER));
+    reg_inst(instruction("LFG"  , I_LFG,   ARGS_1, RCTRL_IU1_BUSB_O | ACTION_GCTRL_CREG_EN | GCTRL_CREG_FG    | GCTRL_CREG_BUSB_I | GCTRL_FT_ENTER));
+    reg_inst(instruction("LIHP1", I_LIHP1, ARGS_1, RCTRL_IU1_BUSB_O | ACTION_GCTRL_CREG_EN | GCTRL_CREG_IHPR1 | GCTRL_CREG_BUSB_I | GCTRL_FT_ENTER));
+    reg_inst(instruction("LIHP2", I_LIHP2, ARGS_1, RCTRL_IU1_BUSB_O | ACTION_GCTRL_CREG_EN | GCTRL_CREG_IHPR2 | GCTRL_CREG_BUSB_I | GCTRL_FT_ENTER));
 }
 
 #define NOFLAGSUFFIX "NF"
@@ -204,8 +214,8 @@ static void gen_alu_flagables(uinst_t flagbits) {
 }
 
 static void gen_alu() {
-    gen_alu_flagables(0);
     gen_alu_flagables(ACTRL_FLAGS_OUT | ACTION_GCTRL_CREG_EN | GCTRL_CREG_FG | GCTRL_CREG_BUSB_I);
+    gen_alu_flagables(0);
 }
 
 static void gen_x() {
@@ -281,7 +291,8 @@ static void gen_x() {
 static void gen_io() {
     reg_inst(instruction("IOR" , I_IOR, ARGS_2_1CONST, {
         RCTRL_IU1_BUSA_O | COMMAND_IO_READ,
-        RCTRL_IU2_BUSB_I | GCTRL_FT_ENTER
+        // HARDWARE NOTE (IO_READ together with FT_ENTER means output to busB, not input from busA)
+        RCTRL_IU2_BUSB_I | COMMAND_IO_READ | GCTRL_FT_ENTER
     }));
 
     reg_inst(instruction("IOW" , I_IOW, ARGS_2_1CONST, RCTRL_IU1_BUSA_O | RCTRL_IU1_BUSB_O | COMMAND_IO_WRITE | GCTRL_FT_ENTER));

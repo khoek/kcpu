@@ -7,6 +7,7 @@
 #include "mod/reg.hpp"
 #include "mod/mem.hpp"
 #include "mod/alu.hpp"
+#include "mod/io.hpp"
 
 namespace kcpu {
 
@@ -32,8 +33,8 @@ class vm {
     mod_reg reg;
     mod_mem mem;
     mod_alu alu;
+    mod_io  io;
 
-    vm();
     vm(vm_logger logger);
     uint32_t get_total_clocks();
     STATE get_state();

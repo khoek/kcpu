@@ -17,6 +17,9 @@ static void gen_ctl() {
 static void gen_mem() {
     reg_alias(alias("PUSH", ARGS_1        , virtual_instruction(I_X_PUSH, { slot_reg(REG_SP), slot_arg(0) })));
     reg_alias(alias("POP" , ARGS_1_NOCONST, virtual_instruction(I_X_POP , { slot_reg(REG_SP), slot_arg(0) })));
+
+    reg_alias(alias("PUSHFG", ARGS_0, virtual_instruction(I_X_PUSHFG, { slot_reg(REG_SP) })));
+    reg_alias(alias("POPFG" , ARGS_0, virtual_instruction(I_X_POPFG , { slot_reg(REG_SP) })));
 }
 
 static void gen_alu() {

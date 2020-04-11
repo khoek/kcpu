@@ -1,0 +1,80 @@
+LIHP1 int1
+LIHP2 int2
+
+MOV %rsp %rc
+
+TST $0xFFFF
+
+MOV $1 %rb
+INT1
+MOV $1 %rb
+INT1
+MOV $2 %rb
+INT2
+MOV $1 %rb
+INT1
+MOV $2 %rb
+INT2
+
+JZ fail
+
+CMP %rc %rsp
+JNE fail
+
+HLT
+
+
+
+int1:
+    PUSHFG
+    PUSH %ra
+    PUSH %rb
+    PUSH %rc
+    PUSH %rd
+    PUSH %rbp
+    MOV %rid %ra
+    ST intret %ra
+
+    CMP $1 %rb
+    JNE fail
+
+    JMP int1_exit
+
+    int1_exit:
+        POP %rbp
+        POP %rd
+        POP %rc
+        POP %rb
+        POP %ra
+        POPFG
+        LDJMP intret
+
+int2:
+    PUSHFG
+    PUSH %ra
+    PUSH %rb
+    PUSH %rc
+    PUSH %rd
+    PUSH %rbp
+    MOV %rid %ra
+    ST intret %ra
+
+    CMP $2 %rb
+    JNE fail
+
+    JMP int2_exit
+
+    int2_exit:
+        POP %rbp
+        POP %rd
+        POP %rc
+        POP %rb
+        POP %ra
+        POPFG
+        LDJMP intret
+
+intret:
+    NOP
+
+fail:
+    ABRT

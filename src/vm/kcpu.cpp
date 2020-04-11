@@ -5,8 +5,7 @@
 
 namespace kcpu {
 
-vm::vm() : total_clocks(0), ctl(logger), reg(logger), mem(logger), alu(logger) { }
-vm::vm(vm_logger l) : total_clocks(0), logger(l), ctl(logger), reg(logger), mem(logger), alu(logger) { }
+vm::vm(vm_logger l) : total_clocks(0), logger(l), ctl(logger), reg(logger), mem(logger), alu(logger), io(logger) { }
 
 uint32_t vm::get_total_clocks() {
     return total_clocks;
@@ -50,6 +49,7 @@ vm::STATE vm::ustep() {
 
     bus_state state(logger);
 
+    io.clock_outputs(ui, state);
     ctl.clock_outputs(ui, state);
     alu.clock_outputs(ui, state);
     // `mod_reg` must appear after `mod_ctl` and before `mod_mem`
@@ -66,6 +66,7 @@ vm::STATE vm::ustep() {
     mem.clock_inputs(ui, state);
     reg.clock_inputs(i, ui, state);
     ctl.clock_inputs(ui, state);
+    io.clock_inputs(ui, state);
 
     return get_state();
 }

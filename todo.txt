@@ -9,13 +9,9 @@ SOFT/FIRMWARE:
 
 
   In the VM:
-    * FIX THE BUS IN THE MEMORY UCODE STUFF (explained there in a fixme)
 
-
-  Fix bug by moving the BUSMODE_X flag into one of the free spots in the CTL or GTRL actions, since they are only needed during byte-type operations
-
-Also, for the IO bus use bus hold devices to decouple them, instead of having a silly intermediate IO controller register
-(but remember we want the IO modules to be able to asynchronously call in their results and move on with their lives)
+  * Also, for the IO bus use bus hold devices to decouple them, instead of having a silly intermediate IO controller register
+  (but remember we want the IO modules to be able to asynchronously call in their results and move on with their lives)
 
 
 
