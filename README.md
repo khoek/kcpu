@@ -1,4 +1,4 @@
-# kCPU Virtual Machine
+# kCPU Virtual Machine ![C/C++ CI](https://github.com/khoek/kcpu-vm/workflows/C/C++%20CI/badge.svg)
 
 A hardware-simulating virtual machine for my CPU architecture `kCPU`.
 
