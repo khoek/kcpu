@@ -23,15 +23,15 @@ static uint16_t uaddr(regval_t inst, ucval_t uc) {
 }
 
 slot slot_reg(preg_t reg) {
-    return {.kind = slot::SLOT_REG, .val = { .reg = reg } };
+    return (slot) {.kind = slot::SLOT_REG, .val = { .reg = reg } };
 }
 
 slot slot_arg(uint8_t argidx) {
-    return {.kind = slot::SLOT_ARG, .val = { .argidx = argidx } };
+    return (slot) {.kind = slot::SLOT_ARG, .val = { .argidx = argidx } };
 }
 
 slot slot_constval(regval_t constval) {
-    return {.kind = slot::SLOT_CONSTVAL, .val = { .constval = constval } };
+    return (slot) {.kind = slot::SLOT_CONSTVAL, .val = { .constval = constval } };
 }
 
 static std::vector<slot> get_slots(argtype args) {

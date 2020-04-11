@@ -8,12 +8,56 @@ on:
 
 jobs:
   build:
+    name: ${{ matrix.name }}
+    runs-on: ${{ matrix.os }}
 
-    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        name: [
+          ubuntu-18.04-gcc-9,
+          ubuntu-18.04-clang-9,
+          macOS-10.15-gcc-9,
+        ]
+
+        include:
+          - name: ubuntu-18.04-gcc-9
+            os: ubuntu-18.04
+            compiler: gcc
+            version: "9"
+
+          - name: ubuntu-18.04-clang-9
+            os: ubuntu-18.04
+            compiler: clang
+            version: "9"
+
+          - name: macOS-10.15-gcc-9
+            os: macOS-10.15
+            compiler: gcc
+            version: "9"
 
     steps:
     - uses: actions/checkout@v2
+      
+    - name: prepare tools (Linux)
+      if: runner.os == 'Linux'
+      run: |
+        if [ "${{ matrix.compiler }}" = "gcc" ]; then
+          echo "::set-env name=CC::gcc-${{ matrix.version }}"
+          echo "::set-env name=CXX::g++-${{ matrix.version }}"
+        else
+          echo "::set-env name=CC::clang-${{ matrix.version }}"
+          echo "::set-env name=CXX::clang++-${{ matrix.version }}"
+        fi
+
+    - name: prepare tools (macOS)
+      if: runner.os == 'macOS'
+      run: |
+        echo "::set-env name=CC::gcc-${{ matrix.version }}"
+        echo "::set-env name=CXX::g++-${{ matrix.version }}"
+      
     - name: make
       run: make
+
     - name: make test
       run: make test

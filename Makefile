@@ -1,3 +1,5 @@
+CXX ?= g++
+
 .PHONY: all clean cloc run run-step run-quiet test dump
 
 SRCS := $(shell find src -type f -name "*.cpp")
@@ -23,7 +25,7 @@ KASMOBJS := $(TESTKASMOBJS) $(SANDBOXKASMOBJS)
 
 SANDBOXARGS := sandbox/bios.bin sandbox/prog.bin
 
-CXXFLAGS := -std=c++17 -rdynamic -g
+CXXFLAGS := -std=c++17 -rdynamic -O3
 TOOLFLAGS := -I.
 
 all: $(LIB) $(TOOLLIB) $(KASMOBJS) $(TOOLBINS)
@@ -63,13 +65,13 @@ $(KASMOBJS): %.bin: %.kasm ./bin/kasm
 	bin/kasm $< $@
 
 $(OBJS): %.o: %.cpp $(HDRS) Makefile
-	g++ $(CXXFLAGS) -c $< -o $@
+	$(CXX) $(CXXFLAGS) -c $< -o $@
 
 $(TOOLLIBOBJS): %.o: %.cpp $(HDRS) $(TOOLLIBHDRS) Makefile
-	g++ $(CXXFLAGS) $(TOOLFLAGS) -c $< -o $@
+	$(CXX) $(CXXFLAGS) $(TOOLFLAGS) -c $< -o $@
 
 $(TOOLBINS): bin/%: tools/%.cpp $(HDRS) $(LIB) $(TOOLLIB) Makefile
-	g++ $(TOOLFLAGS) $(CXXFLAGS) $< $(TOOLLIB) $(LIB) -o $@
+	$(CXX) $(TOOLFLAGS) $(CXXFLAGS) $< $(TOOLLIB) $(LIB) -o $@
 
 $(LIB): $(OBJS) Makefile
 	mkdir -p bin/lib
