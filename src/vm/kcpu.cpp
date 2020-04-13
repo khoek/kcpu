@@ -35,9 +35,8 @@ vm::STATE vm::ustep() {
         throw vm_error("cpu already halted!");
     }
 
-    bool io_done = false; // FIXME implement this.
-
-    ctl.offclock_pulse(io_done);
+    // This must be called before `ctl.get_uinst()`, as it sets up the value of the uinst latch.
+    ctl.offclock_pulse(io.get_io_done());
 
     regval_t i = ctl.get_inst();
     uinst_t ui = ctl.get_uinst();

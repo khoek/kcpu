@@ -41,6 +41,7 @@ class mod_ctl {
     void dump_registers();
     regval_t get_inst();
     uinst_t get_uinst();
+
     void clock_outputs(uinst_t ui, bus_state &s);
     void clock_inputs(uinst_t ui, bus_state &s);
     void offclock_pulse(bool io_done);

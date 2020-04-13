@@ -40,6 +40,7 @@ class mod_mem {
 
     mod_mem(vm_logger &logger);
     void dump_registers();
+
     void clock_outputs(uinst_t ui, bus_state &s);
     void clock_connects(uinst_t ui, bus_state &s);
     void clock_inputs(uinst_t ui, bus_state &s);
