@@ -68,6 +68,10 @@ vm::STATE vm::ustep() {
     ctl.clock_inputs(ui, state);
     io.clock_inputs(ui, state);
 
+    bool io_done = false; // FIXME implement this.
+
+    ctl.offclock_pulse(ui, io_done);
+
     return get_state();
 }
 

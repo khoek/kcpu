@@ -1,5 +1,5 @@
-#include <sstream>
 #include <cassert>
+#include <sstream>
 
 #include "opclass.hpp"
 #include "inst.hpp"

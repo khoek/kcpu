@@ -1,3 +1,4 @@
+#include <cassert>
 #include <fstream>
 #include <algorithm>
 
@@ -31,6 +32,8 @@ int main() {
     std::vector<std::string> blacklist = {
         "HLT", "ABRT",
         "STPFX", "FAR STPFX",
+        "IOR", "IOW",
+        "INT1", "INT2",
         "CALL", "RET", "X_CALL", "X_RET",
         "JMP", "LJMP",
         "LDJMP", "LDLJMP",
@@ -52,7 +55,8 @@ int main() {
 
         of_everything << a.name;
         for(int j = 0; j < a.args.count; j++) {
-            of_everything << " %r" << kcpu::PREG_NAMES[j + 2];
+            assert(a.args.count < 8 - 4);
+            of_everything << " %r" << kcpu::PREG_NAMES[j + 4];
         }
         of_everything << std::endl;
     }

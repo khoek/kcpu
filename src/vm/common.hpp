@@ -1,6 +1,7 @@
 #ifndef VM_COMMON_H
 #define VM_COMMON_H
 
+#include <sstream>
 #include "../types.hpp"
 #include "../except.hpp"
 #include "../spec/hw.hpp"
@@ -11,6 +12,16 @@ class vm_error : public bt_error {
     public:
     vm_error(const std::string &arg);
 };
+
+static inline void vm_assert_raw(bool cond, const char *file, int line) {
+    if(!cond) {
+        std::stringstream ss;
+        ss << "assertion failed! " << file << ":" << line;
+        throw vm_error(ss.str());
+    }
+}
+
+#define vm_assert(cond) vm_assert_raw((cond), __FILE__, __LINE__)
 
 class vm_logger {
     public:

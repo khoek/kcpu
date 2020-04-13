@@ -1,5 +1,5 @@
-#include <cassert>
 #include "../../spec/ucode.hpp"
+#include "../common.hpp"
 #include "mem.hpp"
 
 namespace kcpu {
@@ -123,7 +123,7 @@ void mod_mem::clock_connects(uinst_t ui, bus_state &s) {
             // That is, there is no reason this can't happen due to
             // ucode design, but we don't use it and don't support it
             // right now.
-            assert(!s.is_assigned(BUS_B));
+            vm_assert(!s.is_assigned(BUS_B));
             if(!should_flip) {
                 s.assign(BUS_B,           s.early_read(BUS_F));
             } else {

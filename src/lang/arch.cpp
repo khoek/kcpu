@@ -1,4 +1,4 @@
-
+#include <cassert>
 #include <sstream>
 #include <iterator>
 

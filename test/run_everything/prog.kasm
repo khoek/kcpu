@@ -21,6 +21,7 @@ FAR STBH %ra %rb
 FAR STBL %ra %rb
 FAR STW %ra %rb
 FAR STWO %ra %rb %rc
+LCFG %ra
 LDBH %ra %rb
 LDBHZ %ra %rb
 LDBL %ra %rb
@@ -28,6 +29,9 @@ LDBLZ %ra %rb
 LDW %ra %rb
 LDWO %ra %rb %rc
 LEAVE
+LFG %ra
+LIHP1 %ra
+LIHP2 %ra
 LSFT %ra
 LSFTNF %ra
 MOV %ra %rb
@@ -37,7 +41,9 @@ NOT %ra
 OR %ra %rb
 ORNF %ra %rb
 POP %ra
+POPFG
 PUSH %ra
+PUSHFG
 RSFT %ra
 RSFTNF %ra
 STBH %ra %rb
@@ -54,6 +60,8 @@ X_ENTER %ra %rb
 X_ENTERFR %ra %rb
 X_LEAVE %ra %rb
 X_POP %ra %rb
+X_POPFG %ra
 X_PUSH %ra %rb
+X_PUSHFG %ra
 HLT
 ABRT

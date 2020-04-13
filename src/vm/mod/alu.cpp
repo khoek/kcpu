@@ -1,6 +1,6 @@
-#include <cassert>
 #include <stdexcept>
 #include "../../spec/ucode.hpp"
+#include "../common.hpp"
 #include "alu.hpp"
 
 namespace kcpu {
@@ -100,12 +100,12 @@ static op *ops[] = {&add_op, &sub_op, &and_op, &or_op, &xor_op, &lsft_op, &rshf_
 
 void mod_alu::clock_outputs(uinst_t ui, bus_state &s) {
     if(ui & ACTRL_DATA_OUT) {
-        assert(!(ui & ACTRL_INPUT_EN));
+        vm_assert(!(ui & ACTRL_INPUT_EN));
         s.assign(BUS_A, result.val);
     }
 
     if(ui & ACTRL_FLAGS_OUT) {
-        assert(!(ui & ACTRL_INPUT_EN));
+        vm_assert(!(ui & ACTRL_INPUT_EN));
         s.assign(BUS_B, result.flags);
     }
 }
@@ -117,7 +117,7 @@ void mod_alu::clock_inputs(uinst_t ui, bus_state &s) {
             throw vm_error("unknown ACTRL_MODE");
         }
 
-        assert(ops[mode]->mode == mode);
+        vm_assert(ops[mode]->mode == mode);
         result = ops[mode]->eval(s.read(BUS_A), s.read(BUS_B));
     }
 }

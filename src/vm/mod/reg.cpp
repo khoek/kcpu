@@ -1,7 +1,7 @@
 #include "../../spec/ucode.hpp"
 #include "../../spec/inst.hpp"
+#include "../common.hpp"
 #include "reg.hpp"
-#include <cassert>
 
 namespace kcpu {
 
@@ -33,7 +33,7 @@ void mod_reg::maybe_assign(bus_state &s, regval_t inst, uinst_t ui, uint8_t iunu
         s.assign(RCTRL_IU_GET_BUS(iu), reg[r]);
 
         if(r == REG_SP) {
-            assert((ui & MASK_CTRL_COMMAND) != COMMAND_RCTRL_RSP_INC);
+            vm_assert((ui & MASK_CTRL_COMMAND) != COMMAND_RCTRL_RSP_INC);
             // NOTE don't need to check for P_I_RSPDEC here, since there
             // would be no timing problem (the DEC occurs during the FT LOAD).
         }
@@ -46,7 +46,7 @@ void mod_reg::maybe_read(bus_state &s, regval_t inst, uinst_t ui, uint8_t iunum,
         reg[r] = s.read(RCTRL_IU_GET_BUS(iu));
 
         if(r == REG_SP) {
-            assert((ui & MASK_CTRL_COMMAND) != COMMAND_RCTRL_RSP_INC);
+            vm_assert((ui & MASK_CTRL_COMMAND) != COMMAND_RCTRL_RSP_INC);
             // NOTE don't need to check for P_I_RSPDEC here, since there
             // would be no timing problem (the DEC occurs during the FT LOAD).
         }

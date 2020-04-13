@@ -62,6 +62,20 @@ void mod_ctl::clock_outputs(uinst_t ui, bus_state &s) {
         }
         default: throw vm_error("unknown GCTRL_ACTION");
     }
+
+    switch(ui & MASK_CTRL_COMMAND) {
+        case COMMAND_NONE:
+        case COMMAND_RCTRL_RSP_INC: {
+            break;
+        }
+        case COMMAND_IO_READ: {
+            break;
+        }
+        case COMMAND_IO_WRITE: {
+            break;
+        }
+        default: throw vm_error("unknown CTRL_COMMAND");
+    }
 }
 
 void mod_ctl::set_instmask_enabled(bool state) {
@@ -90,9 +104,25 @@ void mod_ctl::ft_enter() {
 }
 
 void mod_ctl::clock_inputs(uinst_t ui, bus_state &s) {
-    // HARDWARE NOTE This register can be simultaneously reset under the GCTRL_FT_ENTER/MAYBEEXIT/EXIT conditions, but we
-    // assume that (presumably async) reset signal dominates this increment.
-    reg[REG_UC]++;
+    if(!cbits[CBIT_IO_WAIT]) {
+        // HARDWARE NOTE This register can be simultaneously reset under the GCTRL_FT_ENTER/MAYBEEXIT/EXIT conditions, but we
+        // assume that (presumably async) reset signal dominates this increment.
+        reg[REG_UC]++;
+    }
+
+    // HARDWARE NOTE: As comment at definition, CBIT_IO_WAIT must be set AFTER it is checked to incrememnt REG_UC.
+    switch(ui & MASK_CTRL_COMMAND) {
+        case COMMAND_NONE:
+        case COMMAND_RCTRL_RSP_INC: {
+            break;
+        }
+        case COMMAND_IO_READ:
+        case COMMAND_IO_WRITE: {
+            cbits[CBIT_IO_WAIT] = true;
+            break;
+        }
+        default: throw vm_error("unknown CTRL_COMMAND");
+    }
 
     switch(ui & MASK_CTRL_ACTION) {
         case ACTION_CTRL_NONE:
@@ -152,6 +182,23 @@ void mod_ctl::clock_inputs(uinst_t ui, bus_state &s) {
             }
             ft_enter();
         }
+    }
+}
+
+void mod_ctl::offclock_pulse(uinst_t ui, bool io_done) {
+    switch(ui & MASK_CTRL_COMMAND) {
+        case COMMAND_NONE:
+        case COMMAND_RCTRL_RSP_INC: {
+            break;
+        }
+        case COMMAND_IO_READ:
+        case COMMAND_IO_WRITE: {
+            if(io_done) {
+                cbits[CBIT_IO_WAIT] = false;
+            }
+            break;
+        }
+        default: throw vm_error("unknown CTRL_COMMAND");
     }
 }
 
