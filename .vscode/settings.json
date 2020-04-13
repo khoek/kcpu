@@ -68,7 +68,8 @@
         "cfenv": "cpp",
         "typeindex": "cpp",
         "variant": "cpp",
-        "*.ipp": "cpp"
+        "*.ipp": "cpp",
+        "future": "cpp"
     },
 
     "editor.trimAutoWhitespace": true,

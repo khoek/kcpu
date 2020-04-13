@@ -5,7 +5,7 @@
 
 namespace kcpu {
 
-vm::vm(vm_logger l) : total_clocks(0), logger(l), ctl(logger), reg(logger), mem(logger), alu(logger), io(logger) { }
+vm::vm(vm_logger l) : total_clocks(0), logger(l), ctl(logger), reg(logger), mem(logger), alu(logger), ioc(logger) { }
 
 uint32_t vm::get_total_clocks() {
     return total_clocks;
@@ -25,6 +25,7 @@ void vm::dump_registers() {
     mem.dump_registers();
     reg.dump_registers();
     alu.dump_registers();
+    ioc.dump_registers();
     logger.logf("\n");
 }
 
@@ -36,7 +37,8 @@ vm::STATE vm::ustep() {
     }
 
     // This must be called before `ctl.get_uinst()`, as it sets up the value of the uinst latch.
-    ctl.offclock_pulse(io.get_io_done());
+    ctl.offclock_pulse(ioc.is_io_done());
+    ioc.offclock_pulse();
 
     regval_t i = ctl.get_inst();
     uinst_t ui = ctl.get_uinst();
@@ -52,24 +54,22 @@ vm::STATE vm::ustep() {
 
     bus_state state(logger);
 
-    io.clock_outputs(ui, state);
     ctl.clock_outputs(ui, state);
     alu.clock_outputs(ui, state);
     // `mod_reg` must appear after `mod_ctl` and before `mod_mem`
-    // FIXME hand over the high four RCTRL registers to GCTRL, for a better model
-    // of the real situation.
     reg.clock_outputs(i, ui, !ctl.cbits[CBIT_INSTMASK] && (ctl.reg[REG_UC] == 0x0), state);
     mem.clock_outputs(ui, state);
+    ioc.clock_outputs(ui, state);
 
     mem.clock_connects(ui, state);
 
     state.freeze();
 
-    alu.clock_inputs(ui, state);
+    ioc.clock_inputs(ui, state);
     mem.clock_inputs(ui, state);
     reg.clock_inputs(i, ui, state);
+    alu.clock_inputs(ui, state);
     ctl.clock_inputs(ui, state);
-    io.clock_inputs(ui, state);
 
     return get_state();
 }

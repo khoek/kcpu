@@ -50,6 +50,8 @@ void bus_state::freeze() {
 }
 
 void bus_state::assign(bus_t b, regval_t val) {
+    if(logger.dump_bus) logger.logf("  %s <- %X\n", BUS_NAMES[b], val);
+
     if(frozen) {
         throw vm_error("bus state frozen!");
     }
@@ -57,8 +59,6 @@ void bus_state::assign(bus_t b, regval_t val) {
     if(set[b]) {
         throw vm_error("out bus collision");
     }
-
-    if(logger.dump_bus) logger.logf("  %s <- %X\n", BUS_NAMES[b], val);
 
     set[b] = true;
     bus[b] = val;

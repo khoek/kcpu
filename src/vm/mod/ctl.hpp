@@ -12,7 +12,7 @@ namespace kcpu {
 // This bit is a bit tricky.
 // It is set on CLK rising edge whenever IO_READ or IO_WRITE are asserted.
 // It is cleared on CLK falling edge whenever IO_DONE is asserted.
-
+//
 // Moreover, it masks the UC increment and UC unlatching, subject to: if IO_DONE is asserted on a CLK
 // falling edge (so that CBIT_IO_WAIT should be cleared) simultaneously the its UC unlatching-inhbit
 // function does not occur (that is, IO_DONE hard overrides the UC unlatching-inhibit function of this bit,

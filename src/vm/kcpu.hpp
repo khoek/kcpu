@@ -33,7 +33,7 @@ class vm {
     mod_reg reg;
     mod_mem mem;
     mod_alu alu;
-    mod_io  io;
+    mod_io  ioc;
 
     vm(vm_logger logger);
     uint32_t get_total_clocks();

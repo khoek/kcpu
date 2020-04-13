@@ -289,15 +289,8 @@ static void gen_x() {
 }
 
 static void gen_io() {
-    // FIXME hmmm, can we get it so IORs could potentially complete in 1 clock for a "direct type" io module (just exposing one or more off-chip registers, say on a graphics chip video buffer or a serial chip command register)
-
-    reg_inst(instruction("IOR" , I_IOR, ARGS_2_1CONST, {
-        RCTRL_IU1_BUSA_O | COMMAND_IO_READ,
-        // HARDWARE NOTE (IO_READ together with FT_ENTER means output to busB, not input from busA)
-        RCTRL_IU2_BUSB_I | COMMAND_IO_READ | GCTRL_FT_ENTER
-    }));
-
-    reg_inst(instruction("IOW" , I_IOW, ARGS_2_1CONST, RCTRL_IU1_BUSA_O | RCTRL_IU1_BUSB_O | COMMAND_IO_WRITE | GCTRL_FT_ENTER));
+    reg_inst(instruction("IOR", I_IOR, ARGS_2_1CONST, RCTRL_IU1_BUSA_O | RCTRL_IU2_BUSB_I | COMMAND_IO_READ  | GCTRL_FT_ENTER));
+    reg_inst(instruction("IOW", I_IOW, ARGS_2_1CONST, RCTRL_IU1_BUSA_O | RCTRL_IU2_BUSB_O | COMMAND_IO_WRITE | GCTRL_FT_ENTER));
 }
 
 void kcpu::internal::register_insts() {

@@ -23,13 +23,21 @@ mod_ctl::mod_ctl(vm_logger &logger) : logger(logger) {
 void mod_ctl::dump_registers() {
     logger.logf("RIP: %04X RUC: %04X\n", reg[REG_IP], reg[REG_UC]);
     logger.logf("RIR: %04X RFG: %04X\n", reg[REG_IR], reg[REG_FG]);
-    logger.logf("CBITS: %c%c\n", cbits[CBIT_INSTMASK] ? 'M' : 'm', cbits[CBIT_HALTED] ? 'H' : 'h');
+    logger.logf("CBITS: %c%c%c%c\n",
+        cbits[CBIT_INSTMASK] ? 'M' : 'm',
+        cbits[CBIT_HALTED]   ? 'H' : 'h',
+        cbits[CBIT_ABORTED]  ? 'A' : 'a',
+        cbits[CBIT_IO_WAIT]  ? 'W' : 'w'
+    );
 }
 
 #define LOAD_INSTVAL 0
 
 regval_t mod_ctl::get_inst() {
-    return cbits[CBIT_INSTMASK] ? LOAD_INSTVAL : reg[REG_IR];
+    // HARDWARE NOTE: CBIT_IO_WAIT inhibits CBIT_INSTMASK, for obvious reasons,
+    // EXCEPT WHEN IO_DONE IS ASSERTED, WHEN CBIT_INSTMASK BEHAVES AS NORMAL.
+    // (This is the actual behaviour as emulated, see the hardware note in `offclock_pulse()`.)
+    return (cbits[CBIT_INSTMASK] && !cbits[CBIT_IO_WAIT]) ? LOAD_INSTVAL : reg[REG_IR];
 }
 
 uinst_t mod_ctl::get_uinst() {
@@ -40,7 +48,7 @@ void mod_ctl::clock_outputs(uinst_t ui, bus_state &s) {
     // HARDWARE NOTE: in real life this could be toggled-on during a
     // cycle (I think only if we enter a NOP without the mask up),
     // so make sure we wont get a short/bus collision if that happens.
-    if(cbits[CBIT_INSTMASK] && !(reg[REG_UC] & 0x1)) {
+    if(cbits[CBIT_INSTMASK] && !cbits[CBIT_IO_WAIT] && !(reg[REG_UC] & 0x1)) {
         s.assign(BUS_A, reg[REG_IP]);
     }
 
@@ -186,13 +194,13 @@ void mod_ctl::clock_inputs(uinst_t ui, bus_state &s) {
 }
 
 void mod_ctl::offclock_pulse(bool io_done) {
+    if(io_done) {
+        cbits[CBIT_IO_WAIT] = false;
+    }
+
     // HARDWARE NOTE: note that io_done overrides CBIT_IO_WAIT here, and then immediately clears it.
     if(io_done || !cbits[CBIT_IO_WAIT]) {
         uinst_latch_val = arch::self().ucode_read(get_inst(), reg[REG_UC]);
-    }
-
-    if(io_done) {
-        cbits[CBIT_IO_WAIT] = false;
     }
 }
 
