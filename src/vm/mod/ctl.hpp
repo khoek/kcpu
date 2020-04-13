@@ -27,6 +27,8 @@ class mod_ctl {
     private:
     vm_logger &logger;
 
+    uinst_t uinst_latch_val;
+
     void set_instmask_enabled(bool state);
     void ft_enter();
 
@@ -41,7 +43,7 @@ class mod_ctl {
     uinst_t get_uinst();
     void clock_outputs(uinst_t ui, bus_state &s);
     void clock_inputs(uinst_t ui, bus_state &s);
-    void offclock_pulse(uinst_t ui, bool io_done);
+    void offclock_pulse(bool io_done);
 };
 
 }

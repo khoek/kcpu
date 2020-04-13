@@ -33,7 +33,7 @@ regval_t mod_ctl::get_inst() {
 }
 
 uinst_t mod_ctl::get_uinst() {
-    return arch::self().ucode_read(get_inst(), reg[REG_UC]);
+    return uinst_latch_val;
 }
 
 void mod_ctl::clock_outputs(uinst_t ui, bus_state &s) {
@@ -185,20 +185,14 @@ void mod_ctl::clock_inputs(uinst_t ui, bus_state &s) {
     }
 }
 
-void mod_ctl::offclock_pulse(uinst_t ui, bool io_done) {
-    switch(ui & MASK_CTRL_COMMAND) {
-        case COMMAND_NONE:
-        case COMMAND_RCTRL_RSP_INC: {
-            break;
-        }
-        case COMMAND_IO_READ:
-        case COMMAND_IO_WRITE: {
-            if(io_done) {
-                cbits[CBIT_IO_WAIT] = false;
-            }
-            break;
-        }
-        default: throw vm_error("unknown CTRL_COMMAND");
+void mod_ctl::offclock_pulse(bool io_done) {
+    // HARDWARE NOTE: note that io_done overrides CBIT_IO_WAIT here, and then immediately clears it.
+    if(io_done || !cbits[CBIT_IO_WAIT]) {
+        uinst_latch_val = arch::self().ucode_read(get_inst(), reg[REG_UC]);
+    }
+
+    if(io_done) {
+        cbits[CBIT_IO_WAIT] = false;
     }
 }
 

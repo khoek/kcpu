@@ -35,6 +35,10 @@ vm::STATE vm::ustep() {
         throw vm_error("cpu already halted!");
     }
 
+    bool io_done = false; // FIXME implement this.
+
+    ctl.offclock_pulse(io_done);
+
     regval_t i = ctl.get_inst();
     uinst_t ui = ctl.get_uinst();
     if(logger.dump_bus) logger.logf("IP/UC @ I/UI: 0x%04X/0x%04X @ 0x%04X/0x%04lX\n", ctl.reg[REG_IP], ctl.reg[REG_UC], i, ui);
@@ -67,10 +71,6 @@ vm::STATE vm::ustep() {
     reg.clock_inputs(i, ui, state);
     ctl.clock_inputs(ui, state);
     io.clock_inputs(ui, state);
-
-    bool io_done = false; // FIXME implement this.
-
-    ctl.offclock_pulse(ui, io_done);
 
     return get_state();
 }
