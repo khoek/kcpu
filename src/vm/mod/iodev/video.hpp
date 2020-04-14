@@ -18,18 +18,20 @@ class video : public io_device {
 
     static const unsigned int REG_CMD    = 0;
     static const unsigned int REG_STREAM = 1;
-    static const unsigned int REG_ADDR   = 2;
-    static const unsigned int REG_DATA   = 3;
-    static const unsigned int REGISTER_COUNT = 4;
+    static const unsigned int REG_HIADDR = 2;
+    static const unsigned int REG_LOADDR = 3;
+    static const unsigned int REG_DATA   = 4;
+    static const unsigned int REGISTER_COUNT = 5;
 
     static const unsigned int CMD_FLIP = 0x01;
 
-    char *buffer[2];
-
     renderer *rend;
 
-    regval_t addr;
+    regval_t hiaddr = 0;
+    regval_t loaddr = 0;
 
+    constexpr unsigned int get_framebuffer_size();
+    unsigned int get_addr();
     void handle_command(regval_t cmd);
 
     public:

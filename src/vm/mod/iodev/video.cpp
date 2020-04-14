@@ -9,6 +9,16 @@ video::~video() {
     delete rend;
 }
 
+constexpr unsigned int video::get_framebuffer_size() {
+    return WIDTH * PIXEL_WIDTH * HEIGHT * PIXEL_WIDTH * 4;
+}
+
+unsigned int video::get_addr() {
+    unsigned int addr = (((unsigned int) hiaddr) << 16) | ((unsigned int) loaddr);
+    vm_assert(addr < get_framebuffer_size());
+    return addr;
+}
+
 std::vector<regval_t> video::get_reserved_ports() {
     std::vector<regval_t> ports;
     for(int i = 0; i < REGISTER_COUNT; i++) {
@@ -41,16 +51,20 @@ halfcycle_count_t video::write(regval_t port, regval_t val) {
             throw new vm_error("unimplemented");
             break;
         }
-        case REG_ADDR: {
-            addr = val;
+        case REG_HIADDR: {
+            hiaddr = val;
+            break;
+        }
+        case REG_LOADDR: {
+            loaddr = val;
             break;
         }
         case REG_DATA: {
-            int addr_r = addr / (WIDTH * 4);
-            int addr_c = (addr % (WIDTH * 4)) / 4;
-            int addr_comp = addr % 4;
+            unsigned int addr = get_addr();
+            unsigned int addr_r = addr / (WIDTH * 4);
+            unsigned int addr_c = (addr % (WIDTH * 4)) / 4;
+            unsigned int addr_comp = addr % 4;
 
-            // FIXME bounds check
             for(int r = 0; r < PIXEL_WIDTH; r++) {
                 for(int c = 0; c < PIXEL_WIDTH; c++) {
                     int new_r = r + (PIXEL_WIDTH * addr_r);
@@ -72,12 +86,12 @@ std::pair<regval_t, halfcycle_count_t> video::read(regval_t port) {
 
     switch(reg) {
         case REG_DATA: {
-            // FIXME bounds check
-            return std::pair(rend->get_next_framebuffer()[addr], 0);
+            return std::pair(rend->get_next_framebuffer()[get_addr()], 0);
         }
-        case REG_CMD: throw new vm_error("cannot read from graphics command register");
-        case REG_STREAM: throw new vm_error("cannot read from graphics stream register");
-        case REG_ADDR: throw new vm_error("cannot read from graphics address register");
+        case REG_CMD:
+        case REG_STREAM:
+        case REG_HIADDR:
+        case REG_LOADDR: throw new vm_error("cannot read from that graphics register");
         default: throw new vm_error("unknown graphics register");
     }
 }

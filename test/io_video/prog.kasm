@@ -5,7 +5,7 @@ MOV $0 %rb
 loop:
     INC %rsp
 
-    IOW $0xC2 %rb
+    IOW $0xC3 %rb
 
     MOV $0x33 %rd
     AND %rb %rd
@@ -14,7 +14,7 @@ loop:
     ADD $222 %rbp
 
 skip_mod:
-    IOW $0xC3 %rbp
+    IOW $0xC4 %rbp
 
     MOV $0xFF %rc
     AND %rb %rc
