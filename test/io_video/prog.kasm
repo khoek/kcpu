@@ -3,6 +3,8 @@ MOV $54 %rbp
 MOV $0 %rb
 
 loop:
+    INC %rsp
+
     IOW $0xC2 %rb
 
     MOV $0x33 %rd
@@ -24,4 +26,10 @@ skip_mod:
 skip_flip:
     ADD $1 %rb
 
+    CMP $0x2000 %rsp
+    JE done
+
     JMP loop
+
+done:
+    HLT

@@ -4,9 +4,10 @@
 #include "../common.hpp"
 #include "iodev/iodev_manager.hpp"
 #include "iodev/probe.hpp"
+#include "iodev/pic.hpp"
 #include "iodev/uid_register.hpp"
 #include "iodev/slow_registers.hpp"
-#include "iodev/graphics.hpp"
+#include "iodev/video.hpp"
 
 namespace kcpu {
 
@@ -16,9 +17,10 @@ class mod_io {
 
     io_device_manager iodev_manager;
     iodev::probe id_probe;
+    iodev::pic id_pic;
     iodev::uid_register id_uid_register;
     iodev::slow_registers id_slow_registers;
-    iodev::graphics id_graphics;
+    iodev::video id_video;
 
     public:
     mod_io(vm_logger &logger);

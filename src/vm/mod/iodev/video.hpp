@@ -1,21 +1,14 @@
-#ifndef VM_MOD_IODEV_GRAPHICS_H
-#define VM_MOD_IODEV_GRAPHICS_H
-
-#define ENABLE_SDL_GRAPHICS
+#ifndef VM_MOD_IODEV_VIDEO_H
+#define VM_MOD_IODEV_VIDEO_H
 
 #include "iodev.hpp"
-
-#ifdef ENABLE_SDL_GRAPHICS
-#include "../../../lib/graphics/sdl2_renderer.hpp"
-#else
-#include "../../../lib/graphics/dummy_renderer.hpp"
-#endif
+#include "../../../lib/graphics.hpp"
 
 namespace kcpu {
 
 namespace iodev {
 
-class graphics : public io_device {
+class video : public io_device {
     private:
     static const unsigned int PIXEL_WIDTH = 8;
     static const unsigned int WIDTH = 160;
@@ -31,18 +24,17 @@ class graphics : public io_device {
 
     static const unsigned int CMD_FLIP = 0x01;
 
-#ifdef ENABLE_SDL_GRAPHICS
-    sdl2_renderer renderer;
-#else
-    dummy_renderer renderer;
-#endif
+    char *buffer[2];
+
+    renderer *rend;
 
     regval_t addr;
 
     void handle_command(regval_t cmd);
 
     public:
-    graphics();
+    video();
+    ~video();
     std::vector<regval_t> get_reserved_ports();
     std::pair<regval_t, halfcycle_count_t> read(regval_t port);
     halfcycle_count_t write(regval_t port, regval_t val);

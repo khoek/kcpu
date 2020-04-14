@@ -1,12 +1,15 @@
 CXX ?= g++
 
+CXXFLAGS ?= -std=c++17 -rdynamic -O3 -DENABLE_SDL_GRAPHICS -D_REENTRANT -I/usr/include/SDL2
+TOOLFLAGS ?= -I.
+EXTRALIBS ?= -lSDL2 -pthread
+
 .PHONY: all clean cloc run run-step run-quiet test test-noninteractive dump
 
 SRCS := $(shell find src -type f -name "*.cpp")
 OBJS := $(SRCS:.cpp=.o)
 HDRS := $(shell find src -type f -name "*.hpp")
 LIB := bin/lib/libkcpu.a
-EXTRALIBS := -lSDL2 -pthread
 
 TOOLSRCS := $(shell find tools -maxdepth 1 -type f -name "*.cpp")
 TOOLBINS := $(patsubst tools/%.cpp, bin/%, $(TOOLSRCS))
@@ -25,9 +28,6 @@ SANDBOXKASMOBJS := $(patsubst %.kasm, %.bin, $(SANDBOXKASMSRCS))
 KASMOBJS := $(TESTKASMOBJS) $(SANDBOXKASMOBJS)
 
 SANDBOXARGS := sandbox/bios.bin sandbox/prog.bin
-
-CXXFLAGS := -std=c++17 -rdynamic -O3 -D_REENTRANT -I/usr/include/SDL2
-TOOLFLAGS := -I.
 
 all: $(LIB) $(TOOLLIB) $(KASMOBJS) $(TOOLBINS)
 
@@ -54,7 +54,7 @@ test: $(TOOLBINS) $(TESTKASMOBJS)
 	bin/run_test_suite
 
 test-noninteractive: $(TOOLBINS) $(TESTKASMOBJS)
-	bin/run_test_suite -n
+	bin/run_test_suite -ni
 
 dump: $(TOOLBINS)
 	bin/arch_dump

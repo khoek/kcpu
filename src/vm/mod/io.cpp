@@ -6,18 +6,16 @@ namespace kcpu {
 
 mod_io::mod_io(vm_logger &logger) : logger(logger), iodev_manager(logger), id_probe(iodev_manager.get_ports()) {
     iodev_manager.register_iodev(id_probe);
+    iodev_manager.register_iodev(id_pic);
+
     iodev_manager.register_iodev(id_uid_register);
     iodev_manager.register_iodev(id_slow_registers);
 
-    // FIXME implement external memory
+    // FIXME implement external memory?
     // iodev_manager.register_iodev(id_external_memory);
 
-    // FIXME add build flags for both of these, and make the respective tests
-    // still pass by consulting the probe API for info about their presence.
-    // ALTERNATIVELY, we can just provide a relevant "dummy" entity when they
-    // are absent (e.g. just emulate a framebuffer, and don't draw, easy when
-    // the canvas is abstracted away).
-    iodev_manager.register_iodev(id_graphics);
+    iodev_manager.register_iodev(id_video);
+
     // devices.push_back(<a serial thing? :D>); (this one would be disabled by default.)
 }
 

@@ -1,7 +1,13 @@
+#ifdef ENABLE_SDL_GRAPHICS
+
 #include <exception>
-#include "SDL.h"
 
 #include "sdl2_renderer.hpp"
+
+sdl2_runtime & sdl2_runtime::get_runtime() {
+    static sdl2_runtime r;
+    return r;
+}
 
 sdl2_runtime::sdl2_runtime() {
     SDL_Init(SDL_INIT_VIDEO);
@@ -11,12 +17,8 @@ sdl2_runtime::~sdl2_runtime() {
     SDL_Quit();
 }
 
-sdl2_runtime sdl2_renderer::get_runtime() {
-    return sdl2_runtime();
-}
-
 sdl2_renderer::sdl2_renderer(unsigned int width, unsigned int height) : renderer(width, height) {
-    get_runtime();
+    sdl2_runtime::get_runtime();
 
     thread = std::thread(&sdl2_renderer::render_loop, this);
 
@@ -25,6 +27,7 @@ sdl2_renderer::sdl2_renderer(unsigned int width, unsigned int height) : renderer
 }
 
 sdl2_renderer::~sdl2_renderer() {
+    destroyed = true;
     running = false;
     thread.join();
 }
@@ -33,8 +36,11 @@ void sdl2_renderer::render_loop() {
     SDL_CreateWindowAndRenderer(get_width(), get_height(), SDL_WINDOW_OPENGL, &window, &rend);
 
     if(!window) {
-        fprintf(stderr, "Could not create window: %s\n", SDL_GetError());
-        exit(1);
+        std::lock_guard<std::mutex> l(mutex);
+        running = false;
+        startup_complete = true;
+        cv.notify_all();
+        return;
     }
 
     // Note that if SDL_PIXELFORMAT_ARGB8888 does not match the format used on the graphics card,
@@ -77,8 +83,10 @@ void sdl2_renderer::render_loop() {
         }
     }
 
-    // TODO just gracefully provide a dummy framebuffer instead?
-    throw new std::runtime_error("graphics window closed");
+    if(!destroyed) {
+        // TODO just gracefully provide a dummy framebuffer instead?
+        throw new std::runtime_error("graphics window closed");
+    }
 
     buffer = NULL;
     cv.notify_all();
@@ -90,14 +98,12 @@ void sdl2_renderer::render_loop() {
     SDL_DestroyWindow(window);
 }
 
-char * sdl2_renderer::get_next_framebuffer() {
-    return buffer;
-}
-
-void sdl2_renderer::flip() {
+void sdl2_renderer::publish_next_framebuffer() {
     if(!running) {
         return;
     }
+
+    memcpy(buffer, get_next_framebuffer(), 4 * get_width() * get_height());
 
     {
         std::lock_guard<std::mutex> l(mutex);
@@ -107,3 +113,5 @@ void sdl2_renderer::flip() {
     std::unique_lock<std::mutex> l(mutex);
     cv.wait(l, [this]{ return !running || !do_flip; });
 }
+
+#endif

@@ -1,5 +1,7 @@
-#ifndef LIB_GRAPHICS_SDL2_RENDERER_H
-#define LIB_GRAPHICS_SDL2_RENDERER_H
+#ifndef LIB_RENDERER_SDL2_RENDERER_H
+#define LIB_RENDERER_SDL2_RENDERER_H
+
+#ifdef ENABLE_SDL_GRAPHICS
 
 #include <thread>
 #include <mutex>
@@ -10,14 +12,14 @@
 
 class sdl2_runtime {
     public:
+    static sdl2_runtime & get_runtime();
+
     sdl2_runtime();
     ~sdl2_runtime();
 };
 
 class sdl2_renderer : public renderer {
     private:
-    static sdl2_runtime get_runtime();
-
     SDL_Window *window;
     SDL_Renderer *rend;
     SDL_Texture *texture;
@@ -28,6 +30,7 @@ class sdl2_renderer : public renderer {
 
     volatile bool running = true;
     bool startup_complete = false;
+    bool destroyed = false;
     bool do_flip = false;
     char *buffer;
 
@@ -35,10 +38,11 @@ class sdl2_renderer : public renderer {
 
     public:
     sdl2_renderer(unsigned int width, unsigned int height);
-    virtual ~sdl2_renderer();
+    ~sdl2_renderer();
 
-    char * get_next_framebuffer();
-    void flip();
+    void publish_next_framebuffer();
 };
+
+#endif
 
 #endif

@@ -28,7 +28,7 @@ static void load_binary_maybedefault(const char *name, std::filesystem::path p, 
         return;
     }
 
-    throw std::runtime_error("error: could not find binary or default");
+    throw std::runtime_error("could not find binary or default");
 }
 
 static std::string colour_str(std::string s, bool good) {
@@ -72,13 +72,18 @@ static bool run_test(bool verbose, uint32_t num, const std::filesystem::path pat
 }
 
 int main(int argc, char **argv) {
+    bool headless = true;
     bool noninteractive_mode = false;
 
     std::vector<std::string> args;
     for(int i = 1; i < argc; i++) {
         std::string arg(argv[i]);
-        if(arg == "-n") {
+        if(arg == "-ni") {
             noninteractive_mode = true;
+        } else if(arg == "-h") {
+            headless = true;
+        } else if(arg == "-nh") {
+            headless = false;
         } else {
             args.push_back(argv[i]);
         }
@@ -88,7 +93,9 @@ int main(int argc, char **argv) {
         std::cerr << "Unexpected argument: " << args[0] << std::endl;
         return 1;
     }
-    
+
+    graphics::get_graphics().configure(headless);
+
     std::cout << "--------------------------------------------" << std::endl;
 
     std::vector<std::filesystem::path> tests;

@@ -7,6 +7,7 @@ int main(int argc, char **argv) {
     bool verbose = false;
     bool disasm_mode = false;
     bool step_mode = false;
+    bool headless = false;
 
     std::vector<std::string> args;
     for(int i = 1; i < argc; i++) {
@@ -18,6 +19,10 @@ int main(int argc, char **argv) {
         } else if(arg == "-s") {
             step_mode = true;
             disasm_mode = true;
+        } else if(arg == "-h") {
+            headless = true;
+        } else if(arg == "-nh") {
+            headless = false;
         } else {
             args.push_back(argv[i]);
         }
@@ -27,6 +32,8 @@ int main(int argc, char **argv) {
         std::cerr << "Need two non-switch arguments, the bios and prog bin paths." << std::endl;
         return 1;
     }
+
+    graphics::get_graphics().configure(headless);
 
     kcpu::vm cpu(kcpu::vm_logger{disasm_mode, verbose, verbose});
     load_binary("BIOS", args[0], BIOS_SIZE, cpu.mem.bios.data());
