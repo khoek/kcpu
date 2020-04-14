@@ -1,0 +1,27 @@
+
+MOV $54 %rbp
+MOV $0 %rb
+
+loop:
+    IOW $0xC2 %rb
+
+    MOV $0x33 %rd
+    AND %rb %rd
+    JNZ skip_mod
+
+    ADD $222 %rbp
+
+skip_mod:
+    IOW $0xC3 %rbp
+
+    MOV $0xFF %rc
+    AND %rb %rc
+    JNZ skip_flip
+
+    MOV $0x01 %ra
+    IOW $0xC0 %ra
+
+skip_flip:
+    ADD $1 %rb
+
+    JMP loop

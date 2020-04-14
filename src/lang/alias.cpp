@@ -34,6 +34,10 @@ static void gen_alu() {
         virtual_instruction(I_ADD2, { slot_constval(0x0001), slot_arg(0) }),
     }));
 
+    reg_alias(alias("INC", ARGS_1_NOCONST, {
+        virtual_instruction(I_ADD2, { slot_constval(0x0001), slot_arg(0) }),
+    }));
+
     // FIXME use a "nodata" version of an arithmetic instruction instead
     // Subtract one operand from the other to perform the comparison.
     // e.g. FLAG_SIGN tells you which is greater.

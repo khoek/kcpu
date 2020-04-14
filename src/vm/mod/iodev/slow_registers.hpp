@@ -12,7 +12,7 @@ class slow_registers : public io_device {
     static const int PORT_BASE = 0xF0;
     static const int REGISTER_COUNT = 5;
 
-    mutable regval_t regs[REGISTER_COUNT];
+    regval_t regs[REGISTER_COUNT];
 
     public:
     slow_registers();

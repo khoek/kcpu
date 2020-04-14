@@ -6,6 +6,7 @@
 #include "iodev/probe.hpp"
 #include "iodev/uid_register.hpp"
 #include "iodev/slow_registers.hpp"
+#include "iodev/graphics.hpp"
 
 namespace kcpu {
 
@@ -17,6 +18,7 @@ class mod_io {
     iodev::probe id_probe;
     iodev::uid_register id_uid_register;
     iodev::slow_registers id_slow_registers;
+    iodev::graphics id_graphics;
 
     public:
     mod_io(vm_logger &logger);

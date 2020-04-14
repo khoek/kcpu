@@ -6,6 +6,7 @@ SRCS := $(shell find src -type f -name "*.cpp")
 OBJS := $(SRCS:.cpp=.o)
 HDRS := $(shell find src -type f -name "*.hpp")
 LIB := bin/lib/libkcpu.a
+EXTRALIBS := -lSDL2 -pthread
 
 TOOLSRCS := $(shell find tools -maxdepth 1 -type f -name "*.cpp")
 TOOLBINS := $(patsubst tools/%.cpp, bin/%, $(TOOLSRCS))
@@ -25,7 +26,7 @@ KASMOBJS := $(TESTKASMOBJS) $(SANDBOXKASMOBJS)
 
 SANDBOXARGS := sandbox/bios.bin sandbox/prog.bin
 
-CXXFLAGS := -std=c++17 -rdynamic -O3
+CXXFLAGS := -std=c++17 -rdynamic -O3 -D_REENTRANT -I/usr/include/SDL2
 TOOLFLAGS := -I.
 
 all: $(LIB) $(TOOLLIB) $(KASMOBJS) $(TOOLBINS)
@@ -71,10 +72,10 @@ $(OBJS): %.o: %.cpp $(HDRS) Makefile
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
 $(TOOLLIBOBJS): %.o: %.cpp $(HDRS) $(TOOLLIBHDRS) Makefile
-	$(CXX) $(CXXFLAGS) $(TOOLFLAGS) -c $< -o $@
+	$(CXX) $(CXXFLAGS) $(TOOLFLAGS) -c -o $@ $<
 
 $(TOOLBINS): bin/%: tools/%.cpp $(HDRS) $(LIB) $(TOOLLIB) Makefile
-	$(CXX) $(TOOLFLAGS) $(CXXFLAGS) $< $(TOOLLIB) $(LIB) -o $@
+	$(CXX) $(TOOLFLAGS) $(CXXFLAGS) -o $@ $< $(TOOLLIB) $(LIB) $(EXTRALIBS)
 
 $(LIB): $(OBJS) Makefile
 	mkdir -p bin/lib
