@@ -29,14 +29,8 @@ SOFT/FIRMWARE:
                command 3 bits with the IUn_O 3 command 3 bits for each fixed ups---if they are equal, inhibit the input.
 
 
-
-    * Space in the UCODE bits to support a very basic port-based IO interface
-    (I think two ucode control bits, read and write (read will need two states, input port and output data), takes port from BUSA and data from BUSB)
-            -> Implement a "wait" condition until the IO bus returns?
-
-
     * How are we going to do interrupts??? (I think another instmask---just to 0x1 instead of 0x0)
-            -> 1. (MOV(BUSA) RIP RID | MOV(BUSB) RISP RIP)
+            -> 1. (MOV(BUSA) RIP RID | MOV(BUSB) RISP RSP)
             -> 2. MOV RIHP RIP (equivalent)
             -> (need to save flags, stack pointer (in a fixed location), old RIP stashed in RID,
                 plus load new stack, save all registers, etc. in __code__ then)
