@@ -1,5 +1,5 @@
-#ifndef LIB_RENDERER_SDL2_RENDERER_H
-#define LIB_RENDERER_SDL2_RENDERER_H
+#ifndef LIB_GRAPHICS_SDL2_RENDERER_H
+#define LIB_GRAPHICS_SDL2_RENDERER_H
 
 #ifdef ENABLE_SDL_GRAPHICS
 
@@ -9,6 +9,7 @@
 #include "SDL.h"
 
 #include "renderer.hpp"
+#include "framebuffer.hpp"
 
 class sdl2_runtime {
     public:
@@ -31,7 +32,6 @@ class sdl2_renderer : public renderer {
     volatile bool running = true;
     bool startup_complete = false;
     bool destroyed = false;
-    bool do_flip = false;
     char *buffer;
 
     void render_loop();
@@ -39,8 +39,6 @@ class sdl2_renderer : public renderer {
     public:
     sdl2_renderer(unsigned int width, unsigned int height);
     ~sdl2_renderer();
-
-    void publish_next_framebuffer();
 };
 
 #endif

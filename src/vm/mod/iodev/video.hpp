@@ -24,14 +24,25 @@ class video : public io_device {
     static const unsigned int REGISTER_COUNT = 5;
 
     static const unsigned int CMD_FLIP = 0x01;
+    static const unsigned int CMD_STREAMRST = 0x02;
+
+    struct vram_addr {
+        unsigned int r;
+        unsigned int c;
+        unsigned int comp;
+    };
 
     renderer *rend;
 
+    unsigned int stream_ptr;
     regval_t hiaddr = 0;
     regval_t loaddr = 0;
 
     constexpr unsigned int get_framebuffer_size();
     unsigned int get_addr();
+    video::vram_addr decode_addr(unsigned int addr);
+    regval_t vram_read(unsigned int addr);
+    void vram_write(unsigned int addr, regval_t val);
     void handle_command(regval_t cmd);
 
     public:

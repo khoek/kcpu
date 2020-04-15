@@ -1,7 +1,7 @@
 #ifndef LIB_GRAPHICS_H
 #define LIB_GRAPHICS_H
 
-#include "renderer/renderer.hpp"
+#include "graphics/renderer.hpp"
 
 class graphics {
     private:

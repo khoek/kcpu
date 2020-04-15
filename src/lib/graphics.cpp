@@ -1,9 +1,7 @@
 #include "graphics.hpp"
 
-#include "renderer/headless_renderer.hpp"
-
 #ifdef ENABLE_SDL_GRAPHICS
-#include "renderer/sdl2_renderer.hpp"
+#include "graphics/sdl2_renderer.hpp"
 #endif
 
 graphics & graphics::get_graphics() {
