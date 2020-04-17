@@ -97,7 +97,7 @@ vm::state vm::ustep() {
     mem.clock_inputs(ui, state);
     reg.clock_inputs(ui, state, i);
     alu.clock_inputs(ui, state);
-    ctl.clock_inputs(ui, state, pint);
+    ctl.clock_inputs(ui, state, ioc.get_pic());
 
     // This is a bit of a hack since the PIC handles aint asynchronously (at least I think that is how it will be implemented)
     ioc.get_pic().handle_aint(ctl.is_aint_active());

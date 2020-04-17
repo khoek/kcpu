@@ -26,9 +26,9 @@ class pic : public pic_interface, public single_port_io_device {
 // But it does allow us to raise interrupts from software, which is great for testing. (So maybe do it?)
     static const regval_t CMD_SET_PEND = 0b11 << SHIFT_CMD;
 
-    static const regval_t BIT_INT_NMI = 1 << 0;
-
-    static const regval_t MASK_NMIS = BIT_INT_NMI;
+// HARDWARE NOTE: As we have it now, MASK_NMIS bits both ignore the irq_mask field so those are still delivered when possible,
+//                and also NMI bits assert the additional PNMI line when pending.
+    static const regval_t MASK_NMIS = 0x0001;
 
     bool aint_prev = false;
 
@@ -36,7 +36,7 @@ class pic : public pic_interface, public single_port_io_device {
     regval_t irq_serv = 0;
     regval_t irq_pend = 0;
 
-    regval_t get_next_pending_bit(bool expect_nonzero);
+    regval_t get_next_pending_bit(bool expect_nonzero, bool nmi_only);
 
     vm_logger &logger;
 
@@ -44,8 +44,9 @@ class pic : public pic_interface, public single_port_io_device {
     pic(vm_logger &logger);
     void dump_registers();
 
-    void assert(regval_t bit);
     bool is_pint_active();
+    bool is_pnmi_active();
+    void assert(regval_t bit);
     void handle_aint(bool aint);
 
     std::pair<regval_t, halfcycle_count_t> read();

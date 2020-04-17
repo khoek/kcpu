@@ -7,13 +7,16 @@
 # 3. ENABLE+NOT Triggered is recieved (from previous),
 # 4. ENABLE+Triggered is recieved.
 
+MOV $0x8006 %rbp
+IOW $0x0001 %rbp
+
 step1:
     LIHP int1
     LCRIT
     JMP step1.main
 
     step1.main:
-        MOV $0xC001 %ra
+        MOV $0xC004 %ra
         IOW $0x0001 %ra
 
         NOP
@@ -40,7 +43,7 @@ step2:
     JMP step2.main
 
     step2.main:
-        MOV $0xC001 %ra
+        MOV $0xC004 %ra
         IOW $0x0001 %ra
 
         NOP
@@ -88,7 +91,7 @@ step4:
     JMP step4.main
 
     step4.main:
-        MOV $0xC001 %ra
+        MOV $0xC004 %ra
         IOW $0x0001 %ra
 
         NOP

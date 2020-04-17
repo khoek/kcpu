@@ -14,8 +14,8 @@ void pic::dump_registers() {
 
 // HARDWARE NOTE: NMI enable jumper?
 // HARDWARE NOTE: This function ignores the masked bits!
-regval_t pic::get_next_pending_bit(bool expect_nonzero) {
-    regval_t irqs_masked = irq_pend & (irq_mask | MASK_NMIS);
+regval_t pic::get_next_pending_bit(bool expect_nonzero, bool nmi_only) {
+    regval_t irqs_masked = irq_pend & ((irq_mask | MASK_NMIS) & (nmi_only ? MASK_NMIS : 0xFFFF));
     if(!irqs_masked) {
         if(expect_nonzero) {
             throw new vm_error("irq_ACK with no active interrupt");
@@ -39,7 +39,7 @@ void pic::handle_aint(bool aint) {
     }
 
     // FIXME how to implement this in hardware?
-    regval_t pending_bit = get_next_pending_bit(true);
+    regval_t pending_bit = get_next_pending_bit(true, false);
     irq_serv = pending_bit;
     // HARDWARE NOTE: It is important that we clear the pending bit, and record it in the in-service register
     // at this point, so that we can recieve further copies of that interrupt while it is being serviced.
@@ -49,7 +49,11 @@ void pic::handle_aint(bool aint) {
 }
 
 bool pic::is_pint_active() {
-    return !irq_serv && !!get_next_pending_bit(false);
+    return !irq_serv && !!get_next_pending_bit(false, false);
+}
+
+bool pic::is_pnmi_active() {
+    return !irq_serv && !!get_next_pending_bit(false, true);
 }
 
 // HARDWARE NOTE: Let's only set an interrupt pending in the PIC on the rising edge of an interrupt line, so we can implement a hard "reset button" for example.

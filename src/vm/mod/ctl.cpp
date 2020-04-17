@@ -134,9 +134,9 @@ static regval_t decode_jcond_mask(uinst_t ui) {
     }
 }
 
-void mod_ctl::clock_inputs(uinst_t ui, bus_state &s, bool pint) {
+void mod_ctl::clock_inputs(uinst_t ui, bus_state &s, pic_out_interface &pic) {
     // HARDWARE NOTE: interrupt_enable is simply AND-ed with the incoming PINT line.
-    pint = pint && cbits[CBIT_IE];
+    bool pint = pic.is_pint_active() && (pic.is_pnmi_active() || cbits[CBIT_IE]);
 
     if(!cbits[CBIT_IO_WAIT]) {
         // HARDWARE NOTE This register can be simultaneously reset under the GCTRL_FT_ENTER/MAYBEEXIT/EXIT conditions, but we

@@ -15,25 +15,26 @@ MOV $0xBEEF %rd
 # need aligned stack pointer
 MOV $0xBEE0 %rsp
 
-MOV $0x8003 %rbp
+MOV $0x8006 %rbp
 IOW $0x0001 %rbp
 
-MOV $0xC001 %rbp
+# We skip the low interrupt bit, since it is a NMI.
+MOV $0xC004 %rbp
 IOW $0x0001 %rbp
 ADD $1 %rb
 MOV $0xC002 %rbp
 IOW $0x0001 %rbp
 ADD $1 %rb
-MOV $0xC001 %rbp
+MOV $0xC004 %rbp
 IOW $0x0001 %rbp
 ADD $1 %rb
-MOV $0xC001 %rbp
+MOV $0xC004 %rbp
 IOW $0x0001 %rbp
 ADD $1 %rb
 MOV $0xC002 %rbp
 IOW $0x0001 %rbp
 ADD $1 %rb
-MOV $0xC001 %rbp
+MOV $0xC004 %rbp
 IOW $0x0001 %rbp
 ADD $1 %rb
 MOV $0xC002 %rbp
@@ -54,11 +55,11 @@ CMP $0xBEE0 %rsp
 JNE fail
 
 LD data.int_1_count %ra
-CMP $4 %ra
+CMP $3 %ra
 JNE fail
 
 LD data.int_2_count %ra
-CMP $3 %ra
+CMP $4 %ra
 JNE fail
 
 HLT
@@ -78,10 +79,10 @@ int_handle:
     CMP %rc %rbp
     JNE fail
 
-    CMP $0x0001 %rc
+    CMP $0x0002 %rc
     JE int_handle.1
 
-    CMP $0x0002 %rc
+    CMP $0x0004 %rc
     JE int_handle.2
 
     JMP fail

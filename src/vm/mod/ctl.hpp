@@ -2,6 +2,7 @@
 #define VM_MOD_CTL_H
 
 #include "../common.hpp"
+#include "interface/pic.hpp"
 
 namespace kcpu {
 
@@ -88,7 +89,7 @@ class mod_ctl {
     bool is_aint_active();
 
     void clock_outputs(uinst_t ui, bus_state &s);
-    void clock_inputs(uinst_t ui, bus_state &s, bool pint);
+    void clock_inputs(uinst_t ui, bus_state &s, pic_out_interface &pic);
     void offclock_pulse(bool io_done);
 };
 
