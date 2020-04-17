@@ -70,9 +70,8 @@ vm::state vm::ustep() {
 
     regval_t i = ctl.get_inst();
     uinst_t ui = ctl.get_uinst();
-    bool pint = ioc.get_pic().is_pint_active();
 
-    print_debug_info(i, ui, pint);
+    print_debug_info(i, ui, ioc.get_pic().is_pint_active());
 
     if(!ui) {
         throw vm_error("executing undefined microcode instruction!");
