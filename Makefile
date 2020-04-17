@@ -1,6 +1,6 @@
 CXX ?= g++
 
-CXXFLAGS ?= -std=c++17 -rdynamic -g -DENABLE_SDL_GRAPHICS -D_REENTRANT -I/usr/include/SDL2
+CXXFLAGS ?= -std=c++17 -rdynamic -O3 -DENABLE_SDL_GRAPHICS -D_REENTRANT -I/usr/include/SDL2
 TOOLFLAGS ?= -I.
 EXTRALIBS ?= -lSDL2 -pthread
 

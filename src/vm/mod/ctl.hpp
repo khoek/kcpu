@@ -14,10 +14,10 @@ namespace kcpu {
 
     (On a clock rising edge:)
     As CBIT_INSTMASK is SET, the state of the PINT external signal line is latched,
-    and the value of the low instruction bit passed to the ucode is connected to the
-    latched value. All other instruction bits are made zero. As a result, a NOP opcode
-    (0x0) is read if there is no PINT, and _DO_INT opcode (0x1) is read if there is a
-    PINT.
+    and the value of the low instruction bit (AFTER THE BEING SHIFTED PAST THE IUS)
+    passed to the ucode is connected to the latched value. All other instruction bits
+    are made zero. As a result, a NOP opcode (0x0) is read if there is no PINT, and
+    _DO_INT opcode (0x1) is read if there is a PINT.
 
     While CBIT_INSTMASK is high, we assert AINT with the latched value of PINT.
 

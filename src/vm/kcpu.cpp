@@ -83,7 +83,6 @@ vm::state vm::ustep() {
 
     ctl.clock_outputs(ui, state);
     alu.clock_outputs(ui, state);
-    // `mod_reg` must appear after `mod_ctl` and before `mod_mem`
     reg.clock_outputs(ui, state, i);
     mem.clock_outputs(ui, state);
     ioc.clock_outputs(ui, state);
