@@ -32,6 +32,7 @@ step1:
         ABRT
 
     int1:
+        POP %rbp
         MOV $0x4000 %rbp
         IOW $0x0001 %rbp
 
@@ -80,6 +81,7 @@ step3:
         ABRT
 
     int3:
+        POP %rbp
         MOV $0x4000 %rbp
         IOW $0x0001 %rbp
 
@@ -107,6 +109,7 @@ step4:
         ABRT
 
     int4:
+        POP %rbp
         MOV $0x4000 %rbp
         IOW $0x0001 %rbp
 

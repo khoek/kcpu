@@ -11,7 +11,7 @@ namespace kcpu {
 #define INST_STRIP_IU3(raw) ((raw) & ~IU_MASK)
 #define INST_GET_LOADDATA(inst) ((inst) & P_I_LOADDATA)
 #define INST_GET_OPCODE(inst) (((inst) & ~P_I_LOADDATA) >> INST_SHIFT)
-#define INST_MK(loaddata, opcode, iu1, iu2, iu3) (((loaddata) ? P_I_LOADDATA : 0) | (opcode << INST_SHIFT) | INST_MK_IU1(iu1) | INST_MK_IU2(iu2) | INST_MK_IU3(iu3))
+#define INST_MK(loaddata, opcode, iu1, iu2, iu3) (((loaddata) ? P_I_LOADDATA : 0) | ((opcode) << INST_SHIFT) | INST_MK_IU1(iu1) | INST_MK_IU2(iu2) | INST_MK_IU3(iu3))
 
 #define ITYPE_SHIFT 4
 
@@ -70,7 +70,7 @@ namespace kcpu {
 
 // SYS/MISC (12/16)
 #define I_NOP       OC(IT_SYS, 0b0000)
-#define I__DO_INT   OC(IT_SYS, 0b0001)
+#define I__DO_INT   OC(IT_SYS, 0b0001).add_flag(P_PRE_I_RSPDEC)
 // #define I__UNUSED   OC(IT_SYS, 0b0010)
 
 #define I_MOV       OC(IT_SYS, 0b0011)
@@ -97,8 +97,10 @@ namespace kcpu {
 #define I_X_CALL    OC(IT_X  , 0b0100).add_flag(P_PRE_I_RSPDEC) // FIXME hack
 #define I_X_RET     OC(IT_X  , 0b0101)
 
-#define I_X_PUSHFG  OC(IT_X  , 0b0110).add_flag(P_PRE_I_RSPDEC) // FIXME hack
-#define I_X_POPFG   OC(IT_X  , 0b0111)
+#define I_X_RET_LCRIT OC(IT_X, 0b0110)
+
+#define I_X_PUSHFG  OC(IT_X  , 0b1000).add_flag(P_PRE_I_RSPDEC) // FIXME hack
+#define I_X_POPFG   OC(IT_X  , 0b1001)
 
 // ALU (8/8)
 #define I_ADD2      OC(IT_ALU, 0b0000)

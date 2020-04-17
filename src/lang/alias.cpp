@@ -7,11 +7,12 @@ namespace kcpu {
 #define reg_alias arch::self().reg_alias
 
 static void gen_ctl() {
-    reg_alias(alias("CALL"   , ARGS_1, virtual_instruction(I_X_CALL ,   { slot_reg(REG_SP), slot_arg(0) })));
-    reg_alias(alias("RET"    , ARGS_0, virtual_instruction(I_X_RET  ,   { slot_reg(REG_SP) })));
-    reg_alias(alias("ENTER"  , ARGS_0, virtual_instruction(I_X_ENTER,   { slot_reg(REG_SP), slot_reg(REG_BP) })));
-    reg_alias(alias("LEAVE"  , ARGS_0, virtual_instruction(I_X_LEAVE,   { slot_reg(REG_SP), slot_reg(REG_BP) })));
-    reg_alias(alias("ENTERFR", ARGS_1, virtual_instruction(I_X_ENTERFR, { slot_reg(REG_BP), slot_arg(0) })));
+    reg_alias(alias("CALL"     , ARGS_1, virtual_instruction(I_X_CALL     , { slot_reg(REG_SP), slot_arg(0) })));
+    reg_alias(alias("RET"      , ARGS_0, virtual_instruction(I_X_RET      , { slot_reg(REG_SP) })));
+    reg_alias(alias("RET+LCRIT", ARGS_0, virtual_instruction(I_X_RET_LCRIT, { slot_reg(REG_SP) })));
+    reg_alias(alias("ENTER"    , ARGS_0, virtual_instruction(I_X_ENTER    , { slot_reg(REG_SP), slot_reg(REG_BP) })));
+    reg_alias(alias("LEAVE"    , ARGS_0, virtual_instruction(I_X_LEAVE    , { slot_reg(REG_SP), slot_reg(REG_BP) })));
+    reg_alias(alias("ENTERFR"  , ARGS_1, virtual_instruction(I_X_ENTERFR  , { slot_reg(REG_BP), slot_arg(0) })));
 }
 
 static void gen_mem() {

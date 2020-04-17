@@ -48,14 +48,12 @@ fail:
     ABRT
 
 int_success:
-    MOV %rid %rb
-
     MOV $1 %ra
     ST data.had_int %ra
 
     MOV $0x4000 %rbp
     IOW $0x0001 %rbp
-    JMP %rb
+    RET
 
 data.had_int:
     NOP

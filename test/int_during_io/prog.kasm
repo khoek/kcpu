@@ -63,15 +63,13 @@ fail:
     ABRT
 
 int_success:
-    MOV %rid %rb
-
     LD data.had_int %rbp
     ADD $1 %rbp
     ST data.had_int %rbp
 
     MOV $0x4000 %rbp
     IOW $0x0001 %rbp
-    JMP %rb
+    RET
 
 data.had_int:
     NOP

@@ -1,6 +1,30 @@
 
 SOFT/FIRMWARE:
 
+
+  REMAINING HARDWARE TO SIMULATE:
+
+
+    * NMIs can be delivered over normal interrupts; record this in the in_service register using a bitwise or, and have the tests interpret
+    the register properly in this situation.
+
+
+
+  REMAINING HARDWARE TO FIX/DECIDE:
+
+    * DEAL with the hardware design comment in the push_pop test (basically, POP %rsp is a big nono right now, should make this ok?)
+
+    * PROHIBIT MOV %rx %rx in hardware? (it would be a short)
+            -> one way to prohibit this in hardware reasonably cheaply is to compare the IUn_I
+               command 3 bits with the IUn_O 3 command 3 bits for each fixed ups---if they are equal, inhibit the input.
+
+    *  Remove direct access to %rid in the assembler; at the moment the only legitimate usage is saving/restoring in an interrupt handler,
+    and in this case we can just roll a custom version of PUSHFG/POPFG to also push/pop it? (actually, there might be
+    some problem with decrementing RSP a second time during the push? I think the ALU will be able to do the math
+    simultaneously instead?)
+
+
+
   VM UI:
     * Write a post-processor for the disassembler to try to collapse aliases.---this isn't super hard, just search
       for aliases which begin with the first actual opcode, and then continue checking ahead for matches.
@@ -8,41 +32,25 @@ SOFT/FIRMWARE:
                  we don't get confused when we are in the middle of a few instructions all part of the same alias.
 
 
+
+
+
   In the VM:
+
 
   * Also, for the IO bus use bus hold devices to decouple them, instead of having a silly intermediate IO controller register
   (but remember we want the IO modules to be able to asynchronously call in their results and move on with their lives)
 
 
 
-    * FLAG-ONLY versions of the ALU insts (we already value-only versions).
 
-    * DEAL with the hardware design comment in the push_pop test
+
+    * FLAG-ONLY versions of the ALU insts (we already value-only versions).
 
     * Allow a const in either argument in e.g. a STW (but not e.g. LDW)
 
-    * Compress flags!
+    * Compress ucode!
 
-
-    * PROHIBIT MOV %rx %rx in software? (it would be a short)
-            -> one way to prohibit this in hardware reasonably cheaply is to compare the IUn_I
-               command 3 bits with the IUn_O 3 command 3 bits for each fixed ups---if they are equal, inhibit the input.
-
-
-    * How are we going to do interrupts??? (I think another instmask---just to 0x1 instead of 0x0)
-            -> 1. (MOV(BUSA) RIP RID | MOV(BUSB) RISP RSP)
-            -> 2. MOV RIHP RIP (equivalent)
-            -> (need to save flags, stack pointer (in a fixed location), old RIP stashed in RID,
-                plus load new stack, save all registers, etc. in __code__ then)
-
-            -> implement the interrupt code, and EOI signalling, using the IO bus.
-
-            -> required new control features: RISP BUSB output
-
-    * THUS, NEED A PUSH_FLAGS and POP_FLAGS instruction. Need 1 control bit/free action to support flags output. (already have input).
-
-
-    * Does an ordinary NOP in some code cause a 1-uop stutter when REG_UC gets reset?-- no! just the "NOP" itself takes 1 uop!
 
 
     * MOAR TESTS

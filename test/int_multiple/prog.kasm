@@ -1,6 +1,9 @@
 LIHP int_handle
 
-JMP+LCRIT main
+MOV $0x8006 %rbp
+IOW $0x0001 %rbp
+
+LCRIT
 
 main:
 MOV $0 %ra
@@ -14,9 +17,6 @@ MOV $0xBEEF %rc
 MOV $0xBEEF %rd
 # need aligned stack pointer
 MOV $0xBEE0 %rsp
-
-MOV $0x8006 %rbp
-IOW $0x0001 %rbp
 
 # We skip the low interrupt bit, since it is a NMI.
 MOV $0xC004 %rbp
@@ -66,13 +66,13 @@ HLT
 
 int_handle:
     PUSHFG
+######### Don't forget to save RID! #########
+    PUSH %rid
     PUSH %ra
     PUSH %rb
     PUSH %rc
     PUSH %rd
     PUSH %rbp
-    MOV %rid %ra
-    ST data.int_ret_rip %ra
 
     IOR $0x0001 %rc
     AND $0x3FFF %rbp
@@ -91,7 +91,7 @@ int_handle:
         LD data.int_1_count %ra
         ADD $1 %ra
         ST data.int_1_count %ra
-        JMP int_handle.exit
+        JMP+ECRIT int_handle.exit
 
     int_handle.2:
         LD data.int_2_count %ra
@@ -108,8 +108,9 @@ int_handle:
         POP %rc
         POP %rb
         POP %ra
+        POP %rid
         POPFG
-        LDJMP+LCRIT data.int_ret_rip
+        RET+LCRIT
 
 fail:
     ABRT
@@ -118,7 +119,4 @@ data.int_1_count:
     NOP
 
 data.int_2_count:
-    NOP
-
-data.int_ret_rip:
     NOP

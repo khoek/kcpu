@@ -34,8 +34,9 @@ void mod_ctl::dump_registers() {
     );
 }
 
-#define LOAD_INSTVAL (0 << INST_SHIFT)
-#define INT_INSTVAL  (1 << INST_SHIFT)
+// HARDWARE NOTE: Ensure that the INT instruction has SP in IU1! AND RSP_DEC FLAG!
+#define LOAD_INSTVAL INST_MK(false,                  0x0,      0, 0, 0)
+#define INT_INSTVAL  INST_MK(false, P_PRE_I_RSPDEC | 0x1, REG_SP, 0, 0)
 
 regval_t mod_ctl::get_inst() {
     // HARDWARE NOTE: CBIT_IO_WAIT inhibits CBIT_INSTMASK, for obvious reasons,
@@ -49,7 +50,7 @@ uinst_t mod_ctl::get_uinst() {
 }
 
 bool mod_ctl::is_first_uop() {
-    return !cbits[CBIT_INSTMASK] && (reg[REG_UC] == 0x0);
+    return ((get_uinst() & MASK_CTRL_ACTION) != ACTION_GCTRL_RIP_BUSA_O) && (reg[REG_UC] == 0x0);
 }
 
 /*

@@ -36,7 +36,7 @@ int main() {
         "STPFX", "FAR STPFX",
         "IOR", "IOW",
         "_DO_INT",
-        "CALL", "RET", "X_CALL", "X_RET",
+        "CALL", "RET", "RET+LCRIT", "X_CALL", "X_RET", "X_RET+LCRIT",
         "JMP", "LJMP",
         "JMP+ECRIT", "JMP+LCRIT",
         "LDJMP", "LDLJMP",

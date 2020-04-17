@@ -21,11 +21,19 @@ static void gen_sys() {
         MCTRL_MODE_FO    | MCTRL_BUSMODE_CONW_BUSB | RCTRL_IU1_BUSB_I | GCTRL_FT_EXIT,
     }));
 
-    reg_inst(instruction("_DO_INT" , I__DO_INT, ARGS_0, {
-        // NOTE: the busmasking will ensure that IU1 = 0, i.e. REG_ID
-        RCTRL_IU1_BUSB_I | GCTRL_JM_P_RIP_BUSB_O,
-        GCTRL_CREG_IHPR | GCTRL_CREG_O | GCTRL_JM_YES
+    // FIXME create an ARGS_XXXX const which represents that this instruction should never
+    // be used in code.
+    reg_inst(instruction("_DO_INT", I__DO_INT, ARGS_1, {
+        //IU1 = MUST BE RSP
+        MCTRL_MODE_FI    | MCTRL_BUSMODE_CONW_BUSB | RCTRL_IU1_BUSA_O | GCTRL_JM_P_RIP_BUSB_O,
+        MCTRL_MODE_FO_MI | MCTRL_BUSMODE_CONW_BUSM |                    GCTRL_CREG_IHPR | GCTRL_CREG_O | GCTRL_JM_YES,
     }));
+
+    // reg_inst(instruction("_DO_INT" , I__DO_INT, ARGS_0, {
+    //     // NOTE: the busmasking will ensure that IU1 = 0, i.e. REG_ID
+    //     RCTRL_IU1_BUSB_I | GCTRL_JM_P_RIP_BUSB_O,
+    //     GCTRL_CREG_IHPR | GCTRL_CREG_O | GCTRL_JM_YES
+    // }));
 
     reg_inst(instruction("HLT" , I_HLT , ARGS_0, GCTRL_JM_HALT));
     reg_inst(instruction("ABRT", I_ABRT, ARGS_0, GCTRL_JM_ABRT));
@@ -274,6 +282,13 @@ static void gen_x() {
         // IU1 = MUST BE RSP, IU2 = CALL ADDRESS
         // Effectively: X_POP RSP RIP
         MCTRL_MODE_FI_MO | MCTRL_BUSMODE_CONW_BUSM | RCTRL_IU1_BUSA_O,
+        MCTRL_MODE_FO    | MCTRL_BUSMODE_CONW_BUSB | COMMAND_RCTRL_RSP_INC | GCTRL_JM_YES,
+    }));
+
+    reg_inst(instruction("X_RET+LCRIT", I_X_RET_LCRIT, ARGS_1_NOCONST, {
+        // IU1 = MUST BE RSP, IU2 = CALL ADDRESS
+        // Effectively: X_POP RSP RIP
+        MCTRL_MODE_FI_MO | MCTRL_BUSMODE_CONW_BUSM | RCTRL_IU1_BUSA_O      | GCTRL_CREG_P_IE | GCTRL_CREG_I,
         MCTRL_MODE_FO    | MCTRL_BUSMODE_CONW_BUSB | COMMAND_RCTRL_RSP_INC | GCTRL_JM_YES,
     }));
 
