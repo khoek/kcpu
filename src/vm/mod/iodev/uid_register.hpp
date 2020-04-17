@@ -15,8 +15,8 @@ class uid_register : public single_port_io_device {
     public:
     uid_register();
 
-    std::pair<regval_t, halfcycle_count_t> read();
-    halfcycle_count_t write(regval_t val);
+    std::pair<regval_t, halfcycle_count_t> read() override;
+    halfcycle_count_t write(regval_t val) override;
 };
 
 }

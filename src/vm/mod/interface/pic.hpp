@@ -11,10 +11,13 @@ class pic_out_interface {
     virtual bool is_pnmi_active() = 0;
 };
 
-class pic_interface : public pic_out_interface {
+class pic_in_interface {
     public:
     virtual void assert(regval_t bit) = 0;
     virtual void handle_aint(bool aint) = 0;
+};
+
+class pic_interface : public pic_in_interface, public pic_out_interface {
 };
 
 }

@@ -52,6 +52,14 @@ bool mod_ctl::is_first_uop() {
     return !cbits[CBIT_INSTMASK] && (reg[REG_UC] == 0x0);
 }
 
+/*
+    HARDWARE NOTE: the first boolean below is morally
+    neccesary, but as of writing we never latch pint unless the
+    INSTMASK is going high, and the pint latch is always cleared
+    by the time INSTMASK is cleared.
+
+    (So, at least right now, it can be safely commented.)
+*/
 bool mod_ctl::is_aint_active() {
     return cbits[CBIT_INSTMASK] && pint_latch_val;
 }
@@ -92,33 +100,27 @@ void mod_ctl::clock_outputs(uinst_t ui, bus_state &s) {
 }
 
 void mod_ctl::set_instmask_enabled(uinst_t ui, bool state, bool pint) {
-    // FIXME I'm certain the logic in here could be substantially simplified.
+    /*
+        We only examine pint (the second condition) when we execute the
+        first instruction of a NOP without the INSTMASK set.
 
+        HARDWARE NOTE: Remember though, this function is "called" when
+                        either the INTMASK_SET or INTMASK_CLEAR lines are
+                        asserted.
+    */
+    if(((ui & MASK_CTRL_ACTION) != ACTION_GCTRL_RIP_BUSA_O) || pint) {
+        reg[REG_UC] = 0;
+    }
 
-    // This outer guard just avoids the case where we execute the first instruction of a NOP without the INSTMASK set.
-    if((ui & MASK_CTRL_ACTION) != ACTION_GCTRL_RIP_BUSA_O) {
-        // HARDWARE NOTE implement this first condition by funneling `cbits[CBIT_INSTMASK]` through the command signals
-        // latch, without it actually coming from the EEPROMs---thus we won't need any fancy edge-detection stuff. (No
-        // race between the next instruction propagating and this condition check reaching the UC reg.)
-        if(cbits[CBIT_INSTMASK] != state) {
-            reg[REG_UC] = 0;
-        }
-
-        // HARDWARE NOTE: CAREFUL ABOUT THE CONDITIONAL EXPRESSION HERE
-        if(state) {
-            pint_latch_val = pint;
-            if(!pint) {
-                reg[REG_UC] = 0;
-            }
-        }
-    } else {
-        // HARDWARE NOTE: CAREFUL ABOUT THE CONDITIONAL EXPRESSION HERE
-        if (state) {
-            pint_latch_val = pint;
-            if(pint) {
-                reg[REG_UC] = 0;
-            }
-        }
+    /*
+        The check of CBIT_IO_WAIT here prevents interrupts from being
+        silently dropped during IO. (The CPU would issue AINT since
+        the INSTMASK is up during an IO_WAIT, but unlatch the PINT
+        line as the IO finishes, forgetting that it had come in in the
+        first place and not running _DO_INT.)
+    */
+    if(state && !cbits[CBIT_IO_WAIT]) {
+        pint_latch_val = pint;
     }
 
     cbits[CBIT_INSTMASK] = state;

@@ -19,8 +19,8 @@ class probe : public single_port_io_device {
 
     public:
     probe(const std::unordered_map<regval_t, std::reference_wrapper<io_device>> & ports);
-    std::pair<regval_t, halfcycle_count_t> read();
-    halfcycle_count_t write(regval_t val);
+    std::pair<regval_t, halfcycle_count_t> read() override;
+    halfcycle_count_t write(regval_t val) override;
 };
 
 }

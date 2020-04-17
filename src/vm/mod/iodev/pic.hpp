@@ -44,13 +44,13 @@ class pic : public pic_interface, public single_port_io_device {
     pic(vm_logger &logger);
     void dump_registers();
 
-    bool is_pint_active();
-    bool is_pnmi_active();
-    void assert(regval_t bit);
-    void handle_aint(bool aint);
+    bool is_pint_active() override;
+    bool is_pnmi_active() override;
+    void assert(regval_t bit) override;
+    void handle_aint(bool aint) override;
 
-    std::pair<regval_t, halfcycle_count_t> read();
-    halfcycle_count_t write(regval_t val);
+    std::pair<regval_t, halfcycle_count_t> read() override;
+    halfcycle_count_t write(regval_t val) override;
 };
 
 }

@@ -48,9 +48,9 @@ class video : public io_device {
     public:
     video();
     ~video();
-    std::vector<regval_t> get_reserved_ports();
-    std::pair<regval_t, halfcycle_count_t> read(regval_t port);
-    halfcycle_count_t write(regval_t port, regval_t val);
+    std::vector<regval_t> get_reserved_ports() override;
+    std::pair<regval_t, halfcycle_count_t> read(regval_t port) override;
+    halfcycle_count_t write(regval_t port, regval_t val) override;
 };
 
 }
