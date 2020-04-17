@@ -1,4 +1,7 @@
 # run_everything (mostly, except jumps)
+# Note: this could break at any time, if these
+# instructions write over too much of the code.
+
 STPFX $0x0080
 FAR STPFX $0x0080
 
@@ -9,6 +12,7 @@ ADD3NF %ra %rb %rc
 AND %ra %rb
 ANDNF %ra %rb
 CMP %ra %rb
+ECRIT
 ENTER
 ENTERFR %ra
 FAR LDBH %ra %rb
@@ -21,7 +25,8 @@ FAR STBH %ra %rb
 FAR STBL %ra %rb
 FAR STW %ra %rb
 FAR STWO %ra %rb %rc
-LCFG %ra
+INC %ra
+LCRIT
 LDBH %ra %rb
 LDBHZ %ra %rb
 LDBL %ra %rb
@@ -30,8 +35,7 @@ LDW %ra %rb
 LDWO %ra %rb %rc
 LEAVE
 LFG %ra
-LIHP1 %ra
-LIHP2 %ra
+LIHP %ra
 LSFT %ra
 LSFTNF %ra
 MOV %ra %rb

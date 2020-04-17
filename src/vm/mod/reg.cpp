@@ -53,19 +53,19 @@ void mod_reg::maybe_read(bus_state &s, regval_t inst, uinst_t ui, uint8_t iunum,
     }
 }
 
-void mod_reg::clock_outputs(regval_t inst, uinst_t ui, bool first_uop, bus_state &s) {
-    // HARDWARE NOTE: this is actually supposed to have occured on the off-clock transition
-    // half a cycle before the first uop after the instmask has been lifted.
+void mod_reg::offclock_pulse(regval_t inst, bool first_uop) {
     if((inst & P_I_RSPDEC) && first_uop) {
         reg[REG_SP] -= 2;
     }
+}
 
+void mod_reg::clock_outputs(uinst_t ui, bus_state &s, regval_t inst) {
     maybe_assign(s, inst, ui, 1, RCTRL_DECODE_IU1(ui), INST_GET_IU1(inst));
     maybe_assign(s, inst, ui, 2, RCTRL_DECODE_IU2(ui), INST_GET_IU2(inst));
     maybe_assign(s, inst, ui, 3, RCTRL_DECODE_IU3(ui), INST_GET_IU3(inst));
 }
 
-void mod_reg::clock_inputs(regval_t inst, uinst_t ui, bus_state &s) {
+void mod_reg::clock_inputs(uinst_t ui, bus_state &s, regval_t inst) {
     maybe_read(s, inst, ui, 1, RCTRL_DECODE_IU1(ui), INST_GET_IU1(inst));
     maybe_read(s, inst, ui, 2, RCTRL_DECODE_IU2(ui), INST_GET_IU2(inst));
     maybe_read(s, inst, ui, 3, RCTRL_DECODE_IU3(ui), INST_GET_IU3(inst));

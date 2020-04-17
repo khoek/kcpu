@@ -42,7 +42,7 @@ int main(int argc, char **argv) {
     printf("CPU Start\n");
 
     do {
-        kcpu::vm::STATE s = step_mode ? cpu.step() : cpu.run();
+        kcpu::vm::state s = step_mode ? cpu.step() : cpu.run();
         if(step_mode && cpu.ctl.cbits[CBIT_INSTMASK]) {
             std::string prompt_msg("[ENTER to step]");
             std::cout << prompt_msg << std::flush;
@@ -51,7 +51,7 @@ int main(int argc, char **argv) {
             std::cout << "\r" << std::string(prompt_msg.length(), ' ') << "\r" << std::flush;
         }
 
-        if(s == kcpu::vm::STATE_ABORTED) {
+        if(s == kcpu::vm::state::ABORTED) {
             printf("CPU Aborted, continue(y)? ");
 
             char c;
@@ -64,9 +64,9 @@ int main(int argc, char **argv) {
             printf("Continuing...\n");
             cpu.resume();
         }
-    } while(cpu.get_state() == kcpu::vm::STATE_RUNNING);
+    } while(cpu.get_state() == kcpu::vm::state::RUNNING);
 
-    printf("CPU %s, %d uinstructions executed\n", cpu.ctl.cbits[CBIT_ABORTED] ? "Aborted" : "Halted", cpu.get_total_clocks());
+    printf("CPU %s, %d uinstructions executed\n", cpu.get_state() == kcpu::vm::state::HALTED ? "Halted" : "Aborted", cpu.get_total_clocks());
 
     return 0;
 }

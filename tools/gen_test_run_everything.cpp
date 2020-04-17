@@ -1,5 +1,7 @@
 #include <cassert>
 #include <fstream>
+#include <iostream>
+#include <set>
 #include <algorithm>
 
 #include "src/lang/arch.hpp"
@@ -33,23 +35,31 @@ int main() {
         "HLT", "ABRT",
         "STPFX", "FAR STPFX",
         "IOR", "IOW",
-        "INT1", "INT2",
+        "_DO_INT",
         "CALL", "RET", "X_CALL", "X_RET",
         "JMP", "LJMP",
+        "JMP+ECRIT", "JMP+LCRIT",
         "LDJMP", "LDLJMP",
+        "LDJMP+ECRIT", "LDJMP+LCRIT",
         "JC", "JO", "JS", "JZ", "JE", "JL", "JGE",
         "JNC", "JNO", "JNS", "JNZ", "JNE", "JNL",
         "LDJC", "LDJO", "LDJS", "LDJZ", "LDJE", "LDJL", "LDJGE",
         "LDJNC", "LDJNO", "LDJNS", "LDJNZ", "LDJNE", "LDJNL",
     };
 
+    std::set<std::string> blacklist_found;
+
     std::ofstream of_everything("test/run_everything/prog.kasm");
-    of_everything << "# run_everything (mostly, except jumps)" << std::endl;
-    of_everything << "STPFX $0x0080" << std::endl;
-    of_everything << "FAR STPFX $0x0080" << std::endl;
-    of_everything << std::endl;
+    of_everything << "# run_everything (mostly, except jumps)" << std::endl
+                  << "# Note: this could break at any time, if these" << std::endl
+                  << "# instructions write over too much of the code." << std::endl << std::endl;
+
+    of_everything << "STPFX $0x0080" << std::endl
+                  << "FAR STPFX $0x0080" << std::endl
+                  << std::endl;
     for(auto a : aliases) {
         if(std::find(blacklist.begin(), blacklist.end(), a.name) != blacklist.end()) {
+            blacklist_found.insert(a.name);
             continue;
         }
 
@@ -62,4 +72,19 @@ int main() {
     }
     of_everything << "HLT" << std::endl;
     of_everything << "ABRT" << std::endl;
+
+    bool success = true;
+    for(auto n : blacklist) {
+        if(std::find(blacklist_found.begin(), blacklist_found.end(), n) == blacklist_found.end()) {
+            success = false;
+            std::cout << "non-existent blacklist item: " << n << std::endl;
+        }
+    }
+
+    if(success && (blacklist_found.size() != blacklist.size())) {
+        success = false;
+        std::cout << "blacklist contains duplicate items" << std::endl;
+    }
+
+    return success ? 0 : 1;
 }

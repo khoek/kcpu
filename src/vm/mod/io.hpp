@@ -26,6 +26,7 @@ class mod_io {
     mod_io(vm_logger &logger);
     void dump_registers();
     bool is_io_done();
+    pic_interface & get_pic();
 
     void clock_outputs(uinst_t ui, bus_state &s);
     void clock_inputs(uinst_t ui, bus_state &s);

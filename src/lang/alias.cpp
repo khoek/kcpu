@@ -52,6 +52,12 @@ static void gen_alu() {
     reg_alias(alias("JNL", ARGS_1, virtual_instruction(I_JC, { slot_arg(0) })));
     reg_alias(alias("JGE", ARGS_1, virtual_instruction(I_JC, { slot_arg(0) })));
 
+    reg_alias(alias("LDJE" , ARGS_1, virtual_instruction(I_JZ.add_flag(ITFLAG_JMP_LD),  { slot_arg(0) })));
+    reg_alias(alias("LDJNE", ARGS_1, virtual_instruction(I_JNZ.add_flag(ITFLAG_JMP_LD),  { slot_arg(0) })));
+    reg_alias(alias("LDJL" , ARGS_1, virtual_instruction(I_JNC.add_flag(ITFLAG_JMP_LD), { slot_arg(0) })));
+    reg_alias(alias("LDJNL", ARGS_1, virtual_instruction(I_JC.add_flag(ITFLAG_JMP_LD), { slot_arg(0) })));
+    reg_alias(alias("LDJGE", ARGS_1, virtual_instruction(I_JC.add_flag(ITFLAG_JMP_LD), { slot_arg(0) })));
+
     // TODO check these, I think they are just wrong
     // reg_alias(alias("JLE", ARGS_1, unbound_opcode(I_JS,  { slot_arg(0) })));
     // reg_alias(alias("JG" , ARGS_1, unbound_opcode(I_JNS, { slot_arg(0) })));

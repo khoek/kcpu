@@ -18,15 +18,16 @@ class vm {
 
     void dump_registers();
     void disassemble_current();
+    void print_debug_info(regval_t i, uinst_t ui, bool pint);
 
     public:
-    enum STATE {
-        STATE_RUNNING,
-        STATE_HALTED,
-        STATE_ABORTED,
+    enum state {
+        RUNNING,
+        HALTED,
+        ABORTED,
 
         // Not a real state, just returned by run when it times out
-        STATE_TIMEOUT,
+        TIMEOUT,
     };
 
     mod_ctl ctl;
@@ -37,12 +38,12 @@ class vm {
 
     vm(vm_logger logger);
     uint32_t get_total_clocks();
-    STATE get_state();
+    state get_state();
 
-    STATE ustep();
-    STATE step();
-    STATE run(std::optional<uint32_t> max_clocks);
-    STATE run();
+    state ustep();
+    state step();
+    state run(std::optional<uint32_t> max_clocks);
+    state run();
     void resume();
 };
 

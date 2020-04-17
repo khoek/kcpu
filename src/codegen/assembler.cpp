@@ -258,35 +258,40 @@ void inst_assembler::handle_instruction(std::string &tk) {
 }
 
 void inst_assembler::parse() {
-    std::string tk;
-    if(!(in >> tk)) {
-        throw_parse_error("no token");
-    }
-
-    if(!tk.length()) {
-        return;
-    }
-
-    if(tk[0] == '#') {
-        return;
-    }
-
-    if(tk[tk.length() - 1] == ':') {
-        handle_label(tk);
-        return;
-    }
-
-    if(arch::self().inst_is_prefix(tk)) {
-        std::string tk2;
-        if(!(in >> tk2)) {
-            throw_parse_error("no second token");
+    try {
+        std::string tk;
+        if(!(in >> tk)) {
+            throw_parse_error("no token");
         }
 
-        tk += " ";
-        tk += tk2;
-    }
+        if(!tk.length()) {
+            return;
+        }
 
-    handle_instruction(tk);
+        if(tk[0] == '#') {
+            return;
+        }
+
+        if(tk[tk.length() - 1] == ':') {
+            handle_label(tk);
+            return;
+        }
+
+        if(arch::self().inst_is_prefix(tk)) {
+            std::string tk2;
+            if(!(in >> tk2)) {
+                throw_parse_error("no second token");
+            }
+
+            tk += " ";
+            tk += tk2;
+        }
+
+        handle_instruction(tk);
+    } catch(parse_error &pe) {
+        std::cerr << std::endl << "\033[1;31mERROR\033[0m: could not parse line " << line << std::endl;
+        throw;
+    }
 }
 
 static std::unordered_map<std::string, regval_t> build_label_table(std::vector<chunk> ocs) {

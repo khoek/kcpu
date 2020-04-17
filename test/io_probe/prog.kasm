@@ -3,6 +3,13 @@ CALL probe_port
 SUB $2 %rsp
 
 TST %ra
+JZ fail
+
+PUSH $0x02
+CALL probe_port
+SUB $2 %rsp
+
+TST %ra
 JNZ fail
 
 PUSH $0xF0

@@ -19,8 +19,9 @@ class mod_reg {
     void dump_registers();
     regval_t get(preg_t r);
 
-    void clock_outputs(regval_t inst, uinst_t ui, bool first_uop, bus_state &s);
-    void clock_inputs(regval_t inst, uinst_t ui, bus_state &s);
+    void clock_outputs(uinst_t ui, bus_state &s, regval_t inst);
+    void clock_inputs(uinst_t ui, bus_state &s, regval_t inst);
+    void offclock_pulse(regval_t inst, bool first_uop);
 };
 
 }

@@ -14,21 +14,17 @@ namespace kcpu {
 
 static void gen_sys() {
     reg_inst(instruction("NOP" , I_NOP, ARGS_0, {
-        MCTRL_MODE_FI_MO | MCTRL_BUSMODE_CONW_BUSM /*| GCTRL_ACTION_RIP_BUSA_O*/ | GCTRL_FT_ENTER,
-        MCTRL_MODE_FO    | MCTRL_BUSMODE_CONW_BUSB   | GCTRL_FT_MAYBEEXIT,
-        MCTRL_MODE_FI_MO | MCTRL_BUSMODE_CONW_BUSM /*| GCTRL_ACTION_RIP_BUSA_O*/,
+        MCTRL_MODE_FI_MO | MCTRL_BUSMODE_CONW_BUSM | ACTION_GCTRL_RIP_BUSA_O | GCTRL_FT_ENTER,
+        MCTRL_MODE_FO    | MCTRL_BUSMODE_CONW_BUSB | GCTRL_FT_MAYBEEXIT,
+        MCTRL_MODE_FI_MO | MCTRL_BUSMODE_CONW_BUSM | ACTION_GCTRL_RIP_BUSA_O,
         // NOTE: the busmasking will ensure that IU1 = 0, i.e. REG_ID
         MCTRL_MODE_FO    | MCTRL_BUSMODE_CONW_BUSB | RCTRL_IU1_BUSB_I | GCTRL_FT_EXIT,
     }));
 
-    reg_inst(instruction("INT1" , I_INT1, ARGS_0, {
+    reg_inst(instruction("_DO_INT" , I__DO_INT, ARGS_0, {
+        // NOTE: the busmasking will ensure that IU1 = 0, i.e. REG_ID
         RCTRL_IU1_BUSB_I | GCTRL_JM_P_RIP_BUSB_O,
-        ACTION_GCTRL_CREG_EN | GCTRL_CREG_IHPR1 | GCTRL_CREG_BUSB_O | GCTRL_JM_YES
-    }));
-
-    reg_inst(instruction("INT2" , I_INT2, ARGS_0, {
-        RCTRL_IU1_BUSB_I | GCTRL_JM_P_RIP_BUSB_O,
-        ACTION_GCTRL_CREG_EN | GCTRL_CREG_IHPR2 | GCTRL_CREG_BUSB_O | GCTRL_JM_YES
+        GCTRL_CREG_IHPR | GCTRL_CREG_O | GCTRL_JM_YES
     }));
 
     reg_inst(instruction("HLT" , I_HLT , ARGS_0, GCTRL_JM_HALT));
@@ -134,8 +130,11 @@ static instruction mk_loadable_instruction(regval_t ld, regval_t ldbit, const ch
     return instruction(ss.str(), op.add_flag(ld ? ldbit : 0), second_arg ? ARGS_2_1CONST : ARGS_1, preamble);
 }
 
-static void gen_ctl_loadables(bool ld) {
+static void gen_jmp_loadables(bool ld) {
     reg_inst(mk_loadable_instruction(ld, ITFLAG_JMP_LD, "JMP" , I_JMP , false, GCTRL_JM_YES));
+
+    reg_inst(mk_loadable_instruction(ld, ITFLAG_JMP_LD, "JMP+ECRIT" , I_JMP_ECRIT, false, GCTRL_CREG_P_IE | GCTRL_CREG_O | GCTRL_JM_YES));
+    reg_inst(mk_loadable_instruction(ld, ITFLAG_JMP_LD, "JMP+LCRIT" , I_JMP_LCRIT, false, GCTRL_CREG_P_IE | GCTRL_CREG_I | GCTRL_JM_YES));
 
     reg_inst(mk_loadable_instruction(ld, ITFLAG_JMP_LD, "JC"  , I_JC  , false,                       GCTRL_JCOND_CARRY  ));
     reg_inst(mk_loadable_instruction(ld, ITFLAG_JMP_LD, "JNC" , I_JNC , false, GCTRL_JM_INVERTCOND | GCTRL_JCOND_CARRY  ));
@@ -153,18 +152,21 @@ static void gen_ctl_loadables(bool ld) {
         { MCTRL_MODE_STPFX | MCTRL_BUSMODE_CONW_BUSB | RCTRL_IU1_BUSB_O, }));
 }
 
-static void gen_ctl() {
-    gen_ctl_loadables(false);
-    gen_ctl_loadables(true);
+static void gen_jmp() {
+    gen_jmp_loadables(false);
+    gen_jmp_loadables(true);
 }
 
 static void gen_reg() {
     reg_inst(instruction("MOV", I_MOV, ARGS_2_1CONST, RCTRL_IU1_BUSA_O | RCTRL_IU2_BUSA_I | GCTRL_FT_ENTER));
+}
 
-    reg_inst(instruction("LCFG" , I_LCFG,  ARGS_1, RCTRL_IU1_BUSB_O | ACTION_GCTRL_CREG_EN | GCTRL_CREG_CFG   | GCTRL_CREG_BUSB_I | GCTRL_FT_ENTER));
-    reg_inst(instruction("LFG"  , I_LFG,   ARGS_1, RCTRL_IU1_BUSB_O | ACTION_GCTRL_CREG_EN | GCTRL_CREG_FG    | GCTRL_CREG_BUSB_I | GCTRL_FT_ENTER));
-    reg_inst(instruction("LIHP1", I_LIHP1, ARGS_1, RCTRL_IU1_BUSB_O | ACTION_GCTRL_CREG_EN | GCTRL_CREG_IHPR1 | GCTRL_CREG_BUSB_I | GCTRL_FT_ENTER));
-    reg_inst(instruction("LIHP2", I_LIHP2, ARGS_1, RCTRL_IU1_BUSB_O | ACTION_GCTRL_CREG_EN | GCTRL_CREG_IHPR2 | GCTRL_CREG_BUSB_I | GCTRL_FT_ENTER));
+static void gen_ctl() {
+    reg_inst(instruction("LFG"  , I_LFG  , ARGS_1, RCTRL_IU1_BUSB_O | GCTRL_CREG_FG   | GCTRL_CREG_I | GCTRL_FT_ENTER));
+    reg_inst(instruction("LIHP" , I_LIHP , ARGS_1, RCTRL_IU1_BUSB_O | GCTRL_CREG_IHPR | GCTRL_CREG_I | GCTRL_FT_ENTER));
+
+    reg_inst(instruction("ECRIT", I_ECRIT, ARGS_0,                    GCTRL_CREG_P_IE | GCTRL_CREG_O | GCTRL_FT_ENTER));
+    reg_inst(instruction("LCRIT", I_LCRIT, ARGS_0,                    GCTRL_CREG_P_IE | GCTRL_CREG_I | GCTRL_FT_ENTER));
 }
 
 #define NOFLAGSUFFIX "NF"
@@ -214,7 +216,7 @@ static void gen_alu_flagables(uinst_t flagbits) {
 }
 
 static void gen_alu() {
-    gen_alu_flagables(ACTRL_FLAGS_OUT | ACTION_GCTRL_CREG_EN | GCTRL_CREG_FG | GCTRL_CREG_BUSB_I);
+    gen_alu_flagables(ACTRL_FLAGS_OUT | GCTRL_CREG_FG | GCTRL_CREG_I);
     gen_alu_flagables(0);
 }
 
@@ -277,14 +279,14 @@ static void gen_x() {
 
     reg_inst(instruction("X_PUSHFG", I_X_PUSHFG, ARGS_1_NOCONST, {
         //IU1 = MUST BE RSP
-        MCTRL_MODE_FI    | MCTRL_BUSMODE_CONW_BUSB | RCTRL_IU1_BUSA_O | ACTION_GCTRL_CREG_EN | GCTRL_CREG_FG | GCTRL_CREG_BUSB_O,
+        MCTRL_MODE_FI    | MCTRL_BUSMODE_CONW_BUSB | RCTRL_IU1_BUSA_O | GCTRL_CREG_FG | GCTRL_CREG_O,
         MCTRL_MODE_FO_MI | MCTRL_BUSMODE_CONW_BUSM | GCTRL_FT_ENTER,
     }));
 
     reg_inst(instruction("X_POPFG", I_X_POPFG, ARGS_1_NOCONST, {
         //IU1 = MUST BE RSP
         MCTRL_MODE_FI_MO | MCTRL_BUSMODE_CONW_BUSM | RCTRL_IU1_BUSA_O,
-        MCTRL_MODE_FO    | MCTRL_BUSMODE_CONW_BUSB | ACTION_GCTRL_CREG_EN | GCTRL_CREG_FG | GCTRL_CREG_BUSB_I | COMMAND_RCTRL_RSP_INC | GCTRL_FT_ENTER,
+        MCTRL_MODE_FO    | MCTRL_BUSMODE_CONW_BUSB | GCTRL_CREG_FG | GCTRL_CREG_I | COMMAND_RCTRL_RSP_INC | GCTRL_FT_ENTER,
     }));
 }
 
@@ -298,8 +300,9 @@ void kcpu::internal::register_insts() {
        7 instruction bits compared to 9. */
 
     gen_sys();
-    gen_ctl();
+    gen_jmp();
     gen_reg();
+    gen_ctl();
     gen_mem();
     gen_alu();
     gen_io();

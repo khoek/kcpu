@@ -45,20 +45,20 @@ static bool run_test(bool verbose, uint32_t num, const std::filesystem::path pat
                   << std::right << std::setw(0);
 
         if(verbose) printf("\nCPU Start\n");
-        kcpu::vm::STATE s = cpu.run(MAX_USTEPS);
-        if(verbose) printf("\nCPU %s, %d uinstructions executed\n", cpu.ctl.cbits[CBIT_ABORTED] ? "Aborted" : "Halted", cpu.get_total_clocks());
+        kcpu::vm::state s = cpu.run(MAX_USTEPS);
+        if(verbose) printf("\nCPU %s, %d uinstructions executed\n", cpu.get_state() == kcpu::vm::state::HALTED ? "Halted" : "Aborted", cpu.get_total_clocks());
 
         switch(s) {
-            case kcpu::vm::STATE_HALTED: {
+            case kcpu::vm::state::HALTED: {
                 std::cout << colour_str("PASS", true) << "  @" << std::setfill(' ') << std::setw(8) << cpu.get_total_clocks()
                           << std::setw(0) << std::setfill(' ') << std::endl;
                 return true;
             }
-            case kcpu::vm::STATE_ABORTED: {
+            case kcpu::vm::state::ABORTED: {
                 std::cout << colour_str("FAIL, ABORTED", false) << std::endl;
                 return false;
             }
-            case kcpu::vm::STATE_TIMEOUT: {
+            case kcpu::vm::state::TIMEOUT: {
                 std::cout << colour_str("FAIL, DETERMINISTIC TIMEOUT", false) << std::endl;
                 return false;
             }

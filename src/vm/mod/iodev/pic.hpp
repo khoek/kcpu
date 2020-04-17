@@ -2,27 +2,54 @@
 #define VM_MOD_IODEV_PIC_H
 
 #include "iodev.hpp"
+#include "../interface/pic.hpp"
 
 namespace kcpu {
 
 namespace iodev {
 
-class pic : public io_device {
+// HARDWARE NOTE: Since the int_mask bits have to be high to enable an interrupt,
+// the computer can start safely with interrupts disabled so long as this register
+// is reset upon boot.
+
+class pic : public pic_interface, public single_port_io_device {
     private:
-    static const unsigned int PORT_BASE = 0x10;
+    static const unsigned int PORT_BASE = 0x01;
 
-    static const unsigned int REG_IMR = 0;
-    static const unsigned int REG_ISR = 1;
-    static const unsigned int REGISTER_COUNT = 2;
+    static const regval_t MASK_CMD  = 0xC000;
+    static const regval_t MASK_VAL  = 0x3FFF;
+    static const regval_t SHIFT_CMD = 14;
 
-    regval_t imr; /* Interrupt Mask    Register */
-    regval_t isr; /* Interrupt Service Register */
-    regval_t ipr; /* Interrupt Pending Register */
+    static const regval_t CMD_EOI      = 0b01 << SHIFT_CMD;
+    static const regval_t CMD_SET_MASK = 0b10 << SHIFT_CMD;
+// HARDWARE NOTE: In hardware we don't have to implement this one; and a CMD_CLEAR_PEND is probably sufficient.
+// But it does allow us to raise interrupts from software, which is great for testing. (So maybe do it?)
+    static const regval_t CMD_SET_PEND = 0b11 << SHIFT_CMD;
+
+    static const regval_t BIT_INT_NMI = 1 << 0;
+
+    static const regval_t MASK_NMIS = BIT_INT_NMI;
+
+    bool aint_prev = false;
+
+    regval_t irq_mask = 0;
+    regval_t irq_serv = 0;
+    regval_t irq_pend = 0;
+
+    regval_t get_next_pending_bit(bool expect_nonzero);
+
+    vm_logger &logger;
 
     public:
-    std::vector<regval_t> get_reserved_ports();
-    std::pair<regval_t, halfcycle_count_t> read(regval_t port);
-    halfcycle_count_t write(regval_t port, regval_t val);
+    pic(vm_logger &logger);
+    void dump_registers();
+
+    void assert(regval_t bit);
+    bool is_pint_active();
+    void handle_aint(bool aint);
+
+    std::pair<regval_t, halfcycle_count_t> read();
+    halfcycle_count_t write(regval_t val);
 };
 
 }

@@ -14,8 +14,8 @@ namespace kcpu {
 
 // Random mutually exclusive "ACTION"s
 #define ACTION_CTRL_NONE        (0b00ULL << (0 + CTRL_BASE))
-#define ACTION_GCTRL_CREG_EN    (0b01ULL << (0 + CTRL_BASE))
-#define ACTION__UNUSED          (0b10ULL << (0 + CTRL_BASE))
+#define ACTION__UNUSED          (0b01ULL << (0 + CTRL_BASE))
+#define ACTION_GCTRL_RIP_BUSA_O (0b10ULL << (0 + CTRL_BASE))
 #define ACTION_MCTRL_BUSMODE_X  (0b11ULL << (0 + CTRL_BASE))
 
 #define COMMAND_NONE            (0b00ULL << (2 + CTRL_BASE))
@@ -50,8 +50,8 @@ namespace kcpu {
 // "pseudo", where we have fake jumpmode which is mutually-
 // exclusive with any FT or JM.
 #define GCTRL_JM_YES          (0b0100ULL << (0 + GCTRL_BASE))
-// HARDWARE NOTE: despite the different names, GCTRL_JM_P_RIP_BUSB_O is the dual output version of GCTRL_JM_YES (input)!
-#define GCTRL_JM_P_RIP_BUSB_O (0b0101ULL << (0 + GCTRL_BASE))
+// HARDWARE NOTE: despite the different names, GCTRL_JM_P_RIP_BUSB_O is the dual output version of GCTRL_JM_YES (input to RIP)!
+#define GCTRL_JM_P_RIP_BUSB_O (0b0101ULL << (0 + GCTRL_BASE))   //FIXME consider integrating with the CREG output mechanism (can't see a way to make this work off the top of my head)
 #define GCTRL_JM_HALT         (0b0110ULL << (0 + GCTRL_BASE))
 // ABRT halts and sets the abort flag as well.
 // Aborts are useful as a breakpoint in the VM, but along
@@ -63,25 +63,32 @@ namespace kcpu {
 #define GCTRL_JCOND_SIGN    (0b1010ULL << (0 + GCTRL_BASE))
 #define GCTRL_JCOND_N_OVFLW (0b1011ULL << (0 + GCTRL_BASE))
 
-// HARDWARE NOTES: GCTRL_ACTION_RIP_BUSA_O is RETIRED, can be computed by ANDing the low bit of UC with the value of CBIT_INSTMASK
-
 // NOT A REAL BIT, JUST A HELPER FOR THE 4 FLAG JMs
 #define GCTRL_JM_INVERTCOND  (0b0100ULL << (0 + GCTRL_BASE))
 
-#define GCTRL_CREG_CFG   (0b00ULL << (4 + GCTRL_BASE))
-#define GCTRL_CREG_FG    (0b01ULL << (4 + GCTRL_BASE))
-#define GCTRL_CREG_IHPR1 (0b10ULL << (4 + GCTRL_BASE))
-#define GCTRL_CREG_IHPR2 (0b11ULL << (4 + GCTRL_BASE))
+// Note there is space here for one more possibility, CREG_NONE active but GCTRL_CREG_BUSB_O selected
+#define GCTRL_CREG_NONE   (0b00ULL << (4 + GCTRL_BASE))
+#define GCTRL_CREG_FG     (0b01ULL << (4 + GCTRL_BASE))
+#define GCTRL_CREG_IHPR   (0b10ULL << (4 + GCTRL_BASE))
+// P_IE is the "interrupt enable" flag.
+// NOTE not a real register, just a bit which is set with I and
+// cleared with O below (not actually inputing or outputting).
+#define GCTRL_CREG_P_IE (0b11ULL << (4 + GCTRL_BASE))
 
-#define GCTRL_CREG_BUSB_I (0ULL << (6 + GCTRL_BASE))
-#define GCTRL_CREG_BUSB_O (1ULL << (6 + GCTRL_BASE))
+// HARDWARE NOTE
+// These two bits, when a normal CREG (FG or IHPR) are selected,
+// indicate whether there will be output or input from the reg
+// to BUS_B.
+#define GCTRL_CREG_I (0ULL << (6 + GCTRL_BASE))
+#define GCTRL_CREG_O (1ULL << (6 + GCTRL_BASE))
 
 // NONBIT: GCTRL decoding
 #define MASK_GCTRL_FTJM (0b1111ULL << (0 + GCTRL_BASE))
 #define MASK_GCTRL_CREG (0b11ULL << (4 + GCTRL_BASE))
+#define MASK_GCTRL_DIR (0b1ULL << (6 + GCTRL_BASE))
 #define GCTRL_DECODE_CREG(val) (((val) & MASK_GCTRL_CREG) >> (4 + GCTRL_BASE))
-#define GCTRL_CREG_IS_INPUT(dec) (!(dec & (1ULL << (6 + GCTRL_BASE))))
-#define GCTRL_CREG_IS_OUTPUT(dec) (!!(dec & (1ULL << (6 + GCTRL_BASE))))
+#define GCTRL_CREG_IS_INPUT(dec) (!(dec & MASK_GCTRL_DIR))
+#define GCTRL_CREG_IS_OUTPUT(dec) (!!(dec & MASK_GCTRL_DIR))
 
 // RCTRL
 #define RCTRL_BASE GCTRL_END

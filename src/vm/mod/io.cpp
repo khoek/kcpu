@@ -4,7 +4,7 @@
 
 namespace kcpu {
 
-mod_io::mod_io(vm_logger &logger) : logger(logger), iodev_manager(logger), id_probe(iodev_manager.get_ports()) {
+mod_io::mod_io(vm_logger &logger) : logger(logger), iodev_manager(logger), id_probe(iodev_manager.get_ports()), id_pic(logger) {
     iodev_manager.register_iodev(id_probe);
     iodev_manager.register_iodev(id_pic);
 
@@ -21,10 +21,15 @@ mod_io::mod_io(vm_logger &logger) : logger(logger), iodev_manager(logger), id_pr
 
 void mod_io::dump_registers() {
     iodev_manager.dump_registers();
+    id_pic.dump_registers();
 }
 
 bool mod_io::is_io_done() {
     return iodev_manager.is_io_done();
+}
+
+pic_interface & mod_io::get_pic() {
+    return id_pic;
 }
 
 void mod_io::clock_outputs(uinst_t ui, bus_state &s) {

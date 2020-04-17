@@ -23,75 +23,102 @@ mod_ctl::mod_ctl(vm_logger &logger) : logger(logger) {
 void mod_ctl::dump_registers() {
     logger.logf("RIP: %04X RUC: %04X\n", reg[REG_IP], reg[REG_UC]);
     logger.logf("RIR: %04X RFG: %04X\n", reg[REG_IR], reg[REG_FG]);
-    logger.logf("CBITS: %c%c%c%c\n",
+    logger.logf("CBITS: %c%c%c%c%c PINT(latch): %d AINT: %d\n",
         cbits[CBIT_INSTMASK] ? 'M' : 'm',
+        cbits[CBIT_IE]       ? 'I' : 'i',
+        cbits[CBIT_IO_WAIT]  ? 'W' : 'w',
         cbits[CBIT_HALTED]   ? 'H' : 'h',
         cbits[CBIT_ABORTED]  ? 'A' : 'a',
-        cbits[CBIT_IO_WAIT]  ? 'W' : 'w'
+        pint_latch_val ? 1 : 0,
+        is_aint_active() ? 1 : 0
     );
 }
 
-#define LOAD_INSTVAL 0
+#define LOAD_INSTVAL (0 << INST_SHIFT)
+#define INT_INSTVAL  (1 << INST_SHIFT)
 
 regval_t mod_ctl::get_inst() {
     // HARDWARE NOTE: CBIT_IO_WAIT inhibits CBIT_INSTMASK, for obvious reasons,
     // EXCEPT WHEN IO_DONE IS ASSERTED, WHEN CBIT_INSTMASK BEHAVES AS NORMAL.
     // (This is the actual behaviour as emulated, see the hardware note in `offclock_pulse()`.)
-    return (cbits[CBIT_INSTMASK] && !cbits[CBIT_IO_WAIT]) ? LOAD_INSTVAL : reg[REG_IR];
+    return (cbits[CBIT_INSTMASK] && !cbits[CBIT_IO_WAIT]) ? (pint_latch_val ? INT_INSTVAL : LOAD_INSTVAL) : reg[REG_IR];
 }
 
 uinst_t mod_ctl::get_uinst() {
     return uinst_latch_val;
 }
 
-void mod_ctl::clock_outputs(uinst_t ui, bus_state &s) {
-    // HARDWARE NOTE: in real life this could be toggled-on during a
-    // cycle (I think only if we enter a NOP without the mask up),
-    // so make sure we wont get a short/bus collision if that happens.
-    if(cbits[CBIT_INSTMASK] && !cbits[CBIT_IO_WAIT] && !(reg[REG_UC] & 0x1)) {
-        s.assign(BUS_A, reg[REG_IP]);
-    }
+bool mod_ctl::is_first_uop() {
+    return !cbits[CBIT_INSTMASK] && (reg[REG_UC] == 0x0);
+}
 
+bool mod_ctl::is_aint_active() {
+    return cbits[CBIT_INSTMASK] && pint_latch_val;
+}
+
+void mod_ctl::clock_outputs(uinst_t ui, bus_state &s) {
     if((ui & MASK_GCTRL_FTJM) == GCTRL_JM_P_RIP_BUSB_O) {
         s.assign(BUS_B, reg[REG_IP]);
     }
 
-    switch(ui & MASK_CTRL_ACTION) {
-        case ACTION_CTRL_NONE:
-        case ACTION__UNUSED:
-        case ACTION_MCTRL_BUSMODE_X: {
+    switch(ui & MASK_GCTRL_CREG) {
+        case GCTRL_CREG_NONE:
+        case GCTRL_CREG_P_IE: {
             break;
         }
-        case ACTION_GCTRL_CREG_EN: {
+        case GCTRL_CREG_FG:
+        case GCTRL_CREG_IHPR: {
             if(GCTRL_CREG_IS_OUTPUT(ui)) {
                 s.assign(BUS_B, reg[GCTRL_DECODE_CREG(ui)]);
             }
             break;
         }
-        default: throw vm_error("unknown GCTRL_ACTION");
+        default: throw vm_error("unknown GCTRL CREG");
     }
 
-    switch(ui & MASK_CTRL_COMMAND) {
-        case COMMAND_NONE:
-        case COMMAND_RCTRL_RSP_INC: {
+    switch(ui & MASK_CTRL_ACTION) {
+        case ACTION_CTRL_NONE:
+        case ACTION_MCTRL_BUSMODE_X: {
             break;
         }
-        case COMMAND_IO_READ: {
+        case ACTION_GCTRL_RIP_BUSA_O: {
+            if(!cbits[CBIT_IO_WAIT]) {
+                s.assign(BUS_A, reg[REG_IP]);
+            }
             break;
         }
-        case COMMAND_IO_WRITE: {
-            break;
-        }
-        default: throw vm_error("unknown CTRL_COMMAND");
+        default: throw vm_error("unknown GCTRL_ACTION");
     }
 }
 
-void mod_ctl::set_instmask_enabled(bool state) {
-    // NOTE implement this condition by funneling it through the command signals latch, without it actually coming
-    // from the EEPROMs---thus we won't need any fancy edge-detection stuff. (No race between the next instruction
-    // propagating and this condition check reaching the UC reg.)
-    if(state != cbits[CBIT_INSTMASK]) {
-        reg[REG_UC] = 0;
+void mod_ctl::set_instmask_enabled(uinst_t ui, bool state, bool pint) {
+    // FIXME I'm certain the logic in here could be substantially simplified.
+
+
+    // This outer guard just avoids the case where we execute the first instruction of a NOP without the INSTMASK set.
+    if((ui & MASK_CTRL_ACTION) != ACTION_GCTRL_RIP_BUSA_O) {
+        // HARDWARE NOTE implement this first condition by funneling `cbits[CBIT_INSTMASK]` through the command signals
+        // latch, without it actually coming from the EEPROMs---thus we won't need any fancy edge-detection stuff. (No
+        // race between the next instruction propagating and this condition check reaching the UC reg.)
+        if(cbits[CBIT_INSTMASK] != state) {
+            reg[REG_UC] = 0;
+        }
+
+        // HARDWARE NOTE: CAREFUL ABOUT THE CONDITIONAL EXPRESSION HERE
+        if(state) {
+            pint_latch_val = pint;
+            if(!pint) {
+                reg[REG_UC] = 0;
+            }
+        }
+    } else {
+        // HARDWARE NOTE: CAREFUL ABOUT THE CONDITIONAL EXPRESSION HERE
+        if (state) {
+            pint_latch_val = pint;
+            if(pint) {
+                reg[REG_UC] = 0;
+            }
+        }
     }
 
     cbits[CBIT_INSTMASK] = state;
@@ -107,18 +134,17 @@ static regval_t decode_jcond_mask(uinst_t ui) {
     }
 }
 
-void mod_ctl::ft_enter() {
-    set_instmask_enabled(true);
-}
+void mod_ctl::clock_inputs(uinst_t ui, bus_state &s, bool pint) {
+    // HARDWARE NOTE: interrupt_enable is simply AND-ed with the incoming PINT line.
+    pint = pint && cbits[CBIT_IE];
 
-void mod_ctl::clock_inputs(uinst_t ui, bus_state &s) {
     if(!cbits[CBIT_IO_WAIT]) {
         // HARDWARE NOTE This register can be simultaneously reset under the GCTRL_FT_ENTER/MAYBEEXIT/EXIT conditions, but we
         // assume that (presumably async) reset signal dominates this increment.
         reg[REG_UC]++;
     }
 
-    // HARDWARE NOTE: As comment at definition, CBIT_IO_WAIT must be set AFTER it is checked to incrememnt REG_UC.
+    // HARDWARE NOTE: As per comment at definition, CBIT_IO_WAIT must be set AFTER it is checked to incrememnt REG_UC.
     switch(ui & MASK_CTRL_COMMAND) {
         case COMMAND_NONE:
         case COMMAND_RCTRL_RSP_INC: {
@@ -132,19 +158,22 @@ void mod_ctl::clock_inputs(uinst_t ui, bus_state &s) {
         default: throw vm_error("unknown CTRL_COMMAND");
     }
 
-    switch(ui & MASK_CTRL_ACTION) {
-        case ACTION_CTRL_NONE:
-        case ACTION__UNUSED:
-        case ACTION_MCTRL_BUSMODE_X: {
+    switch(ui & MASK_GCTRL_CREG) {
+        case GCTRL_CREG_NONE: {
             break;
         }
-        case ACTION_GCTRL_CREG_EN: {
+        case GCTRL_CREG_P_IE: {
+            cbits[CBIT_IE] = (ui & MASK_GCTRL_DIR) == GCTRL_CREG_I;
+            break;
+        }
+        case GCTRL_CREG_FG:
+        case GCTRL_CREG_IHPR: {
             if(GCTRL_CREG_IS_INPUT(ui)) {
                 reg[GCTRL_DECODE_CREG(ui)] = s.read(BUS_B);
             }
             break;
         }
-        default: throw vm_error("unknown GCTRL_ACTION");
+        default: throw vm_error("unknown GCTRL CREG");
     }
 
     switch(ui & MASK_GCTRL_FTJM) {
@@ -152,23 +181,25 @@ void mod_ctl::clock_inputs(uinst_t ui, bus_state &s) {
             break;
         }
         case GCTRL_FT_ENTER: {
-            ft_enter();
+            set_instmask_enabled(ui, true, pint);
             break;
         }
         case GCTRL_FT_EXIT: {
             reg[REG_IP] += 2;
-            set_instmask_enabled(false);
+            set_instmask_enabled(ui, false, pint);
             break;
         }
         case GCTRL_FT_MAYBEEXIT: {
             reg[REG_IP] += 2;
             reg[REG_IR] = s.read(BUS_B);
-            set_instmask_enabled(reg[REG_IR] & P_I_LOADDATA);
+            if(!(reg[REG_IR] & P_I_LOADDATA)) {
+                set_instmask_enabled(ui, false, pint);
+            }
             break;
         }
         case GCTRL_JM_YES: {
             reg[REG_IP] = s.read(BUS_B);
-            ft_enter();
+            set_instmask_enabled(ui, true, pint);
             break;
         }
         case GCTRL_JM_P_RIP_BUSB_O: {
@@ -188,7 +219,7 @@ void mod_ctl::clock_inputs(uinst_t ui, bus_state &s) {
             if((!!(reg[REG_FG] & decode_jcond_mask(ui))) ^ (!!(ui & GCTRL_JM_INVERTCOND))) {
                 reg[REG_IP] = s.read(BUS_B);
             }
-            ft_enter();
+            set_instmask_enabled(ui, true, pint);
         }
     }
 }
@@ -201,6 +232,9 @@ void mod_ctl::offclock_pulse(bool io_done) {
     // HARDWARE NOTE: note that io_done overrides CBIT_IO_WAIT here, and then immediately clears it.
     if(io_done || !cbits[CBIT_IO_WAIT]) {
         uinst_latch_val = arch::self().ucode_read(get_inst(), reg[REG_UC]);
+        if(logger.dump_bus) {
+            logger.logf("uinst latch <- 0x%X@0x%X\n", get_inst(), uinst_latch_val);
+        }
     }
 }
 

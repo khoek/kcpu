@@ -1,31 +1,69 @@
-LIHP1 int1
-LIHP2 int2
+LIHP int_handle
 
-MOV %rsp %rc
+JMP+LCRIT main
+
+main:
+MOV $0 %ra
+ST data.int_1_count %ra
+ST data.int_2_count %ra
 
 TST $0xFFFF
+MOV $0xBEEF %ra
+MOV $0x0000 %rb
+MOV $0xBEEF %rc
+MOV $0xBEEF %rd
+# need aligned stack pointer
+MOV $0xBEE0 %rsp
 
-MOV $1 %rb
-INT1
-MOV $1 %rb
-INT1
-MOV $2 %rb
-INT2
-MOV $1 %rb
-INT1
-MOV $2 %rb
-INT2
+MOV $0x8003 %rbp
+IOW $0x0001 %rbp
+
+MOV $0xC001 %rbp
+IOW $0x0001 %rbp
+ADD $1 %rb
+MOV $0xC002 %rbp
+IOW $0x0001 %rbp
+ADD $1 %rb
+MOV $0xC001 %rbp
+IOW $0x0001 %rbp
+ADD $1 %rb
+MOV $0xC001 %rbp
+IOW $0x0001 %rbp
+ADD $1 %rb
+MOV $0xC002 %rbp
+IOW $0x0001 %rbp
+ADD $1 %rb
+MOV $0xC001 %rbp
+IOW $0x0001 %rbp
+ADD $1 %rb
+MOV $0xC002 %rbp
+IOW $0x0001 %rbp
+ADD $1 %rb
 
 JZ fail
 
-CMP %rc %rsp
+CMP $0xBEEF %ra
+JNE fail
+CMP $0x0007 %rb
+JNE fail
+CMP $0xBEEF %rc
+JNE fail
+CMP $0xBEEF %rd
+JNE fail
+CMP $0xBEE0 %rsp
+JNE fail
+
+LD data.int_1_count %ra
+CMP $4 %ra
+JNE fail
+
+LD data.int_2_count %ra
+CMP $3 %ra
 JNE fail
 
 HLT
 
-
-
-int1:
+int_handle:
     PUSHFG
     PUSH %ra
     PUSH %rb
@@ -33,48 +71,53 @@ int1:
     PUSH %rd
     PUSH %rbp
     MOV %rid %ra
-    ST intret %ra
+    ST data.int_ret_rip %ra
 
-    CMP $1 %rb
+    IOR $0x0001 %rc
+    AND $0x3FFF %rbp
+    CMP %rc %rbp
     JNE fail
 
-    JMP int1_exit
+    CMP $0x0001 %rc
+    JE int_handle.1
 
-    int1_exit:
+    CMP $0x0002 %rc
+    JE int_handle.2
+
+    JMP fail
+
+    int_handle.1:
+        LD data.int_1_count %ra
+        ADD $1 %ra
+        ST data.int_1_count %ra
+        JMP int_handle.exit
+
+    int_handle.2:
+        LD data.int_2_count %ra
+        ADD $1 %ra
+        ST data.int_2_count %ra
+        JMP+ECRIT int_handle.exit
+
+    int_handle.exit:
+        MOV $0x4000 %rbp
+        IOW $0x0001 %rbp
+
         POP %rbp
         POP %rd
         POP %rc
         POP %rb
         POP %ra
         POPFG
-        LDJMP intret
-
-int2:
-    PUSHFG
-    PUSH %ra
-    PUSH %rb
-    PUSH %rc
-    PUSH %rd
-    PUSH %rbp
-    MOV %rid %ra
-    ST intret %ra
-
-    CMP $2 %rb
-    JNE fail
-
-    JMP int2_exit
-
-    int2_exit:
-        POP %rbp
-        POP %rd
-        POP %rc
-        POP %rb
-        POP %ra
-        POPFG
-        LDJMP intret
-
-intret:
-    NOP
+        LDJMP+LCRIT data.int_ret_rip
 
 fail:
     ABRT
+
+data.int_1_count:
+    NOP
+
+data.int_2_count:
+    NOP
+
+data.int_ret_rip:
+    NOP

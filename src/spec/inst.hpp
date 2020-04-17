@@ -36,17 +36,16 @@ namespace kcpu {
 // a flag), then we just use two icodes.
 //
 // prefix flags (CC):
-// NOTE unlike the following, these must be shifted to their
-// actual position in the 16-bit opcode.
+// NOTE There first two codes are already shifted into their
+// final position in the instruction.
 #define P_I_LOADDATA (1 << 15)
-
-// FIXME, the existence of both of these is a hack
 #define P_I_RSPDEC   (1 << 14)
+
 #define P_PRE_I_RSPDEC (1 << 8)
 
 //
 // itype ranges (AAAA):
-#define IT_SYS              0b0000 // SYS (NOP, INT1, INT2 must occupy hardcoded positions)
+#define IT_SYS              0b0000 // SYS (NOP, INT must occupy hardcoded positions)
 #define IT_X                0b0001 // X   (X_xxxx codes)
 #define IT__MEMC            0b0010 // MEM (CLOSE, don't use directly, use IT_MEM and ITFLAG_MEM_FAR instead)
 #define IT__MEMF            0b0011 // MEM (FAR, don't use directly, use IT_MEM and ITFLAG_MEM_FAR instead)
@@ -69,24 +68,27 @@ namespace kcpu {
 
 // BEGIN DECLS
 
-// SYS/MISC
+// SYS/MISC (12/16)
 #define I_NOP       OC(IT_SYS, 0b0000)
-#define I_INT1      OC(IT_SYS, 0b0001)
-#define I_INT2      OC(IT_SYS, 0b0010)
+#define I__DO_INT   OC(IT_SYS, 0b0001)
+// #define I__UNUSED   OC(IT_SYS, 0b0010)
 
 #define I_MOV       OC(IT_SYS, 0b0011)
 #define I_LCFG      OC(IT_SYS, 0b0100)
 #define I_LFG       OC(IT_SYS, 0b0101)
-#define I_LIHP1     OC(IT_SYS, 0b0110)
-#define I_LIHP2     OC(IT_SYS, 0b0111)
+#define I_LIHP      OC(IT_SYS, 0b0110)
+// #define I__UNUSED   OC(IT_SYS, 0b0111)
 
 #define I_IOR       OC(IT_SYS, 0b1000)
 #define I_IOW       OC(IT_SYS, 0b1001)
 
+#define I_ECRIT     OC(IT_SYS, 0b1100)
+#define I_LCRIT     OC(IT_SYS, 0b1101)
+
 #define I_HLT       OC(IT_SYS, 0b1110)
 #define I_ABRT      OC(IT_SYS, 0b1111)
 
-// X
+// X (8/16)
 #define I_X_ENTER   OC(IT_X  , 0b0000).add_flag(P_PRE_I_RSPDEC) // FIXME hack
 #define I_X_LEAVE   OC(IT_X  , 0b0001).add_flag(P_PRE_I_RSPDEC) // FIXME hack
 
@@ -98,7 +100,7 @@ namespace kcpu {
 #define I_X_PUSHFG  OC(IT_X  , 0b0110).add_flag(P_PRE_I_RSPDEC) // FIXME hack
 #define I_X_POPFG   OC(IT_X  , 0b0111)
 
-// ALU
+// ALU (8/8)
 #define I_ADD2      OC(IT_ALU, 0b0000)
 #define I_SUB       OC(IT_ALU, 0b0001)
 #define I_AND       OC(IT_ALU, 0b0010)
@@ -108,7 +110,7 @@ namespace kcpu {
 #define I_RSFT      OC(IT_ALU, 0b0110)
 #define I_TST       OC(IT_ALU, 0b0111)
 
-// MEM
+// MEM (9/16)
 #define I_STPFX     OC(IT_MEM, 0b0001)
 #define I_LDW       OC(IT_MEM, 0b0011)
 #define I_LDBL      OC(IT_MEM, 0b0100)
@@ -119,8 +121,7 @@ namespace kcpu {
 #define I_STBL      OC(IT_MEM, 0b1100)
 #define I_STBH      OC(IT_MEM, 0b1110)
 
-// JMP
-#define I_JMP       OC(IT_JMP, 0b1000)
+// JMP (12/16)
 #define I_JC        OC(IT_JMP, 0b0000)
 #define I_JNC       OC(IT_JMP, 0b0100)
 #define I_JZ        OC(IT_JMP, 0b0001)
@@ -130,17 +131,24 @@ namespace kcpu {
 #define I_JO        OC(IT_JMP, 0b0011)
 #define I_JNO       OC(IT_JMP, 0b0111)
 
+#define I_JMP       OC(IT_JMP, 0b1000)
 #define I_LJMP      OC(IT_JMP, 0b1001)
-#define I_LDLJMP    OC(IT_JMP, 0b1011)
 
-// IU3_ALL
+#define I_JMP_ECRIT OC(IT_JMP, 0b1110)
+#define I_JMP_LCRIT OC(IT_JMP, 0b1111)
+
+// IU3_ALL_GRP1 (1/2)
 #define I_ADD3      OCANY_IU3(IT_IU3_ALL_GRP1, 0b0)
+
+// IU3_ALL_GRP2 (2/2)
 #define I_LDWO      OCANY_IU3(IT_IU3_ALL_GRP2, 0b0)
 #define I_LDWO_FAR  OCANY_IU3(IT_IU3_ALL_GRP2, 0b1) // REMINDER UNREFERENCED, use I_LDWO and ICFLAG_MEM_IU3_FAR instead.
+
+// IU3_ALL_GRP3 (2/2)
 #define I_STWO      OCANY_IU3(IT_IU3_ALL_GRP3, 0b0)
 #define I_STWO_FAR  OCANY_IU3(IT_IU3_ALL_GRP3, 0b1) // REMINDER UNREFERENCED, use I_LDWO and ICFLAG_MEM_IU3_FAR instead.
 
-// IU3_SINGLE
+// IU3_SINGLE_GRP1 (~1/16)
 #define I_X_ENTERFR OCSINGLE_IU3(IT_IU3_SINGLE_GRP1, 0b0, REG_SP).add_flag(P_PRE_I_RSPDEC) // FIXME hack
 
 // END DECLS

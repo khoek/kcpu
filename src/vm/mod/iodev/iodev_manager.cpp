@@ -45,6 +45,7 @@ void io_device_manager::dump_registers() {
         }
         default: throw vm_error("unknown io state");
     }
+    logger.logf("\n");
 }
 
 bool io_device_manager::is_io_done() {
