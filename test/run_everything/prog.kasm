@@ -1,6 +1,4 @@
 # run_everything (mostly, except jumps)
-# Note: this could break at any time, if these
-# instructions write over too much of the code.
 
 STPFX $0x0080
 FAR STPFX $0x0080

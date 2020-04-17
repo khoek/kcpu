@@ -51,10 +51,8 @@ int main() {
 
     std::ofstream of_everything("test/run_everything/prog.kasm");
     of_everything << "# run_everything (mostly, except jumps)" << std::endl
-                  << "# Note: this could break at any time, if these" << std::endl
-                  << "# instructions write over too much of the code." << std::endl << std::endl;
-
-    of_everything << "STPFX $0x0080" << std::endl
+                  << std::endl
+                  << "STPFX $0x0080" << std::endl
                   << "FAR STPFX $0x0080" << std::endl
                   << std::endl;
     for(auto a : aliases) {
