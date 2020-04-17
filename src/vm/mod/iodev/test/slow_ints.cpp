@@ -16,8 +16,6 @@ halfcycle_count_t slow_ints::write(regval_t val) {
 }
 
 void slow_ints::process_halfcycle(pic_in_interface &pic, bool offclock) {
-    // std::cout << std::endl << std::endl << "count: " << count << std::endl << std::endl;
-
     if(!count) {
         return;
     }
@@ -25,7 +23,6 @@ void slow_ints::process_halfcycle(pic_in_interface &pic, bool offclock) {
     count--;
 
     if(!count) {
-        // std::cout << std::endl << std::endl << "ASSERTING " << std::endl << std::endl;
         pic.assert(INT_NUM);
     }
 }
