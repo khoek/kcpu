@@ -32,15 +32,23 @@ int main() {
     }
 
     std::vector<std::string> blacklist = {
-        "HLT", "ABRT",
+        /*
+            This block is still emitted, but in a manual order/with
+            manual args.
+        */
         "STPFX", "FAR STPFX",
+        "PUSHFG", "POPFG",
+        "HLT", "ABRT",
+
+        /*
+            This block is not emitted. (But perhaps some/all
+            instructions here should be.)
+        */
         "IOR", "IOW",
         "_DO_INT",
-        "CALL", "RET", "RET+LCRIT", "X_CALL", "X_RET", "X_RET+LCRIT",
-        "JMP", "LJMP",
-        "JMP+ECRIT", "JMP+LCRIT",
-        "LDJMP", "LDLJMP",
-        "LDJMP+ECRIT", "LDJMP+LCRIT",
+        "CALL", "RET", "IRET", "X_CALL", "X_RET", "X_IRET",
+        "JMP", "LJMP", "JMP+DI", "JMP+EI",
+        "LDJMP", "LDLJMP", "LDJMP+DI", "LDJMP+EI",
         "JC", "JO", "JS", "JZ", "JE", "JL", "JGE",
         "JNC", "JNO", "JNS", "JNZ", "JNE", "JNL",
         "LDJC", "LDJO", "LDJS", "LDJZ", "LDJE", "LDJL", "LDJGE",
@@ -68,6 +76,12 @@ int main() {
         }
         of_everything << std::endl;
     }
+
+    of_everything << std::endl;
+    of_everything << "PUSHFG" << std::endl;
+    of_everything << "POPFG" << std::endl;
+
+    of_everything << std::endl;
     of_everything << "HLT" << std::endl;
     of_everything << "ABRT" << std::endl;
 

@@ -82,13 +82,13 @@ namespace kcpu {
 #define I_IOR       OC(IT_SYS, 0b1000)
 #define I_IOW       OC(IT_SYS, 0b1001)
 
-#define I_ECRIT     OC(IT_SYS, 0b1100)
-#define I_LCRIT     OC(IT_SYS, 0b1101)
+#define I_DI        OC(IT_SYS, 0b1100)
+#define I_EI        OC(IT_SYS, 0b1101)
 
 #define I_HLT       OC(IT_SYS, 0b1110)
 #define I_ABRT      OC(IT_SYS, 0b1111)
 
-// X (8/16)
+// X (9/16)
 #define I_X_ENTER   OC(IT_X  , 0b0000).add_flag(P_PRE_I_RSPDEC) // FIXME hack
 #define I_X_LEAVE   OC(IT_X  , 0b0001).add_flag(P_PRE_I_RSPDEC) // FIXME hack
 
@@ -97,10 +97,10 @@ namespace kcpu {
 #define I_X_CALL    OC(IT_X  , 0b0100).add_flag(P_PRE_I_RSPDEC) // FIXME hack
 #define I_X_RET     OC(IT_X  , 0b0101)
 
-#define I_X_RET_LCRIT OC(IT_X, 0b0110)
+#define I_X_PUSHFG  OC(IT_X  , 0b0110).add_flag(P_PRE_I_RSPDEC) // FIXME hack
+#define I_X_POPFG   OC(IT_X  , 0b0111)
 
-#define I_X_PUSHFG  OC(IT_X  , 0b1000).add_flag(P_PRE_I_RSPDEC) // FIXME hack
-#define I_X_POPFG   OC(IT_X  , 0b1001)
+#define I_X_IRET    OC(IT_X  , 0b1000)
 
 // ALU (8/8)
 #define I_ADD2      OC(IT_ALU, 0b0000)
@@ -136,8 +136,8 @@ namespace kcpu {
 #define I_JMP       OC(IT_JMP, 0b1000)
 #define I_LJMP      OC(IT_JMP, 0b1001)
 
-#define I_JMP_ECRIT OC(IT_JMP, 0b1110)
-#define I_JMP_LCRIT OC(IT_JMP, 0b1111)
+#define I_JMP_DI    OC(IT_JMP, 0b1110)
+#define I_JMP_EI    OC(IT_JMP, 0b1111)
 
 // IU3_ALL_GRP1 (1/2)
 #define I_ADD3      OCANY_IU3(IT_IU3_ALL_GRP1, 0b0)

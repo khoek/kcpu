@@ -1,5 +1,5 @@
-# (Same as test number 1, except uses LCRIT/ECRIT instead
-#  of combination instructions JMP+LCRIT/JMP+ECRIT.)
+# (Same as test number 1, except uses EI/DI instead
+#  of combination instructions JMP+EI/JMP+DI.)
 
 # Test:
 # 1. ENABLE+Triggered is recieved,
@@ -12,7 +12,7 @@ IOW $0x0001 %rbp
 
 step1:
     LIHP int1
-    LCRIT
+    EI
     JMP step1.main
 
     step1.main:
@@ -40,7 +40,7 @@ step1:
 
 step2:
     LIHP int2
-    ECRIT
+    DI
     JMP step2.main
 
     step2.main:
@@ -64,7 +64,7 @@ step2:
 
 step3:
     LIHP int3
-    LCRIT
+    EI
     JMP step3.main
 
     step3.main:
@@ -89,7 +89,7 @@ step3:
 
 step4:
     LIHP int4
-    LCRIT
+    EI
     JMP step4.main
 
     step4.main:

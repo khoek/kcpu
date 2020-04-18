@@ -84,7 +84,7 @@ void sdl2_renderer::render_loop() {
 
     if(!destroyed) {
         // NOTE: We don't do anything if the user closes the graphics window while the display is running.
-        // throw new std::runtime_error("graphics window closed");
+        // throw std::runtime_error("graphics window closed");
     }
 
     buffer = NULL;

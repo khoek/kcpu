@@ -41,7 +41,7 @@ void video::handle_command(regval_t cmd) {
             stream_ptr = 0;
             break;
         }
-        default: throw new vm_error("unknown video command");
+        default: throw vm_error("unknown video command");
     }
 }
 
@@ -90,7 +90,7 @@ halfcycle_count_t video::write(regval_t port, regval_t val) {
             vram_write(get_addr(), val);
             break;
         }
-        default: throw new vm_error("unknown video register");
+        default: throw vm_error("unknown video register");
     }
 
     return 0;
@@ -107,8 +107,8 @@ std::pair<regval_t, halfcycle_count_t> video::read(regval_t port) {
         case REG_CMD:
         case REG_STREAM:
         case REG_HIADDR:
-        case REG_LOADDR: throw new vm_error("cannot read from that graphics register");
-        default: throw new vm_error("unknown graphics register");
+        case REG_LOADDR: throw vm_error("cannot read from that graphics register");
+        default: throw vm_error("unknown graphics register");
     }
 }
 

@@ -10,7 +10,8 @@ ADD3NF %ra %rb %rc
 AND %ra %rb
 ANDNF %ra %rb
 CMP %ra %rb
-ECRIT
+DI
+EI
 ENTER
 ENTERFR %ra
 FAR LDBH %ra %rb
@@ -24,7 +25,6 @@ FAR STBL %ra %rb
 FAR STW %ra %rb
 FAR STWO %ra %rb %rc
 INC %ra
-LCRIT
 LDBH %ra %rb
 LDBHZ %ra %rb
 LDBL %ra %rb
@@ -43,9 +43,7 @@ NOT %ra
 OR %ra %rb
 ORNF %ra %rb
 POP %ra
-POPFG
 PUSH %ra
-PUSHFG
 RSFT %ra
 RSFTNF %ra
 STBH %ra %rb
@@ -65,5 +63,9 @@ X_POP %ra %rb
 X_POPFG %ra
 X_PUSH %ra %rb
 X_PUSHFG %ra
+
+PUSHFG
+POPFG
+
 HLT
 ABRT

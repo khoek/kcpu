@@ -23,11 +23,28 @@ static void gen_sys() {
 
     // FIXME create an ARGS_XXXX const which represents that this instruction should never
     // be used in code?
-    // (This is really just `X_CALL_IHPR`.)
+    // (This is really just ``.)
     reg_inst(instruction("_DO_INT", I__DO_INT, ARGS_1, {
         //IU1 = MUST BE RSP
+        // Effectively: X_CALL(_IHPR) RSP [don't load next inst yet]; X_PUSHFG RSP
         MCTRL_MODE_FI    | MCTRL_BUSMODE_CONW_BUSB | RCTRL_IU1_BUSA_O | GCTRL_JM_P_RIP_BUSB_O,
-        MCTRL_MODE_FO_MI | MCTRL_BUSMODE_CONW_BUSM |                    GCTRL_CREG_IHPR | GCTRL_CREG_O | GCTRL_JM_YES,
+        /*
+            NOTE
+            There are a lot of bits here; we have to load the new RIP, but not jump, and decrement RSP.
+            HARDWARE NOTE:
+            The instmask-raising function of ALL JMs/FTs (including GCTRL_JM_YES) is inhbited during
+            COMMAND_RCTRL_RSP_DEC, so we don't actually jump yet. (We could make this condition more specific
+            if the need arises, since this is a subtle interaction, but I think it will be ok.)
+        */
+        MCTRL_MODE_FO_MI | MCTRL_BUSMODE_CONW_BUSM | COMMAND_RCTRL_RSP_DEC
+            | ACTION_GCTRL_CREG_EN | GCTRL_CREG_IHPR | GCTRL_CREG_O | GCTRL_JM_YES,
+        /*
+            NOTE
+            We need a second RSP decrement to have happened by now (the first happened during the offclock
+            after the instruction fetch finished), which is the job of some of the bits in the previous uinst.
+        */
+        MCTRL_MODE_FI    | MCTRL_BUSMODE_CONW_BUSB | RCTRL_IU1_BUSA_O | ACTION_GCTRL_CREG_EN | GCTRL_CREG_FG | GCTRL_CREG_O,
+        MCTRL_MODE_FO_MI | MCTRL_BUSMODE_CONW_BUSM | ACTION_GCTRL_CREG_EN | GCTRL_FT_ENTER,
     }));
 
     reg_inst(instruction("HLT" , I_HLT , ARGS_0, GCTRL_JM_HALT));
@@ -134,22 +151,22 @@ static instruction mk_loadable_instruction(regval_t ld, regval_t ldbit, const ch
 }
 
 static void gen_jmp_loadables(bool ld) {
-    reg_inst(mk_loadable_instruction(ld, ITFLAG_JMP_LD, "JMP" , I_JMP , false, GCTRL_JM_YES));
+    reg_inst(mk_loadable_instruction(ld, ITFLAG_JMP_LD, "JMP"   , I_JMP   , false, GCTRL_JM_YES));
 
-    reg_inst(mk_loadable_instruction(ld, ITFLAG_JMP_LD, "JMP+ECRIT" , I_JMP_ECRIT, false, GCTRL_CREG_P_IE | GCTRL_CREG_O | GCTRL_JM_YES));
-    reg_inst(mk_loadable_instruction(ld, ITFLAG_JMP_LD, "JMP+LCRIT" , I_JMP_LCRIT, false, GCTRL_CREG_P_IE | GCTRL_CREG_I | GCTRL_JM_YES));
+    reg_inst(mk_loadable_instruction(ld, ITFLAG_JMP_LD, "JMP+DI", I_JMP_DI, false, ACTION_GCTRL_CREG_EN | GCTRL_CREG_P_IE | GCTRL_CREG_O | GCTRL_JM_YES));
+    reg_inst(mk_loadable_instruction(ld, ITFLAG_JMP_LD, "JMP+EI", I_JMP_EI, false, ACTION_GCTRL_CREG_EN | GCTRL_CREG_P_IE | GCTRL_CREG_I | GCTRL_JM_YES));
 
-    reg_inst(mk_loadable_instruction(ld, ITFLAG_JMP_LD, "JC"  , I_JC  , false,                       GCTRL_JCOND_CARRY  ));
-    reg_inst(mk_loadable_instruction(ld, ITFLAG_JMP_LD, "JNC" , I_JNC , false, GCTRL_JM_INVERTCOND | GCTRL_JCOND_CARRY  ));
+    reg_inst(mk_loadable_instruction(ld, ITFLAG_JMP_LD, "JC"    , I_JC    , false,                       GCTRL_JCOND_CARRY  ));
+    reg_inst(mk_loadable_instruction(ld, ITFLAG_JMP_LD, "JNC"   , I_JNC   , false, GCTRL_JM_INVERTCOND | GCTRL_JCOND_CARRY  ));
 
-    reg_inst(mk_loadable_instruction(ld, ITFLAG_JMP_LD, "JZ"  , I_JZ  , false, GCTRL_JM_INVERTCOND | GCTRL_JCOND_N_ZERO ));
-    reg_inst(mk_loadable_instruction(ld, ITFLAG_JMP_LD, "JNZ" , I_JNZ , false,                       GCTRL_JCOND_N_ZERO ));
+    reg_inst(mk_loadable_instruction(ld, ITFLAG_JMP_LD, "JZ"    , I_JZ    , false, GCTRL_JM_INVERTCOND | GCTRL_JCOND_N_ZERO ));
+    reg_inst(mk_loadable_instruction(ld, ITFLAG_JMP_LD, "JNZ"   , I_JNZ   , false,                       GCTRL_JCOND_N_ZERO ));
 
-    reg_inst(mk_loadable_instruction(ld, ITFLAG_JMP_LD, "JS"  , I_JS  , false,                       GCTRL_JCOND_SIGN   ));
-    reg_inst(mk_loadable_instruction(ld, ITFLAG_JMP_LD, "JNS" , I_JNS , false, GCTRL_JM_INVERTCOND | GCTRL_JCOND_SIGN   ));
+    reg_inst(mk_loadable_instruction(ld, ITFLAG_JMP_LD, "JS"    , I_JS    , false,                       GCTRL_JCOND_SIGN   ));
+    reg_inst(mk_loadable_instruction(ld, ITFLAG_JMP_LD, "JNS"   , I_JNS   , false, GCTRL_JM_INVERTCOND | GCTRL_JCOND_SIGN   ));
 
-    reg_inst(mk_loadable_instruction(ld, ITFLAG_JMP_LD, "JO"  , I_JO  , false, GCTRL_JM_INVERTCOND | GCTRL_JCOND_N_OVFLW));
-    reg_inst(mk_loadable_instruction(ld, ITFLAG_JMP_LD, "JNO" , I_JNO , false,                       GCTRL_JCOND_N_OVFLW));
+    reg_inst(mk_loadable_instruction(ld, ITFLAG_JMP_LD, "JO"    , I_JO    , false, GCTRL_JM_INVERTCOND | GCTRL_JCOND_N_OVFLW));
+    reg_inst(mk_loadable_instruction(ld, ITFLAG_JMP_LD, "JNO"   , I_JNO   , false,                       GCTRL_JCOND_N_OVFLW));
 
     reg_inst(mk_loadable_instruction(ld, ITFLAG_JMP_LD, "LJMP", I_LJMP, true , GCTRL_JM_YES,
         { MCTRL_MODE_STPFX | MCTRL_BUSMODE_CONW_BUSB | RCTRL_IU1_BUSB_O, }));
@@ -165,11 +182,11 @@ static void gen_reg() {
 }
 
 static void gen_ctl() {
-    reg_inst(instruction("LFG"  , I_LFG  , ARGS_1, RCTRL_IU1_BUSB_O | GCTRL_CREG_FG   | GCTRL_CREG_I | GCTRL_FT_ENTER));
-    reg_inst(instruction("LIHP" , I_LIHP , ARGS_1, RCTRL_IU1_BUSB_O | GCTRL_CREG_IHPR | GCTRL_CREG_I | GCTRL_FT_ENTER));
+    reg_inst(instruction("LFG"  , I_LFG , ARGS_1, RCTRL_IU1_BUSB_O | ACTION_GCTRL_CREG_EN | GCTRL_CREG_FG   | GCTRL_CREG_I | GCTRL_FT_ENTER));
+    reg_inst(instruction("LIHP" , I_LIHP, ARGS_1, RCTRL_IU1_BUSB_O | ACTION_GCTRL_CREG_EN | GCTRL_CREG_IHPR | GCTRL_CREG_I | GCTRL_FT_ENTER));
 
-    reg_inst(instruction("ECRIT", I_ECRIT, ARGS_0,                    GCTRL_CREG_P_IE | GCTRL_CREG_O | GCTRL_FT_ENTER));
-    reg_inst(instruction("LCRIT", I_LCRIT, ARGS_0,                    GCTRL_CREG_P_IE | GCTRL_CREG_I | GCTRL_FT_ENTER));
+    reg_inst(instruction("DI", I_DI  , ARGS_0,                    ACTION_GCTRL_CREG_EN | GCTRL_CREG_P_IE | GCTRL_CREG_O | GCTRL_FT_ENTER));
+    reg_inst(instruction("EI", I_EI  , ARGS_0,                    ACTION_GCTRL_CREG_EN | GCTRL_CREG_P_IE | GCTRL_CREG_I | GCTRL_FT_ENTER));
 }
 
 #define NOFLAGSUFFIX "NF"
@@ -219,7 +236,7 @@ static void gen_alu_flagables(uinst_t flagbits) {
 }
 
 static void gen_alu() {
-    gen_alu_flagables(ACTRL_FLAGS_OUT | GCTRL_CREG_FG | GCTRL_CREG_I);
+    gen_alu_flagables(ACTRL_FLAGS_OUT | ACTION_GCTRL_CREG_EN | GCTRL_CREG_P_O_CHNMI_OR_I_ALUFG | GCTRL_CREG_I);
     gen_alu_flagables(0);
 }
 
@@ -274,35 +291,37 @@ static void gen_x() {
     }));
 
     reg_inst(instruction("X_RET", I_X_RET, ARGS_1_NOCONST, {
-        // IU1 = MUST BE RSP, IU2 = CALL ADDRESS
+        // IU1 = MUST BE RSP
         // Effectively: X_POP RSP RIP
         MCTRL_MODE_FI_MO | MCTRL_BUSMODE_CONW_BUSM | RCTRL_IU1_BUSA_O,
         MCTRL_MODE_FO    | MCTRL_BUSMODE_CONW_BUSB | COMMAND_RCTRL_RSP_INC | GCTRL_JM_YES,
     }));
 
-    reg_inst(instruction("X_RET+LCRIT", I_X_RET_LCRIT, ARGS_1_NOCONST, {
-        // IU1 = MUST BE RSP, IU2 = CALL ADDRESS
-        // Effectively: X_POP RSP RIP
-        MCTRL_MODE_FI_MO | MCTRL_BUSMODE_CONW_BUSM | RCTRL_IU1_BUSA_O      | GCTRL_CREG_P_IE | GCTRL_CREG_I,
-        MCTRL_MODE_FO    | MCTRL_BUSMODE_CONW_BUSB | COMMAND_RCTRL_RSP_INC | GCTRL_JM_YES,
-    }));
-
     reg_inst(instruction("X_PUSHFG", I_X_PUSHFG, ARGS_1_NOCONST, {
         //IU1 = MUST BE RSP
-        MCTRL_MODE_FI    | MCTRL_BUSMODE_CONW_BUSB | RCTRL_IU1_BUSA_O | GCTRL_CREG_FG | GCTRL_CREG_O,
+        MCTRL_MODE_FI    | MCTRL_BUSMODE_CONW_BUSB | RCTRL_IU1_BUSA_O | ACTION_GCTRL_CREG_EN | GCTRL_CREG_FG | GCTRL_CREG_O,
         MCTRL_MODE_FO_MI | MCTRL_BUSMODE_CONW_BUSM | GCTRL_FT_ENTER,
     }));
 
     reg_inst(instruction("X_POPFG", I_X_POPFG, ARGS_1_NOCONST, {
         //IU1 = MUST BE RSP
         MCTRL_MODE_FI_MO | MCTRL_BUSMODE_CONW_BUSM | RCTRL_IU1_BUSA_O,
-        MCTRL_MODE_FO    | MCTRL_BUSMODE_CONW_BUSB | GCTRL_CREG_FG | GCTRL_CREG_I | COMMAND_RCTRL_RSP_INC | GCTRL_FT_ENTER,
+        MCTRL_MODE_FO    | MCTRL_BUSMODE_CONW_BUSB | ACTION_GCTRL_CREG_EN | GCTRL_CREG_FG | GCTRL_CREG_I | COMMAND_RCTRL_RSP_INC | GCTRL_FT_ENTER,
+    }));
+
+    reg_inst(instruction("X_IRET", I_X_IRET, ARGS_1_NOCONST, {
+        // IU1 = MUST BE RSP
+        // Effectively: X_POPFG RSP; X_RET RSP
+        MCTRL_MODE_FI_MO | MCTRL_BUSMODE_CONW_BUSM | RCTRL_IU1_BUSA_O,
+        MCTRL_MODE_FO    | MCTRL_BUSMODE_CONW_BUSB | COMMAND_RCTRL_RSP_INC | ACTION_GCTRL_CREG_EN | GCTRL_CREG_FG                   | GCTRL_CREG_I,
+        MCTRL_MODE_FI_MO | MCTRL_BUSMODE_CONW_BUSM | RCTRL_IU1_BUSA_O      | ACTION_GCTRL_CREG_EN | GCTRL_CREG_P_O_CHNMI_OR_I_ALUFG | GCTRL_CREG_O,
+        MCTRL_MODE_FO    | MCTRL_BUSMODE_CONW_BUSB | COMMAND_RCTRL_RSP_INC | GCTRL_JM_YES,
     }));
 }
 
 static void gen_io() {
-    reg_inst(instruction("IOR", I_IOR, ARGS_2_1CONST, RCTRL_IU1_BUSA_O | RCTRL_IU2_BUSB_I | COMMAND_IO_READ  | GCTRL_FT_ENTER));
-    reg_inst(instruction("IOW", I_IOW, ARGS_2_1CONST, RCTRL_IU1_BUSA_O | RCTRL_IU2_BUSB_O | COMMAND_IO_WRITE | GCTRL_FT_ENTER));
+    reg_inst(instruction("IOR", I_IOR, ARGS_2_1CONST, RCTRL_IU1_BUSA_O | RCTRL_IU2_BUSB_I | COMMAND_IO_READWRITE | GCTRL_CREG_I | GCTRL_FT_ENTER));
+    reg_inst(instruction("IOW", I_IOW, ARGS_2_1CONST, RCTRL_IU1_BUSA_O | RCTRL_IU2_BUSB_O | COMMAND_IO_READWRITE | GCTRL_CREG_O | GCTRL_FT_ENTER));
 }
 
 void kcpu::internal::register_insts() {

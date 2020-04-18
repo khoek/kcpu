@@ -2,9 +2,6 @@
 SOFT/FIRMWARE:
 
 
-FIXME, when you read from the isr_serv register, you should only see the lowest bit and it should be cleared
-(but the PIC itself still needs to keep track that that interrupt is still in service, so we really need another register)
-
 
   REMAINING HARDWARE TO SIMULATE:
 

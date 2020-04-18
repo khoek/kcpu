@@ -6,7 +6,7 @@ IOW $0x0001 %rbp
 MOV $0xC004 %ra
 IOW $0x0001 %ra
 
-LCRIT
+EI
 
 loop:
     JMP loop

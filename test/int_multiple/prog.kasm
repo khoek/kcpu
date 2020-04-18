@@ -3,7 +3,7 @@ LIHP int_handle
 MOV $0x800C %rbp
 IOW $0x0001 %rbp
 
-LCRIT
+EI
 
 main:
 MOV $0 %ra
@@ -65,14 +65,7 @@ JNE fail
 HLT
 
 int_handle:
-    PUSHFG
-######### Don't forget to save RID! #########
-    PUSH %rid
-    PUSH %ra
-    PUSH %rb
-    PUSH %rc
-    PUSH %rd
-    PUSH %rbp
+    PUSHA
 
     IOR $0x0001 %rc
     AND $0x3FFF %rbp
@@ -91,26 +84,20 @@ int_handle:
         LD data.int_1_count %ra
         ADD $1 %ra
         ST data.int_1_count %ra
-        JMP+ECRIT int_handle.exit
+        JMP+DI int_handle.exit
 
     int_handle.2:
         LD data.int_2_count %ra
         ADD $1 %ra
         ST data.int_2_count %ra
-        JMP+ECRIT int_handle.exit
+        JMP+DI int_handle.exit
 
     int_handle.exit:
         MOV $0x4000 %rbp
         IOW $0x0001 %rbp
 
-        POP %rbp
-        POP %rd
-        POP %rc
-        POP %rb
-        POP %ra
-        POP %rid
-        POPFG
-        RET+LCRIT
+        POPA
+        IRET
 
 fail:
     ABRT

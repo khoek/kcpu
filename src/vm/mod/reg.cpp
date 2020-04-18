@@ -27,13 +27,22 @@ regval_t mod_reg::get(preg_t r) {
     return reg[r];
 }
 
+static bool should_perform_rsp_inc(uinst_t ui) {
+    return (ui & MASK_CTRL_COMMAND) == COMMAND_RCTRL_RSP_INC;
+}
+
+static bool should_perform_rsp_dec(uinst_t ui) {
+    return (ui & MASK_CTRL_COMMAND) == COMMAND_RCTRL_RSP_DEC;
+}
+
 void mod_reg::maybe_assign(bus_state &s, regval_t inst, uinst_t ui, uint8_t iunum, uint8_t iu, preg_t r) {
     if(RCTRL_IU_IS_EN(iu) && RCTRL_IU_IS_OUTPUT(iu)) {
         if(logger.dump_bus) logger.logf("  iu%d: %s <- %s:", iunum, BUS_NAMES[RCTRL_IU_GET_BUS(iu)], PREG_NAMES[r]);
         s.assign(RCTRL_IU_GET_BUS(iu), reg[r]);
 
         if(r == REG_SP) {
-            vm_assert((ui & MASK_CTRL_COMMAND) != COMMAND_RCTRL_RSP_INC);
+            vm_assert(!should_perform_rsp_inc(ui));
+            vm_assert(!should_perform_rsp_dec(ui));
             // NOTE don't need to check for P_I_RSPDEC here, since there
             // would be no timing problem (the DEC occurs during the FT LOAD).
         }
@@ -46,7 +55,8 @@ void mod_reg::maybe_read(bus_state &s, regval_t inst, uinst_t ui, uint8_t iunum,
         reg[r] = s.read(RCTRL_IU_GET_BUS(iu));
 
         if(r == REG_SP) {
-            vm_assert((ui & MASK_CTRL_COMMAND) != COMMAND_RCTRL_RSP_INC);
+            vm_assert(!should_perform_rsp_inc(ui));
+            vm_assert(!should_perform_rsp_dec(ui));
             // NOTE don't need to check for P_I_RSPDEC here, since there
             // would be no timing problem (the DEC occurs during the FT LOAD).
         }
@@ -70,17 +80,14 @@ void mod_reg::clock_inputs(uinst_t ui, bus_state &s, regval_t inst) {
     maybe_read(s, inst, ui, 2, RCTRL_DECODE_IU2(ui), INST_GET_IU2(inst));
     maybe_read(s, inst, ui, 3, RCTRL_DECODE_IU3(ui), INST_GET_IU3(inst));
 
-    switch(ui & MASK_CTRL_COMMAND) {
-        case COMMAND_NONE:
-        case COMMAND_IO_READ:
-        case COMMAND_IO_WRITE: {
-            break;
-        }
-        case COMMAND_RCTRL_RSP_INC: {
-            reg[REG_SP] += 2;
-            break;
-        }
-        default: throw vm_error("unknown GCTRL_COMMAND");
+    vm_assert(!should_perform_rsp_inc(ui) || !should_perform_rsp_dec(ui));
+
+    if(should_perform_rsp_inc(ui)) {
+        reg[REG_SP] += 2;
+    }
+
+    if(should_perform_rsp_dec(ui)) {
+        reg[REG_SP] -= 2;
     }
 }
 

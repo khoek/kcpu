@@ -9,7 +9,7 @@ IOW $0x0001 %rbp
 
 step1:
     LIHP int1
-    JMP+LCRIT step1.main
+    JMP+EI step1.main
 
     step1.main:
         MOV $0xC004 %ra
@@ -36,7 +36,7 @@ step1:
 
 step2:
     LIHP int2
-    JMP+ECRIT step2.main
+    JMP+DI step2.main
 
     step2.main:
         MOV $0xC004 %ra
@@ -59,7 +59,7 @@ step2:
 
 step3:
     LIHP int3
-    JMP+LCRIT step3.main
+    JMP+EI step3.main
 
     step3.main:
         NOP
@@ -83,7 +83,7 @@ step3:
 
 step4:
     LIHP int4
-    JMP+LCRIT step4.main
+    JMP+EI step4.main
 
     step4.main:
         MOV $0xC004 %ra

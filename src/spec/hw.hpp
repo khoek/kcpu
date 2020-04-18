@@ -69,13 +69,19 @@ enum sreg_t {
 // First 0-3 are "c(ontrol)reg"s, remainder are private.
 // HARDWARE NOTE: the CREG-codes in the ucode depend
 //                on this order of the first 4.
-    REG_FG       = 1,
+
+// HARDWARE NOTE: REG_FG has its low byte connected to the ALU,
+// and its high byte connected to CTL (currently, the latter is
+// to control CBIT_IE only). This means that the only the low byte
+// of the memory of REG_FG_RAW is actually ever nonzero while
+// we are simulating in the VM.
+    REG_FG_RAW   = 1,
     REG_IHP      = 2,
 
     REG_IP       = 4,
     REG_UC       = 5,
     REG_IR       = 6,
-// HARDWARE NOTE: unused register!
+// HARDWARE NOTE: 3 unused registers
 };
 
 }

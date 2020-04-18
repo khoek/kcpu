@@ -14,14 +14,21 @@ namespace kcpu {
 
 // Random mutually exclusive "ACTION"s
 #define ACTION_CTRL_NONE        (0b00ULL << (0 + CTRL_BASE))
-#define ACTION__UNUSED          (0b01ULL << (0 + CTRL_BASE))
+#define ACTION_GCTRL_CREG_EN    (0b01ULL << (0 + CTRL_BASE))
 #define ACTION_GCTRL_RIP_BUSA_O (0b10ULL << (0 + CTRL_BASE))
 #define ACTION_MCTRL_BUSMODE_X  (0b11ULL << (0 + CTRL_BASE))
 
-#define COMMAND_NONE            (0b00ULL << (2 + CTRL_BASE))
-#define COMMAND_IO_READ         (0b01ULL << (2 + CTRL_BASE))
-#define COMMAND_IO_WRITE        (0b10ULL << (2 + CTRL_BASE))
-#define COMMAND_RCTRL_RSP_INC   (0b11ULL << (2 + CTRL_BASE))
+#define COMMAND_NONE          (0b00ULL << (2 + CTRL_BASE))
+/*
+    GCTRL_CREG_I means do an IO read, and ..._O means do an IO write.
+*/
+#define COMMAND_IO_READWRITE  (0b01ULL << (2 + CTRL_BASE))
+/*
+    There next two increment/decrement RSP ON THE CLOCK RISING EDGE.
+    (RSP is usually decremented on the offclock cycle by an instruction register bit.)
+*/
+#define COMMAND_RCTRL_RSP_DEC (0b10ULL << (2 + CTRL_BASE))
+#define COMMAND_RCTRL_RSP_INC (0b11ULL << (2 + CTRL_BASE))
 
 // NONBIT: CTRL decoding
 #define MASK_CTRL_ACTION (0b11ULL << (0 + CTRL_BASE))
@@ -67,13 +74,18 @@ namespace kcpu {
 #define GCTRL_JM_INVERTCOND  (0b0100ULL << (0 + GCTRL_BASE))
 
 // Note there is space here for one more possibility, CREG_NONE active but GCTRL_CREG_BUSB_O selected
-#define GCTRL_CREG_NONE   (0b00ULL << (4 + GCTRL_BASE))
-#define GCTRL_CREG_FG     (0b01ULL << (4 + GCTRL_BASE))
-#define GCTRL_CREG_IHPR   (0b10ULL << (4 + GCTRL_BASE))
+#define GCTRL_CREG_FG     (0b00ULL << (4 + GCTRL_BASE))
+#define GCTRL_CREG_IHPR   (0b01ULL << (4 + GCTRL_BASE))
+// NOTE next two bits not real registers. The first is just a bit
+// which is set with I and cleared with O below (not actually
+// inputing or outputting). The other is an ad-hoc compactification
+// of two mutually exclusive operations.
 // P_IE is the "interrupt enable" flag.
-// NOTE not a real register, just a bit which is set with I and
-// cleared with O below (not actually inputing or outputting).
-#define GCTRL_CREG_P_IE (0b11ULL << (4 + GCTRL_BASE))
+#define GCTRL_CREG_P_IE   (0b10ULL << (4 + GCTRL_BASE))
+// HARDWARE NOTE
+// GCTRL_CREG_P_O_CHNMI_OR_I_ALUFG on O: clears "handling NMI" flag,
+// on I: loads only the ALU bits of FG
+#define GCTRL_CREG_P_O_CHNMI_OR_I_ALUFG (0b11ULL << (4 + GCTRL_BASE))
 
 // HARDWARE NOTE
 // These two bits, when a normal CREG (FG or IHPR) are selected,
@@ -86,7 +98,6 @@ namespace kcpu {
 #define MASK_GCTRL_FTJM (0b1111ULL << (0 + GCTRL_BASE))
 #define MASK_GCTRL_CREG (0b11ULL << (4 + GCTRL_BASE))
 #define MASK_GCTRL_DIR (0b1ULL << (6 + GCTRL_BASE))
-#define GCTRL_DECODE_CREG(val) (((val) & MASK_GCTRL_CREG) >> (4 + GCTRL_BASE))
 #define GCTRL_CREG_IS_INPUT(dec) (!(dec & MASK_GCTRL_DIR))
 #define GCTRL_CREG_IS_OUTPUT(dec) (!!(dec & MASK_GCTRL_DIR))
 

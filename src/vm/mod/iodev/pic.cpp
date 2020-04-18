@@ -21,7 +21,7 @@ static regval_t get_lowest_bit(regval_t bitmask) {
 regval_t pic::get_next_pending_bit(bool expect_nonzero, bool nmi_only) {
     regval_t irqs_masked = irq_pend & ((irq_mask | MASK_NMIS) & (nmi_only ? MASK_NMIS : 0xFFFF));
     if(!irqs_masked && expect_nonzero) {
-        throw new vm_error("irq_ACK with no active interrupt");
+        throw vm_error("irq_ACK with no active interrupt");
     }
     return get_lowest_bit(irqs_masked);
 }
@@ -48,17 +48,16 @@ void pic::handle_aint(bool aint) {
     // Consequently, since irq_serv is now nonzero, the PINT line will go low.
 }
 
-/*
-    PINT is higher if: 1) there is any interrupt pending and no interrupt
-    is being serviced, or 2) there is any NMI pending at all.
-*/
-bool pic::is_pint_active() {
-    return (!irq_serv && !!get_next_pending_bit(false, false))
-        || !!get_next_pending_bit(false, true);
+bool pic::is_pnmi_active() {
+    return !(irq_serv & MASK_NMIS) && !!get_next_pending_bit(false, true);
 }
 
-bool pic::is_pnmi_active() {
-    return !!get_next_pending_bit(false, true);
+/*
+    PINT is higher if: 1) there is any interrupt pending and no interrupt
+    is being serviced, or 2) the NMI is pending and is not currently being serviced.
+*/
+bool pic::is_pint_active() {
+    return (!irq_serv && !!get_next_pending_bit(false, false)) || is_pnmi_active();
 }
 
 // HARDWARE NOTE: Let's only set an interrupt pending in the PIC on the rising edge of an interrupt line, so we can implement a hard "reset button" for example.
@@ -73,7 +72,7 @@ halfcycle_count_t pic::write(regval_t val) {
     switch(val & MASK_CMD) {
         case CMD_EOI: {
             if(!irq_serv) {
-                throw new vm_error("EOI with no active interrupt");
+                throw vm_error("EOI with no active interrupt");
             }
             irq_serv &= ~get_lowest_bit(irq_serv);
             break;
@@ -86,7 +85,7 @@ halfcycle_count_t pic::write(regval_t val) {
             irq_pend = val & MASK_VAL;
             break;
         }
-        default: throw new vm_error("unknown pic command");
+        default: throw vm_error("unknown pic command");
     }
 
     return 0;

@@ -6,7 +6,7 @@ slow_ints::slow_ints() : single_port_io_device(PORT_BASE) {
 }
 
 std::pair<regval_t, halfcycle_count_t> slow_ints::read() {
-    throw new vm_error("unimplemented");
+    throw vm_error("unimplemented");
 }
 
 halfcycle_count_t slow_ints::write(regval_t val) {

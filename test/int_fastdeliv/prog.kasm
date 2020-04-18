@@ -3,7 +3,7 @@ LIHP int
 MOV $0x8006 %rbp
 IOW $0x0001 %rbp
 
-JMP+LCRIT main
+JMP+EI main
 
 main:
     MOV $0xC004 %ra

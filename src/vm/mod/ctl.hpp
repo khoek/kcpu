@@ -49,6 +49,10 @@ HARDWARE NOTE: ACTUALLY, THIS HAS CHANGED A BIT, SEE IMPLEMENTATION of `set_inst
 */
 #define CBIT_IE         3
 /*
+    Handling NMI. (Inhibits further NMIs.)
+*/
+#define CBIT_HNMI       4
+/*
     This bit is a bit tricky.
     It is set on CLK rising edge whenever IO_READ or IO_WRITE are asserted.
     It is cleared on CLK falling edge whenever IO_DONE is asserted.
@@ -60,16 +64,18 @@ HARDWARE NOTE: ACTUALLY, THIS HAS CHANGED A BIT, SEE IMPLEMENTATION of `set_inst
 
     On the other hand, the UC should inc once on a rising edge of CLK at which time IO_WAIT is simultaneously set.
 */
-#define CBIT_IO_WAIT    4
+#define CBIT_IO_WAIT    5
 
-#define CBIT_PINT_LATCH 5
+#define CBIT_PINT_LATCH 6
 /*
     Is set whenever CBIT_PINT_LATCH is set, but is cleared when `regs[REG_UC] == 0`.
     Thus, is only ever on for one clock cycle at a time.
 */
-#define CBIT_INT_ENTER  6
+#define CBIT_INT_ENTER  7
 
-#define NUM_CBITS 7
+#define NUM_CBITS 8
+
+#define FG_CBIT_IE (1 << 8)
 
 class mod_ctl {
     private:
@@ -77,7 +83,10 @@ class mod_ctl {
 
     uinst_t uinst_latch_val = 0;
 
-    void set_instmask_enabled(uinst_t ui, bool state, bool pint);
+    regval_t get_reg_fg();
+    void set_reg_fg_alu(regval_t val);
+    void set_reg_fg_entire(regval_t val);
+    void set_instmask_enabled(uinst_t ui, bool state, bool pint, bool nmi);
 
     public:
     // FIXME it is unfortunate that these need to be public for the run_vm/simulation tools.

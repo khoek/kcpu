@@ -1,6 +1,6 @@
 LIHP int_fail
 
-LCRIT
+EI
 
 MOV $0x8008 %rbp
 IOW $0x0001 %rbp
@@ -53,7 +53,7 @@ int_success:
 
     MOV $0x4000 %rbp
     IOW $0x0001 %rbp
-    RET
+    IRET
 
 data.had_int:
     NOP

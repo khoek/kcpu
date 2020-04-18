@@ -36,15 +36,16 @@ pic_interface & mod_io::get_pic() {
 void mod_io::clock_outputs(uinst_t ui, bus_state &s) {
     switch(ui & MASK_CTRL_COMMAND) {
         case COMMAND_NONE:
+        case COMMAND_RCTRL_RSP_DEC:
         case COMMAND_RCTRL_RSP_INC: {
             break;
         }
-        case COMMAND_IO_READ: {
-            iodev_manager.before_clock_outputs_read(s.early_read(BUS_A));
-            break;
-        }
-        case COMMAND_IO_WRITE: {
-            iodev_manager.before_clock_outputs_write(s.early_read(BUS_A), s.early_read(BUS_B));
+        case COMMAND_IO_READWRITE: {
+            if((ui & MASK_GCTRL_DIR) == GCTRL_CREG_I) {
+                iodev_manager.before_clock_outputs_read(s.early_read(BUS_A));
+            } else {
+                iodev_manager.before_clock_outputs_write(s.early_read(BUS_A), s.early_read(BUS_B));
+            }
             break;
         }
         default: throw vm_error("unknown CTRL_COMMAND");
@@ -54,19 +55,20 @@ void mod_io::clock_outputs(uinst_t ui, bus_state &s) {
 
     switch(ui & MASK_CTRL_COMMAND) {
         case COMMAND_NONE:
+        case COMMAND_RCTRL_RSP_DEC:
         case COMMAND_RCTRL_RSP_INC: {
             iodev_manager.after_clock_outputs_none();
             break;
         }
-        case COMMAND_IO_READ: {
-            if(iodev_manager.is_io_done()) {
-                s.assign(BUS_B, iodev_manager.get_read_result());
+        case COMMAND_IO_READWRITE: {
+            if((ui & MASK_GCTRL_DIR) == GCTRL_CREG_I) {
+                if(iodev_manager.is_io_done()) {
+                    s.assign(BUS_B, iodev_manager.get_read_result());
+                }
+                iodev_manager.after_clock_outputs_read();
+            } else {
+                iodev_manager.after_clock_outputs_write();
             }
-            iodev_manager.after_clock_outputs_read();
-            break;
-        }
-        case COMMAND_IO_WRITE: {
-            iodev_manager.after_clock_outputs_write();
             break;
         }
         default: throw vm_error("unknown CTRL_COMMAND");

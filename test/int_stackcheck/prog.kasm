@@ -10,7 +10,7 @@ IOW $0x0001 %rbp
 MOV $0xC004 %ra
 IOW $0x0001 %ra
 
-LCRIT
+EI
 
 NOP
 NOP
@@ -34,7 +34,7 @@ HLT
 int:
     PUSH $0xF10F
     POP %ra
-    RET
+    IRET
 
 fail:
     ABRT

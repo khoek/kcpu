@@ -1,4 +1,4 @@
-LCRIT
+EI
 
 MOV $0 %ra
 ST data.had_int %ra
@@ -95,7 +95,7 @@ int_norm:
 
     LIHP int_fail
 
-    RET
+    IRET
 
 int_nmi:
     LD data.had_nmi %rbp
@@ -104,7 +104,7 @@ int_nmi:
 
     MOV $0x4000 %rbp
     IOW $0x0001 %rbp
-    RET
+    IRET
 
 data.had_int:
     NOP
