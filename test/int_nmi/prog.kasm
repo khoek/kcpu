@@ -2,7 +2,7 @@
 # 1. ENABLE+Triggered is recieved,
 # 2. DISABLE+Triggered is recieved.
 
-MOV $0x8006 %rbp
+MOV $0x8000 %rbp
 IOW $0x0001 %rbp
 
 step1:
