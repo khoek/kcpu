@@ -37,7 +37,7 @@ void vm::disassemble_current() {
     ss << "(0x" << std::hex << std::uppercase << ip << ")  " << codegen::pretty_print(b) << std::endl;
 
     logger.logf("---------------------\n");
-    logger.logf(ss.str().c_str());
+    logger.logf(ss.str());
     if(!logger.dump_registers) {
         dump_registers();
     }

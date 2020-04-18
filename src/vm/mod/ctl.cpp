@@ -23,14 +23,13 @@ mod_ctl::mod_ctl(vm_logger &logger) : logger(logger) {
 void mod_ctl::dump_registers() {
     logger.logf("RIP: %04X RUC: %04X\n", reg[REG_IP], reg[REG_UC]);
     logger.logf("RIR: %04X RFG: %04X\n", reg[REG_IR], reg[REG_FG]);
-    logger.logf("CBITS: %c%c%c%c%c%c%c\n",
+    logger.logf("CBITS: %c%c%c%c%c%c\n",
         cbits[CBIT_INSTMASK  ] ? 'M' : 'm',
         cbits[CBIT_IE        ] ? 'I' : 'i',
         cbits[CBIT_IO_WAIT   ] ? 'W' : 'w',
         cbits[CBIT_HALTED    ] ? 'H' : 'h',
         cbits[CBIT_ABORTED   ] ? 'A' : 'a',
-        cbits[CBIT_PINT_LATCH] ? 'P' : 'p',
-        cbits[CBIT_INT_ENTER ] ? 'E' : 'e'
+        cbits[CBIT_PINT_LATCH] ? 'P' : 'p'
     );
 }
 
@@ -62,7 +61,7 @@ bool mod_ctl::is_first_uop() {
     (So, at least right now, it can be safely commented.)
 */
 bool mod_ctl::is_aint_active() {
-    return /* cbits[CBIT_INSTMASK] && */ cbits[CBIT_INT_ENTER];
+    return /* cbits[CBIT_INSTMASK] && */ cbits[CBIT_PINT_LATCH];
 }
 
 void mod_ctl::clock_outputs(uinst_t ui, bus_state &s) {
@@ -122,7 +121,6 @@ void mod_ctl::set_instmask_enabled(uinst_t ui, bool state, bool pint) {
     */
     if(state && !cbits[CBIT_IO_WAIT]) {
         cbits[CBIT_PINT_LATCH] = pint;
-        cbits[CBIT_INT_ENTER ] = pint;
     }
 
     cbits[CBIT_INSTMASK] = state;
@@ -139,10 +137,6 @@ static regval_t decode_jcond_mask(uinst_t ui) {
 }
 
 void mod_ctl::clock_inputs(uinst_t ui, bus_state &s, pic_out_interface &pic) {
-    if(reg[REG_UC] == 0x0) {
-        cbits[CBIT_INT_ENTER] = false;
-    }
-
     // HARDWARE NOTE: interrupt_enable is simply AND-ed with the incoming PINT line.
     bool pint = pic.is_pint_active() && (pic.is_pnmi_active() || cbits[CBIT_IE]);
 
@@ -241,7 +235,7 @@ void mod_ctl::offclock_pulse(bool io_done) {
     if(io_done || !cbits[CBIT_IO_WAIT]) {
         uinst_latch_val = arch::self().ucode_read(get_inst(), reg[REG_UC]);
         if(logger.dump_bus) {
-            logger.logf("uinst latch <- 0x%X@0x%X\n", get_inst(), uinst_latch_val);
+            logger.logf("uinst latch <- 0x%X@0x%lX\n", get_inst(), uinst_latch_val);
         }
     }
 }

@@ -18,6 +18,10 @@ void vm_logger::logf(const char *fmt, ...) {
     va_end(ap);
 }
 
+void vm_logger::logf(const std::string &str) {
+    logf("%s", str.c_str());
+}
+
 const char * BUS_NAMES[] = {
     "BUS_A",
     "BUS_B",

@@ -31,7 +31,8 @@ class vm_logger {
 
     vm_logger(bool disassemble = false, bool dump_registers = false, bool dump_bus = false);
 
-    void logf(const char *fmt, ...);
+    void logf(const char *fmt, ...) __attribute__((format (printf, 2, 3)));
+    void logf(const std::string &str);
 };
 
 extern const char * BUS_NAMES[];

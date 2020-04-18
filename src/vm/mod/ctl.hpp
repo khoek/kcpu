@@ -63,11 +63,6 @@ HARDWARE NOTE: ACTUALLY, THIS HAS CHANGED A BIT, SEE IMPLEMENTATION of `set_inst
 #define CBIT_IO_WAIT    4
 
 #define CBIT_PINT_LATCH 5
-/*
-    Is set whenever CBIT_PINT_LATCH is set, but is cleared when `regs[REG_UC] == 0`.
-    Thus, is only ever on for one clock cycle at a time.
-*/
-#define CBIT_INT_ENTER  6
 
 #define NUM_CBITS 7
 
