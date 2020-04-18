@@ -6,10 +6,6 @@ SOFT/FIRMWARE:
   REMAINING HARDWARE TO SIMULATE:
 
 
-    * NMIs can be delivered over normal interrupts; record this in the in_service register using a bitwise or, and have the tests interpret
-    the register properly in this situation.
-
-
     * A jumper/soft flag to issue an NMI after every instruction? (so we can have debugging (over serial?) in the real thing!)
 
 
