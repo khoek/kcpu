@@ -50,10 +50,6 @@ uinst_t mod_ctl::get_uinst() {
     return uinst_latch_val;
 }
 
-bool mod_ctl::is_first_uop() {
-    return ((get_uinst() & MASK_CTRL_ACTION) != ACTION_GCTRL_RIP_BUSA_O) && (reg[REG_UC] == 0x0);
-}
-
 /*
     HARDWARE NOTE: the first boolean below is morally
     neccesary, but as of writing we never latch pint unless the

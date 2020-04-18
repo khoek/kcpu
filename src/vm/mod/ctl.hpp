@@ -100,7 +100,6 @@ class mod_ctl {
 
     regval_t get_inst();
     uinst_t get_uinst();
-    bool is_first_uop();
     bool is_aint_active();
 
     void clock_outputs(uinst_t ui, bus_state &s);
