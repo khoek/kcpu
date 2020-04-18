@@ -26,9 +26,13 @@ namespace kcpu {
 /*
     There next two increment/decrement RSP ON THE CLOCK RISING EDGE.
     (RSP is usually decremented on the offclock cycle by an instruction register bit.)
+
+    HARDWARE NOTE: As the name suggests, `COMMAND_RCTRL_RSP_EARLY_DEC_NOIM` also
+    disallowes the instmask-setting and UC-resetting behaviour of all JMs/FTs,
+    just for that uop. This is currently used to implement `_DO_INT`.
 */
-#define COMMAND_RCTRL_RSP_EARLY_DEC (0b10ULL << (2 + CTRL_BASE))
-#define COMMAND_RCTRL_RSP_EARLY_INC (0b11ULL << (2 + CTRL_BASE))
+#define COMMAND_RCTRL_RSP_EARLY_DEC_NOIM (0b10ULL << (2 + CTRL_BASE))
+#define COMMAND_RCTRL_RSP_EARLY_INC      (0b11ULL << (2 + CTRL_BASE))
 
 // NONBIT: CTRL decoding
 #define MASK_CTRL_ACTION (0b11ULL << (0 + CTRL_BASE))

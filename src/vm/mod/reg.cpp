@@ -32,7 +32,7 @@ static bool should_perform_rsp_early_inc(uinst_t ui) {
 }
 
 static bool should_perform_rsp_early_dec(uinst_t ui) {
-    return (ui & MASK_CTRL_COMMAND) == COMMAND_RCTRL_RSP_EARLY_DEC;
+    return (ui & MASK_CTRL_COMMAND) == COMMAND_RCTRL_RSP_EARLY_DEC_NOIM;
 }
 
 void mod_reg::maybe_assign(bus_state &s, regval_t inst, uinst_t ui, uint8_t iunum, uint8_t iu, preg_t r) {

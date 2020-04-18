@@ -138,7 +138,7 @@ void mod_ctl::set_instmask_enabled(uinst_t ui, bool state, bool pint, bool nmi) 
         HARDWARE NOTE: note that we do not just inhibit UC reset, we also do not raise any of the
                        CBITS here.
     */
-    if((ui & MASK_CTRL_COMMAND) == COMMAND_RCTRL_RSP_EARLY_DEC) {
+    if((ui & MASK_CTRL_COMMAND) == COMMAND_RCTRL_RSP_EARLY_DEC_NOIM) {
         return;
     }
 
@@ -211,7 +211,7 @@ void mod_ctl::clock_inputs(uinst_t ui, bus_state &s, pic_out_interface &pic) {
     // HARDWARE NOTE: As per comment at definition, CBIT_IO_WAIT must be set AFTER it is checked to incrememnt REG_UC.
     switch(ui & MASK_CTRL_COMMAND) {
         case COMMAND_NONE:
-        case COMMAND_RCTRL_RSP_EARLY_DEC:
+        case COMMAND_RCTRL_RSP_EARLY_DEC_NOIM:
         case COMMAND_RCTRL_RSP_EARLY_INC: {
             break;
         }
