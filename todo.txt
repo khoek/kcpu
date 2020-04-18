@@ -10,9 +10,12 @@
           to mark it pending a second time---since then we would get in a loop.)
         - But now that I think about it, I think this combination of flags will work directly?---try it!
 
+        - Add a test; enable the jumper with a debug IO command, then have NMIs count the number of instructions in the test.
+
 
     * PROHIBIT MOV %rx %rx in hardware (it would be undefined)
             -> I think what I had here was way too complex---just have an output signal to each register inhbit an input signal? Yeah, there are only 8.
+               Then add a test!
 
                It was:
                 -> The best way to do this is to compute if IU1 == IU2, and if so inhibit the any IU[1/2]_I if there is any IU[1/2]_O asserted.
