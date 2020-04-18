@@ -13,13 +13,20 @@ SOFT/FIRMWARE:
   REMAINING HARDWARE TO FIX/DECIDE:
 
     * PROHIBIT MOV %rx %rx in hardware? (it would be a short)
-            -> one way to prohibit this in hardware reasonably cheaply is to compare the IUn_I
-               command 3 bits with the IUn_O 3 command 3 bits for each fixed ups---if they are equal, inhibit the input.
+            -> The best way to do this is to compute if IU1 == IU2, and if so inhibit the any IU[1/2]_I if there is any IU[1/2]_O asserted.
+            -> If we do this, definitely simulate in VM to check implementation!
+
+
+
+  Assembler improvements:
+
+    * Allow a const in either argument in e.g. a STW (but not e.g. LDW)
 
     *  Remove direct access to %rid in the assembler; at the moment the only legitimate usage is saving/restoring in an interrupt handler,
     and in this case we can just roll a custom version of PUSHFG/POPFG to also push/pop it? (actually, there might be
     some problem with decrementing RSP a second time during the push? I think the ALU will be able to do the math
     simultaneously instead?)
+
 
 
 
@@ -35,19 +42,12 @@ SOFT/FIRMWARE:
 
   In the VM:
 
-
-  * Also, for the IO bus use bus hold devices to decouple them, instead of having a silly intermediate IO controller register
+    * Also, for the IO bus use bus hold devices to decouple them, instead of having a silly intermediate IO controller register
   (but remember we want the IO modules to be able to asynchronously call in their results and move on with their lives)
-
-
-
-
 
     * FLAG-ONLY versions of the ALU insts (we already value-only versions).
 
-    * Allow a const in either argument in e.g. a STW (but not e.g. LDW)
-
-    * Compress ucode!
+    * Compress ucode! (should we really do this anymore at this point?)
 
 
 

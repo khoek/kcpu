@@ -14,6 +14,13 @@ namespace kcpu {
 
 // Random mutually exclusive "ACTION"s
 #define ACTION_CTRL_NONE        (0b00ULL << (0 + CTRL_BASE))
+/*
+    NOTE: A SOURCE OF MANY UNUSED BITS (if needed)
+    When `ACTION_GCTRL_CREG_EN` is low all of the
+    `GCTRL_CREG_xxx` (xxx = a reg) and `GCTRL_CREG_I/O` bits
+    are completely unused, with the sole exception of
+    `GCTRL_CREG_I/O` controlling `COMMAND_IO_READWRITE`.
+*/
 #define ACTION_GCTRL_CREG_EN    (0b01ULL << (0 + CTRL_BASE))
 #define ACTION_GCTRL_RIP_BUSA_O (0b10ULL << (0 + CTRL_BASE))
 #define ACTION_MCTRL_BUSMODE_X  (0b11ULL << (0 + CTRL_BASE))
@@ -95,15 +102,15 @@ namespace kcpu {
 // These two bits, when a normal CREG (FG or IHPR) are selected,
 // indicate whether there will be output or input from the reg
 // to BUS_B.
-#define GCTRL_CREG_I (0ULL << (6 + GCTRL_BASE))
-#define GCTRL_CREG_O (1ULL << (6 + GCTRL_BASE))
+#define GCTRL_CREG_O (0ULL << (6 + GCTRL_BASE))
+#define GCTRL_CREG_I (1ULL << (6 + GCTRL_BASE))
 
 // NONBIT: GCTRL decoding
 #define MASK_GCTRL_FTJM (0b1111ULL << (0 + GCTRL_BASE))
 #define MASK_GCTRL_CREG (0b11ULL << (4 + GCTRL_BASE))
 #define MASK_GCTRL_DIR (0b1ULL << (6 + GCTRL_BASE))
-#define GCTRL_CREG_IS_INPUT(dec) (!(dec & MASK_GCTRL_DIR))
-#define GCTRL_CREG_IS_OUTPUT(dec) (!!(dec & MASK_GCTRL_DIR))
+#define GCTRL_CREG_IS_INPUT(dec) ((dec & MASK_GCTRL_DIR) == GCTRL_CREG_I)
+#define GCTRL_CREG_IS_OUTPUT(dec) ((dec & MASK_GCTRL_DIR) == GCTRL_CREG_O)
 
 // RCTRL
 #define RCTRL_BASE GCTRL_END
