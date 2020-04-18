@@ -26,9 +26,10 @@ class pic : public pic_interface, public single_port_io_device {
 // But it does allow us to raise interrupts from software, which is great for testing. (So maybe do it?)
     static const regval_t CMD_SET_PEND = 0b11 << SHIFT_CMD;
 
+// HARDWARE NOTE: THE NMIs MUST be the lowest bits, so that EOIs are handled properly.
 // HARDWARE NOTE: As we have it now, MASK_NMIS bits both ignore the irq_mask field so those are still delivered when possible,
 //                and also NMI bits assert the additional PNMI line when pending.
-    static const regval_t MASK_NMIS = 0x0001;
+    static const regval_t MASK_NMIS = 0x0003;
 
     bool aint_prev = false;
 

@@ -6,8 +6,8 @@
 
 namespace kcpu {
 
-#define CBIT_HALTED    0
-#define CBIT_ABORTED   1
+#define CBIT_HALTED     0
+#define CBIT_ABORTED    1
 /*
     When this bit is set, REG_RIR is disconnected from the ucode eeprom address bus,
     and some other instruction code source is used instead.
@@ -43,11 +43,11 @@ HARDWARE NOTE: ACTUALLY, THIS HAS CHANGED A BIT, SEE IMPLEMENTATION of `set_inst
     This brings us to the instruction loading ucode of the next NOP, and everything
     then works nicely.
 */
-#define CBIT_INSTMASK  2
+#define CBIT_INSTMASK   2
 /*
     Interrupt enable.
 */
-#define CBIT_IE        3
+#define CBIT_IE         3
 /*
     This bit is a bit tricky.
     It is set on CLK rising edge whenever IO_READ or IO_WRITE are asserted.
@@ -60,16 +60,22 @@ HARDWARE NOTE: ACTUALLY, THIS HAS CHANGED A BIT, SEE IMPLEMENTATION of `set_inst
 
     On the other hand, the UC should inc once on a rising edge of CLK at which time IO_WAIT is simultaneously set.
 */
-#define CBIT_IO_WAIT   4
+#define CBIT_IO_WAIT    4
 
-#define NUM_CBITS 5
+#define CBIT_PINT_LATCH 5
+/*
+    Is set whenever CBIT_PINT_LATCH is set, but is cleared when `regs[REG_UC] == 0`.
+    Thus, is only ever on for one clock cycle at a time.
+*/
+#define CBIT_INT_ENTER  6
+
+#define NUM_CBITS 7
 
 class mod_ctl {
     private:
     vm_logger &logger;
 
     uinst_t uinst_latch_val = 0;
-    bool pint_latch_val = 0;
 
     void set_instmask_enabled(uinst_t ui, bool state, bool pint);
 

@@ -1,6 +1,6 @@
 LIHP int_handle
 
-MOV $0x8006 %rbp
+MOV $0x800C %rbp
 IOW $0x0001 %rbp
 
 LCRIT
@@ -18,26 +18,26 @@ MOV $0xBEEF %rd
 # need aligned stack pointer
 MOV $0xBEE0 %rsp
 
-# We skip the low interrupt bit, since it is a NMI.
+# We skip the low two interrupt bits, since they are NMIs.
 MOV $0xC004 %rbp
 IOW $0x0001 %rbp
 ADD $1 %rb
-MOV $0xC002 %rbp
-IOW $0x0001 %rbp
-ADD $1 %rb
-MOV $0xC004 %rbp
-IOW $0x0001 %rbp
-ADD $1 %rb
-MOV $0xC004 %rbp
-IOW $0x0001 %rbp
-ADD $1 %rb
-MOV $0xC002 %rbp
+MOV $0xC008 %rbp
 IOW $0x0001 %rbp
 ADD $1 %rb
 MOV $0xC004 %rbp
 IOW $0x0001 %rbp
 ADD $1 %rb
-MOV $0xC002 %rbp
+MOV $0xC004 %rbp
+IOW $0x0001 %rbp
+ADD $1 %rb
+MOV $0xC008 %rbp
+IOW $0x0001 %rbp
+ADD $1 %rb
+MOV $0xC004 %rbp
+IOW $0x0001 %rbp
+ADD $1 %rb
+MOV $0xC008 %rbp
 IOW $0x0001 %rbp
 ADD $1 %rb
 
@@ -55,11 +55,11 @@ CMP $0xBEE0 %rsp
 JNE fail
 
 LD data.int_1_count %ra
-CMP $3 %ra
+CMP $4 %ra
 JNE fail
 
 LD data.int_2_count %ra
-CMP $4 %ra
+CMP $3 %ra
 JNE fail
 
 HLT
@@ -79,10 +79,10 @@ int_handle:
     CMP %rc %rbp
     JNE fail
 
-    CMP $0x0002 %rc
+    CMP $0x0004 %rc
     JE int_handle.1
 
-    CMP $0x0004 %rc
+    CMP $0x0008 %rc
     JE int_handle.2
 
     JMP fail

@@ -12,18 +12,18 @@ void pic::dump_registers() {
         irq_mask, irq_pend, irq_serv, aint_prev ? 1 : 0);
 }
 
+static regval_t get_lowest_bit(regval_t bitmask) {
+    return bitmask ? 1 << (ffs(bitmask) - 1) : 0;
+}
+
 // HARDWARE NOTE: NMI enable jumper?
 // HARDWARE NOTE: This function ignores the masked bits!
 regval_t pic::get_next_pending_bit(bool expect_nonzero, bool nmi_only) {
     regval_t irqs_masked = irq_pend & ((irq_mask | MASK_NMIS) & (nmi_only ? MASK_NMIS : 0xFFFF));
-    if(!irqs_masked) {
-        if(expect_nonzero) {
-            throw new vm_error("irq_ACK with no active interrupt");
-        }
-
-        return 0;
+    if(!irqs_masked && expect_nonzero) {
+        throw new vm_error("irq_ACK with no active interrupt");
     }
-    return 1 << (ffs(irqs_masked) - 1);
+    return get_lowest_bit(irqs_masked);
 }
 
 // HARDWARE NOTE: This function represents an asynchronous propogation of signals through the PIC LOGIC!
@@ -38,9 +38,9 @@ void pic::handle_aint(bool aint) {
         return;
     }
 
-    // FIXME how to implement this in hardware?
+    // HARDWARE NOTE: Implement this in hardware using daisy-chaining.
     regval_t pending_bit = get_next_pending_bit(true, false);
-    irq_serv = pending_bit;
+    irq_serv |= pending_bit;
     // HARDWARE NOTE: It is important that we clear the pending bit, and record it in the in-service register
     // at this point, so that we can recieve further copies of that interrupt while it is being serviced.
     irq_pend &= ~pending_bit;
@@ -48,12 +48,17 @@ void pic::handle_aint(bool aint) {
     // Consequently, since irq_serv is now nonzero, the PINT line will go low.
 }
 
+/*
+    PINT is higher if: 1) there is any interrupt pending and no interrupt
+    is being serviced, or 2) there is any NMI pending at all.
+*/
 bool pic::is_pint_active() {
-    return !irq_serv && !!get_next_pending_bit(false, false);
+    return (!irq_serv && !!get_next_pending_bit(false, false))
+        || !!get_next_pending_bit(false, true);
 }
 
 bool pic::is_pnmi_active() {
-    return !irq_serv && !!get_next_pending_bit(false, true);
+    return !!get_next_pending_bit(false, true);
 }
 
 // HARDWARE NOTE: Let's only set an interrupt pending in the PIC on the rising edge of an interrupt line, so we can implement a hard "reset button" for example.
@@ -70,7 +75,7 @@ halfcycle_count_t pic::write(regval_t val) {
             if(!irq_serv) {
                 throw new vm_error("EOI with no active interrupt");
             }
-            irq_serv = 0;
+            irq_serv &= ~get_lowest_bit(irq_serv);
             break;
         }
         case CMD_SET_MASK: {
