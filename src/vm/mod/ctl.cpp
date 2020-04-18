@@ -61,7 +61,7 @@ bool mod_ctl::is_first_uop() {
     (So, at least right now, it can be safely commented.)
 */
 bool mod_ctl::is_aint_active() {
-    return /* cbits[CBIT_INSTMASK] && */ cbits[CBIT_PINT_LATCH];
+    return /* cbits[CBIT_INSTMASK] && */ cbits[CBIT_INT_ENTER];
 }
 
 void mod_ctl::clock_outputs(uinst_t ui, bus_state &s) {
@@ -121,6 +121,7 @@ void mod_ctl::set_instmask_enabled(uinst_t ui, bool state, bool pint) {
     */
     if(state && !cbits[CBIT_IO_WAIT]) {
         cbits[CBIT_PINT_LATCH] = pint;
+        cbits[CBIT_INT_ENTER ] = pint;
     }
 
     cbits[CBIT_INSTMASK] = state;
@@ -137,6 +138,10 @@ static regval_t decode_jcond_mask(uinst_t ui) {
 }
 
 void mod_ctl::clock_inputs(uinst_t ui, bus_state &s, pic_out_interface &pic) {
+    if(reg[REG_UC] == 0x0) {
+        cbits[CBIT_INT_ENTER] = false;
+    }
+
     // HARDWARE NOTE: interrupt_enable is simply AND-ed with the incoming PINT line.
     bool pint = pic.is_pint_active() && (pic.is_pnmi_active() || cbits[CBIT_IE]);
 
