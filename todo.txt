@@ -9,6 +9,9 @@ SOFT/FIRMWARE:
     the register properly in this situation.
 
 
+    * A jumper/soft flag to issue an NMI after every instruction? (so we can have debugging (over serial?) in the real thing!)
+
+
 
   REMAINING HARDWARE TO FIX/DECIDE:
 
