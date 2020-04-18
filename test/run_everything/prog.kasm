@@ -43,7 +43,9 @@ NOT %ra
 OR %ra %rb
 ORNF %ra %rb
 POP %ra
+POPA
 PUSH %ra
+PUSHA
 RSFT %ra
 RSFTNF %ra
 STBH %ra %rb
@@ -60,9 +62,7 @@ X_ENTER %ra %rb
 X_ENTERFR %ra %rb
 X_LEAVE %ra %rb
 X_POP %ra %rb
-X_POPFG %ra
 X_PUSH %ra %rb
-X_PUSHFG %ra
 
 PUSHFG
 POPFG

@@ -37,7 +37,7 @@ int main() {
             manual args.
         */
         "STPFX", "FAR STPFX",
-        "PUSHFG", "POPFG",
+        "PUSHFG", "POPFG", "X_PUSHFG", "X_POPFG",
         "HLT", "ABRT",
 
         /*

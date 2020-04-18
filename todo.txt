@@ -11,9 +11,28 @@
         - But now that I think about it, I think this combination of flags will work directly?---try it!
 
 
-    * PROHIBIT MOV %rx %rx in hardware (it would be a short)
-            -> The best way to do this is to compute if IU1 == IU2, and if so inhibit the any IU[1/2]_I if there is any IU[1/2]_O asserted.
-            -> If we do this, definitely simulate in VM to check implementation!
+    * PROHIBIT MOV %rx %rx in hardware (it would be undefined)
+            -> I think what I had here was way too complex---just have an output signal to each register inhbit an input signal? Yeah, there are only 8.
+
+               It was:
+                -> The best way to do this is to compute if IU1 == IU2, and if so inhibit the any IU[1/2]_I if there is any IU[1/2]_O asserted.
+                -> If we do this, definitely simulate in VM to check implementation!
+
+
+
+
+
+  Instruction/ucode design:
+
+    * FLAG-ONLY versions of the ALU insts (we already value-only versions).
+      -> When dealing with constants we can just do the operation on RID, so how much do we need this
+         (that argument doesn't work with SUB, since it is ordered, but we do need a RSUB (reverse) anyway to implement a better NEG)
+
+    * Compress ucode! (should we really do this anymore at this point?)
+
+    * MOAR TESTS
+
+
 
 
 
@@ -44,18 +63,6 @@
 
     * Also, for the IO bus use bus hold devices to decouple them, instead of having a silly intermediate IO controller register
   (but remember we want the IO modules to be able to asynchronously call in their results and move on with their lives)
-
-
-
-  Instruction/ucode design:
-
-    * FLAG-ONLY versions of the ALU insts (we already value-only versions).
-
-    * Compress ucode! (should we really do this anymore at this point?)
-
-
-
-    * MOAR TESTS
 
 
 
