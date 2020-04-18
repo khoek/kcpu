@@ -27,16 +27,16 @@ static void gen_sys() {
     reg_inst(instruction("_DO_INT", I__DO_INT, ARGS_1, {
         //IU1 = MUST BE RSP
         // Effectively: X_CALL(_IHPR) RSP [don't load next inst yet]; X_PUSHFG RSP
-        MCTRL_MODE_FI    | MCTRL_BUSMODE_CONW_BUSB | RCTRL_IU1_BUSA_O | GCTRL_JM_P_RIP_BUSB_O,
+        MCTRL_MODE_FI    | MCTRL_BUSMODE_CONW_BUSB | RCTRL_IU1_BUSA_O | GCTRL_JM_P_RIP_BUSB_O | COMMAND_RCTRL_RSP_EARLY_DEC,
         /*
             NOTE
             There are a lot of bits here; we have to load the new RIP, but not jump, and decrement RSP.
             HARDWARE NOTE:
             The instmask-raising function of ALL JMs/FTs (including GCTRL_JM_YES) is inhbited during
-            COMMAND_RCTRL_RSP_DEC, so we don't actually jump yet. (We could make this condition more specific
+            COMMAND_RCTRL_RSP_EARLY_DEC, so we don't actually jump yet. (We could make this condition more specific
             if the need arises, since this is a subtle interaction, but I think it will be ok.)
         */
-        MCTRL_MODE_FO_MI | MCTRL_BUSMODE_CONW_BUSM | COMMAND_RCTRL_RSP_DEC
+        MCTRL_MODE_FO_MI | MCTRL_BUSMODE_CONW_BUSM | COMMAND_RCTRL_RSP_EARLY_DEC
             | ACTION_GCTRL_CREG_EN | GCTRL_CREG_IHPR | GCTRL_CREG_O | GCTRL_JM_YES,
         /*
             NOTE
@@ -245,16 +245,15 @@ static void gen_x() {
 
     // Faster version of: PUSH rbp; MOV rsp rbp;, i.e. (X_PUSH rsp rbp; MOV rsp rbp;)
     reg_inst(instruction("X_ENTER", I_X_ENTER, ARGS_2_NOCONST, {
-        MCTRL_MODE_FI    | MCTRL_BUSMODE_CONW_BUSB | RCTRL_IU1_BUSA_O | RCTRL_IU2_BUSB_O,
+        MCTRL_MODE_FI    | MCTRL_BUSMODE_CONW_BUSB | RCTRL_IU1_BUSA_O | RCTRL_IU2_BUSB_O | COMMAND_RCTRL_RSP_EARLY_DEC,
         MCTRL_MODE_FO_MI | MCTRL_BUSMODE_CONW_BUSM | RCTRL_IU1_BUSA_O | RCTRL_IU2_BUSA_I | GCTRL_FT_ENTER,
     }));
 
     // IU1 must be RBP, IU2 = $CONST or reg, IU3 is forced to RSP
     // Faster version of: PUSH rbp; MOV rsp rbp; SUBNF $CONST, rsp;
-    // FIXME if we move to non-hardcoded IU3s, then change this to 3 args.
     reg_inst(instruction("X_ENTERFR", I_X_ENTERFR, ARGS_2_2CONST, {
         //PUSH rbp; MOV rsp rbp;
-        MCTRL_MODE_FI    | MCTRL_BUSMODE_CONW_BUSB | RCTRL_IU3_BUSA_O | RCTRL_IU1_BUSB_O,
+        MCTRL_MODE_FI    | MCTRL_BUSMODE_CONW_BUSB | RCTRL_IU3_BUSA_O | RCTRL_IU1_BUSB_O | COMMAND_RCTRL_RSP_EARLY_DEC,
         MCTRL_MODE_FO_MI | MCTRL_BUSMODE_CONW_BUSM | RCTRL_IU3_BUSB_O | RCTRL_IU1_BUSB_I
         //SUBNF $CONST, rsp
                 | RCTRL_IU2_BUSA_O | ACTRL_INPUT_EN | ACTRL_MODE_SUB,
@@ -264,8 +263,8 @@ static void gen_x() {
     // Faster version of: MOV rbp rsp; POP rbp, i.e. (MOV rbp rsp; X_POP rsp rbp;)
     // instead we do them both simultaneously.
     reg_inst(instruction("X_LEAVE", I_X_LEAVE, ARGS_2_NOCONST, {
-        MCTRL_MODE_FI_MO | MCTRL_BUSMODE_CONW_BUSM | RCTRL_IU1_BUSA_I | RCTRL_IU2_BUSA_O,
-        MCTRL_MODE_FO    | MCTRL_BUSMODE_CONW_BUSB | RCTRL_IU2_BUSB_I | COMMAND_RCTRL_RSP_INC | GCTRL_FT_ENTER,
+        MCTRL_MODE_FI_MO | MCTRL_BUSMODE_CONW_BUSM | RCTRL_IU1_BUSA_I | RCTRL_IU2_BUSA_O | COMMAND_RCTRL_RSP_EARLY_DEC,
+        MCTRL_MODE_FO    | MCTRL_BUSMODE_CONW_BUSB | RCTRL_IU2_BUSB_I | COMMAND_RCTRL_RSP_EARLY_INC | GCTRL_FT_ENTER,
     }));
 
     // FIXME Note that right now bad things will happen if the first argument of these is not RSP
@@ -273,20 +272,20 @@ static void gen_x() {
 
     reg_inst(instruction("X_PUSH", I_X_PUSH, ARGS_2_2CONST, {
         //IU1 = MUST BE RSP, IU2 = REG to PUSH
-        MCTRL_MODE_FI    | MCTRL_BUSMODE_CONW_BUSB | RCTRL_IU1_BUSA_O | RCTRL_IU2_BUSB_O,
+        MCTRL_MODE_FI    | MCTRL_BUSMODE_CONW_BUSB | RCTRL_IU1_BUSA_O | RCTRL_IU2_BUSB_O | COMMAND_RCTRL_RSP_EARLY_DEC,
         MCTRL_MODE_FO_MI | MCTRL_BUSMODE_CONW_BUSM | GCTRL_FT_ENTER,
     }));
 
     reg_inst(instruction("X_POP", I_X_POP, ARGS_2_NOCONST, {
         //IU1 = MUST BE RSP, IU2 = REG to POP
         MCTRL_MODE_FI_MO | MCTRL_BUSMODE_CONW_BUSM | RCTRL_IU1_BUSA_O,
-        MCTRL_MODE_FO    | MCTRL_BUSMODE_CONW_BUSB | RCTRL_IU2_BUSB_I | COMMAND_RCTRL_RSP_INC | GCTRL_FT_ENTER,
+        MCTRL_MODE_FO    | MCTRL_BUSMODE_CONW_BUSB | RCTRL_IU2_BUSB_I | COMMAND_RCTRL_RSP_EARLY_INC | GCTRL_FT_ENTER,
     }));
 
     reg_inst(instruction("X_CALL", I_X_CALL, ARGS_2_2CONST, {
         // IU1 = MUST BE RSP, IU2 = CALL ADDRESS
         // Effectively: X_PUSH RSP RIP
-        MCTRL_MODE_FI    | MCTRL_BUSMODE_CONW_BUSB | RCTRL_IU1_BUSA_O | GCTRL_JM_P_RIP_BUSB_O,
+        MCTRL_MODE_FI    | MCTRL_BUSMODE_CONW_BUSB | RCTRL_IU1_BUSA_O | GCTRL_JM_P_RIP_BUSB_O | COMMAND_RCTRL_RSP_EARLY_DEC,
         MCTRL_MODE_FO_MI | MCTRL_BUSMODE_CONW_BUSM | RCTRL_IU2_BUSB_O | GCTRL_JM_YES,
     }));
 
@@ -294,28 +293,28 @@ static void gen_x() {
         // IU1 = MUST BE RSP
         // Effectively: X_POP RSP RIP
         MCTRL_MODE_FI_MO | MCTRL_BUSMODE_CONW_BUSM | RCTRL_IU1_BUSA_O,
-        MCTRL_MODE_FO    | MCTRL_BUSMODE_CONW_BUSB | COMMAND_RCTRL_RSP_INC | GCTRL_JM_YES,
+        MCTRL_MODE_FO    | MCTRL_BUSMODE_CONW_BUSB | COMMAND_RCTRL_RSP_EARLY_INC | GCTRL_JM_YES,
     }));
 
     reg_inst(instruction("X_PUSHFG", I_X_PUSHFG, ARGS_1_NOCONST, {
         //IU1 = MUST BE RSP
-        MCTRL_MODE_FI    | MCTRL_BUSMODE_CONW_BUSB | RCTRL_IU1_BUSA_O | ACTION_GCTRL_CREG_EN | GCTRL_CREG_FG | GCTRL_CREG_O,
+        MCTRL_MODE_FI    | MCTRL_BUSMODE_CONW_BUSB | RCTRL_IU1_BUSA_O | ACTION_GCTRL_CREG_EN | GCTRL_CREG_FG | GCTRL_CREG_O | COMMAND_RCTRL_RSP_EARLY_DEC,
         MCTRL_MODE_FO_MI | MCTRL_BUSMODE_CONW_BUSM | GCTRL_FT_ENTER,
     }));
 
     reg_inst(instruction("X_POPFG", I_X_POPFG, ARGS_1_NOCONST, {
         //IU1 = MUST BE RSP
         MCTRL_MODE_FI_MO | MCTRL_BUSMODE_CONW_BUSM | RCTRL_IU1_BUSA_O,
-        MCTRL_MODE_FO    | MCTRL_BUSMODE_CONW_BUSB | ACTION_GCTRL_CREG_EN | GCTRL_CREG_FG | GCTRL_CREG_I | COMMAND_RCTRL_RSP_INC | GCTRL_FT_ENTER,
+        MCTRL_MODE_FO    | MCTRL_BUSMODE_CONW_BUSB | ACTION_GCTRL_CREG_EN | GCTRL_CREG_FG | GCTRL_CREG_I | COMMAND_RCTRL_RSP_EARLY_INC | GCTRL_FT_ENTER,
     }));
 
     reg_inst(instruction("X_IRET", I_X_IRET, ARGS_1_NOCONST, {
         // IU1 = MUST BE RSP
         // Effectively: X_POPFG RSP; X_RET RSP
         MCTRL_MODE_FI_MO | MCTRL_BUSMODE_CONW_BUSM | RCTRL_IU1_BUSA_O,
-        MCTRL_MODE_FO    | MCTRL_BUSMODE_CONW_BUSB | COMMAND_RCTRL_RSP_INC | ACTION_GCTRL_CREG_EN | GCTRL_CREG_FG                   | GCTRL_CREG_I,
-        MCTRL_MODE_FI_MO | MCTRL_BUSMODE_CONW_BUSM | RCTRL_IU1_BUSA_O      | ACTION_GCTRL_CREG_EN | GCTRL_CREG_P_O_CHNMI_OR_I_ALUFG | GCTRL_CREG_O,
-        MCTRL_MODE_FO    | MCTRL_BUSMODE_CONW_BUSB | COMMAND_RCTRL_RSP_INC | GCTRL_JM_YES,
+        MCTRL_MODE_FO    | MCTRL_BUSMODE_CONW_BUSB | COMMAND_RCTRL_RSP_EARLY_INC | ACTION_GCTRL_CREG_EN | GCTRL_CREG_FG                   | GCTRL_CREG_I,
+        MCTRL_MODE_FI_MO | MCTRL_BUSMODE_CONW_BUSM | RCTRL_IU1_BUSA_O            | ACTION_GCTRL_CREG_EN | GCTRL_CREG_P_O_CHNMI_OR_I_ALUFG | GCTRL_CREG_O,
+        MCTRL_MODE_FO    | MCTRL_BUSMODE_CONW_BUSB | COMMAND_RCTRL_RSP_EARLY_INC | GCTRL_JM_YES,
     }));
 }
 

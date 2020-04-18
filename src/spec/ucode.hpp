@@ -27,8 +27,8 @@ namespace kcpu {
     There next two increment/decrement RSP ON THE CLOCK RISING EDGE.
     (RSP is usually decremented on the offclock cycle by an instruction register bit.)
 */
-#define COMMAND_RCTRL_RSP_DEC (0b10ULL << (2 + CTRL_BASE))
-#define COMMAND_RCTRL_RSP_INC (0b11ULL << (2 + CTRL_BASE))
+#define COMMAND_RCTRL_RSP_EARLY_DEC (0b10ULL << (2 + CTRL_BASE))
+#define COMMAND_RCTRL_RSP_EARLY_INC (0b11ULL << (2 + CTRL_BASE))
 
 // NONBIT: CTRL decoding
 #define MASK_CTRL_ACTION (0b11ULL << (0 + CTRL_BASE))

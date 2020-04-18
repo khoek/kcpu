@@ -77,7 +77,7 @@ vm::state vm::ustep() {
         throw vm_error("executing undefined microcode instruction!");
     }
 
-    reg.offclock_pulse(i, ctl.is_first_uop());
+    reg.offclock_pulse(ui);
 
     bus_state state(logger);
 

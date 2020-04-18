@@ -12,8 +12,6 @@ SOFT/FIRMWARE:
 
   REMAINING HARDWARE TO FIX/DECIDE:
 
-    * DEAL with the hardware design comment in the push_pop test (basically, POP %rsp is a big nono right now, should make this ok?)
-
     * PROHIBIT MOV %rx %rx in hardware? (it would be a short)
             -> one way to prohibit this in hardware reasonably cheaply is to compare the IUn_I
                command 3 bits with the IUn_O 3 command 3 bits for each fixed ups---if they are equal, inhibit the input.

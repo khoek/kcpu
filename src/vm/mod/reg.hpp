@@ -21,7 +21,7 @@ class mod_reg {
 
     void clock_outputs(uinst_t ui, bus_state &s, regval_t inst);
     void clock_inputs(uinst_t ui, bus_state &s, regval_t inst);
-    void offclock_pulse(regval_t inst, bool first_uop);
+    void offclock_pulse(uinst_t ui);
 };
 
 }

@@ -24,26 +24,28 @@ namespace kcpu {
 
 // END PREAMBLE
 
-// There are 10 opcode bits excliding IU1 and IU2. We allocate
-// the highest two for LOADDATA and RSPDEC, leaving 8. (We are
-// happy at the moment to overlap IU3 into the opcode range.)
-//
-// We divide the opcode space into 0bCCAAAABBBB, with AAAA the
-// "itype" and BBBB the "icode". Typically the low 3 bits
-// of icode are required for a fixed itype, and the fourth
-// bit specifies a flag. If for a fixed semantic "instruction
-// type" we need more then 4 bits for the options (say, for
-// a flag), then we just use two icodes.
-//
-// prefix flags (CC):
-// NOTE There first two codes are already shifted into their
-// final position in the instruction.
+/*
+    There are 10 opcode bits excliding IU1 and IU2. We allocate
+    the highest for LOADDATA, leaving 9. (We are
+    happy at the moment to overlap IU3 into the opcode range.)
+
+    Also, for previous design reasons the highest of these 9 bits
+    is completely unused, but this is free to change. Below we
+    denote LOADDATA by 'C' and this unused bit by '?'.
+
+    We divide the opcode space into 0bC?AAAABBBB, with AAAA the
+    "itype" and BBBB the "icode". Typically the low 3 bits
+    of icode are required for a fixed itype, and the fourth
+    bit specifies a flag. If for a fixed semantic "instruction
+    type" we need more then 4 bits for the options (say, for
+    a flag), then we just use two icodes.
+
+    Prefix flag (C):
+    NOTE This bit is already shifted into its final position in
+    the instruction, unlike the bits for AAAA and BBBB below.
+*/
 #define P_I_LOADDATA (1 << 15)
-#define P_I_RSPDEC   (1 << 14)
 
-#define P_PRE_I_RSPDEC (1 << 8)
-
-//
 // itype ranges (AAAA):
 #define IT_SYS              0b0000 // SYS (NOP, INT must occupy hardcoded positions)
 #define IT_X                0b0001 // X   (X_xxxx codes)
@@ -70,7 +72,7 @@ namespace kcpu {
 
 // SYS/MISC (12/16)
 #define I_NOP       OC(IT_SYS, 0b0000)
-#define I__DO_INT   OC(IT_SYS, 0b0001).add_flag(P_PRE_I_RSPDEC)
+#define I__DO_INT   OC(IT_SYS, 0b0001)
 // #define I__UNUSED   OC(IT_SYS, 0b0010)
 
 #define I_MOV       OC(IT_SYS, 0b0011)
@@ -89,15 +91,15 @@ namespace kcpu {
 #define I_ABRT      OC(IT_SYS, 0b1111)
 
 // X (9/16)
-#define I_X_ENTER   OC(IT_X  , 0b0000).add_flag(P_PRE_I_RSPDEC) // FIXME hack
-#define I_X_LEAVE   OC(IT_X  , 0b0001).add_flag(P_PRE_I_RSPDEC) // FIXME hack
+#define I_X_ENTER   OC(IT_X  , 0b0000)
+#define I_X_LEAVE   OC(IT_X  , 0b0001)
 
-#define I_X_PUSH    OC(IT_X  , 0b0010).add_flag(P_PRE_I_RSPDEC) // FIXME hack
+#define I_X_PUSH    OC(IT_X  , 0b0010)
 #define I_X_POP     OC(IT_X  , 0b0011)
-#define I_X_CALL    OC(IT_X  , 0b0100).add_flag(P_PRE_I_RSPDEC) // FIXME hack
+#define I_X_CALL    OC(IT_X  , 0b0100)
 #define I_X_RET     OC(IT_X  , 0b0101)
 
-#define I_X_PUSHFG  OC(IT_X  , 0b0110).add_flag(P_PRE_I_RSPDEC) // FIXME hack
+#define I_X_PUSHFG  OC(IT_X  , 0b0110)
 #define I_X_POPFG   OC(IT_X  , 0b0111)
 
 #define I_X_IRET    OC(IT_X  , 0b1000)
@@ -148,10 +150,10 @@ namespace kcpu {
 
 // IU3_ALL_GRP3 (2/2)
 #define I_STWO      OCANY_IU3(IT_IU3_ALL_GRP3, 0b0)
-#define I_STWO_FAR  OCANY_IU3(IT_IU3_ALL_GRP3, 0b1) // REMINDER UNREFERENCED, use I_LDWO and ICFLAG_MEM_IU3_FAR instead.
+#define I_STWO_FAR  OCANY_IU3(IT_IU3_ALL_GRP3, 0b1) // REMINDER UNREFERENCED, use I_STWO and ICFLAG_MEM_IU3_FAR instead.
 
 // IU3_SINGLE_GRP1 (~1/16)
-#define I_X_ENTERFR OCSINGLE_IU3(IT_IU3_SINGLE_GRP1, 0b0, REG_SP).add_flag(P_PRE_I_RSPDEC) // FIXME hack
+#define I_X_ENTERFR OCSINGLE_IU3(IT_IU3_SINGLE_GRP1, 0b0, REG_SP)
 
 // END DECLS
 

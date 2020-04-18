@@ -35,9 +35,9 @@ void mod_ctl::dump_registers() {
     );
 }
 
-// HARDWARE NOTE: Ensure that the INT instruction has SP in IU1! AND RSP_DEC FLAG!
-#define LOAD_INSTVAL INST_MK(false,                  0x0,      0, 0, 0)
-#define INT_INSTVAL  INST_MK(false, P_PRE_I_RSPDEC | 0x1, REG_SP, 0, 0)
+// HARDWARE NOTE: Ensure that the INT instruction has SP in IU1!
+#define LOAD_INSTVAL INST_MK(false, 0x0,      0, 0, 0)
+#define INT_INSTVAL  INST_MK(false, 0x1, REG_SP, 0, 0)
 
 regval_t mod_ctl::get_inst() {
     // HARDWARE NOTE: CBIT_IO_WAIT inhibits CBIT_INSTMASK, for obvious reasons,
@@ -138,7 +138,7 @@ void mod_ctl::set_instmask_enabled(uinst_t ui, bool state, bool pint, bool nmi) 
         HARDWARE NOTE: note that we do not just inhibit UC reset, we also do not raise any of the
                        CBITS here.
     */
-    if((ui & MASK_CTRL_COMMAND) == COMMAND_RCTRL_RSP_DEC) {
+    if((ui & MASK_CTRL_COMMAND) == COMMAND_RCTRL_RSP_EARLY_DEC) {
         return;
     }
 
@@ -211,8 +211,8 @@ void mod_ctl::clock_inputs(uinst_t ui, bus_state &s, pic_out_interface &pic) {
     // HARDWARE NOTE: As per comment at definition, CBIT_IO_WAIT must be set AFTER it is checked to incrememnt REG_UC.
     switch(ui & MASK_CTRL_COMMAND) {
         case COMMAND_NONE:
-        case COMMAND_RCTRL_RSP_DEC:
-        case COMMAND_RCTRL_RSP_INC: {
+        case COMMAND_RCTRL_RSP_EARLY_DEC:
+        case COMMAND_RCTRL_RSP_EARLY_INC: {
             break;
         }
         case COMMAND_IO_READWRITE: {

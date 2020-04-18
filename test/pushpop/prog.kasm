@@ -12,8 +12,6 @@ PUSH $0xBBBB
 POP %rd
 POP %rd
 POP %rbp
-# The below triggers an assertion violation. Either a) prevent it in the assembler, or b) design the hardware so an %rsp write and INC just does a write.
-#POP %rsp
 
 CMP $0xBEEF %ra
 JNE fail
@@ -25,8 +23,6 @@ CMP $0xF0F0 %rd
 JNE fail
 CMP $0x1337 %rbp
 JNE fail
-#CMP $0xDEAD %rsp
-#JNE fail
 
 HLT
 

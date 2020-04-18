@@ -36,8 +36,8 @@ pic_interface & mod_io::get_pic() {
 void mod_io::clock_outputs(uinst_t ui, bus_state &s) {
     switch(ui & MASK_CTRL_COMMAND) {
         case COMMAND_NONE:
-        case COMMAND_RCTRL_RSP_DEC:
-        case COMMAND_RCTRL_RSP_INC: {
+        case COMMAND_RCTRL_RSP_EARLY_DEC:
+        case COMMAND_RCTRL_RSP_EARLY_INC: {
             break;
         }
         case COMMAND_IO_READWRITE: {
@@ -55,8 +55,8 @@ void mod_io::clock_outputs(uinst_t ui, bus_state &s) {
 
     switch(ui & MASK_CTRL_COMMAND) {
         case COMMAND_NONE:
-        case COMMAND_RCTRL_RSP_DEC:
-        case COMMAND_RCTRL_RSP_INC: {
+        case COMMAND_RCTRL_RSP_EARLY_DEC:
+        case COMMAND_RCTRL_RSP_EARLY_INC: {
             iodev_manager.after_clock_outputs_none();
             break;
         }

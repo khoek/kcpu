@@ -16,6 +16,8 @@ static void gen_ctl() {
 }
 
 static void gen_mem() {
+    // NOTE `PUSH %rsp` writes the NEW %rsp to the NEW address. (This happens to be the old 8086 behaviour, but not 286 and beyond.)
+    // NOTE `POP  %rsp` writes the OLD TOP OF STACK to the NEW %rsp (unchanged).
     reg_alias(alias("PUSH", ARGS_1        , virtual_instruction(I_X_PUSH, { slot_reg(REG_SP), slot_arg(0) })));
     reg_alias(alias("POP" , ARGS_1_NOCONST, virtual_instruction(I_X_POP , { slot_reg(REG_SP), slot_arg(0) })));
 
