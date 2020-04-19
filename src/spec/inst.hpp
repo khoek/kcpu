@@ -56,10 +56,10 @@ namespace kcpu {
 #define IT_ALU1             0b0110 // ALU (insts with a NF (noflags) variant)
 #define IT_ALU2             0b0111 // ALU (other ALU insts)
 // reserved itypes for IU3_ALL/_SINGLE opclasses
-#define IT_IU3_SINGLE_GRP1  0b0111 // It is very wasteful to have a separate itype for IU3_SINGLEs, but lets just be lazy for now.
-#define IT_IU3_ALL_GRP1     0b1000
-#define IT_IU3_ALL_GRP2     0b1001
-#define IT_IU3_ALL_GRP3     0b1010
+#define IT_IU3_SINGLE_GRP1  0b1000 // It is very wasteful to have a separate itype for IU3_SINGLEs, but lets just be lazy for now.
+#define IT_IU3_ALL_GRP1     0b1001
+#define IT_IU3_ALL_GRP2     0b1010
+#define IT_IU3_ALL_GRP3     0b1011
 
 // Fake ICs (to implement flags) and flags at the itype/icode level
 #define IT_MEM 0b0010
@@ -105,7 +105,7 @@ namespace kcpu {
 
 #define I_X_IRET    OC(IT_X  , 0b1000)
 
-// ALU (8/8)
+// ALU1 (8/8)
 #define I_ADD2      OC(IT_ALU1, 0b0000)
 #define I_SUB       OC(IT_ALU1, 0b0001)
 #define I_BSUB      OC(IT_ALU1, 0b0010)
@@ -115,6 +115,7 @@ namespace kcpu {
 #define I_LSFT      OC(IT_ALU1, 0b0110)
 #define I_RSFT      OC(IT_ALU1, 0b0111)
 
+// ALU2 (1/16)
 #define I_TST       OC(IT_ALU2, 0b0000)
 
 // MEM (9/16)
