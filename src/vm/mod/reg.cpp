@@ -103,7 +103,7 @@ static iu_state parse_ius(uinst_t ui, regval_t inst) {
     register (after passing through the IU machinery) if the O line
     is also asserted.
 */
-static iu_state filter_simultaneous_i_and_o(iu_state is) {
+static iu_state filter_simultaneous_i_and_o(vm_logger &logger, iu_state is) {
     for(int i = 0; i < 3; i++) {
         if(!RCTRL_IU_IS_EN(is.dec[i])) {
             continue;
@@ -115,10 +115,11 @@ static iu_state filter_simultaneous_i_and_o(iu_state is) {
             }
 
             if(is.iu[i] == is.iu[j]) {
-                bool has_i = RCTRL_IU_IS_INPUT(is.iu[i]) || RCTRL_IU_IS_INPUT(is.iu[j]);
-                bool has_o = RCTRL_IU_IS_OUTPUT(is.iu[i]) || RCTRL_IU_IS_OUTPUT(is.iu[j]);
+                bool has_i = RCTRL_IU_IS_INPUT(is.dec[i]) || RCTRL_IU_IS_INPUT(is.dec[j]);
+                bool has_o = RCTRL_IU_IS_OUTPUT(is.dec[i]) || RCTRL_IU_IS_OUTPUT(is.dec[j]);
                 if(has_i && has_o) {
-                    is.dec[RCTRL_IU_IS_INPUT(is.iu[i]) ? i : j] = 0;
+                    if(logger.dump_bus) logger.logf("filtering simultaneous i:%d and o:%d\n", RCTRL_IU_IS_INPUT(is.dec[i]) ? i : j, RCTRL_IU_IS_INPUT(is.dec[i]) ? j : i);
+                    is.dec[RCTRL_IU_IS_INPUT(is.dec[i]) ? i : j] = 0;
                 }
             }
         }
@@ -128,7 +129,7 @@ static iu_state filter_simultaneous_i_and_o(iu_state is) {
 
 void mod_reg::clock_outputs(uinst_t ui, bus_state &s, regval_t inst) {
     iu_state is = parse_ius(ui, inst);
-    is = filter_simultaneous_i_and_o(is);
+    is = filter_simultaneous_i_and_o(logger, is);
 
     maybe_assign(s, inst, ui, 1, is.dec[0], is.iu[0]);
     maybe_assign(s, inst, ui, 2, is.dec[1], is.iu[1]);
@@ -137,7 +138,7 @@ void mod_reg::clock_outputs(uinst_t ui, bus_state &s, regval_t inst) {
 
 void mod_reg::clock_inputs(uinst_t ui, bus_state &s, regval_t inst) {
     iu_state is = parse_ius(ui, inst);
-    is = filter_simultaneous_i_and_o(is);
+    is = filter_simultaneous_i_and_o(logger, is);
 
     maybe_read(s, inst, ui, 1, is.dec[0], is.iu[0]);
     maybe_read(s, inst, ui, 2, is.dec[1], is.iu[1]);

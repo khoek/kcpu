@@ -2,6 +2,11 @@
 # for functions: all arguments passed on the stack, %ra is return code
 
 # test cases
+PUSH $5
+PUSH $4
+CALL try_case
+ADD $4 %rsp
+
 PUSH $197
 PUSH $194
 CALL try_case

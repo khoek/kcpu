@@ -61,7 +61,6 @@ STWO %rb %rc %rd
 SUB %rb %rc
 SUBNF %rb %rc
 TST %rb
-TSTNF %rb
 XOR %rb %rc
 XORNF %rb %rc
 

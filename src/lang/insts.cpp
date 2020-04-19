@@ -177,15 +177,13 @@ static void gen_ctl() {
 
 #define NOFLAGSUFFIX "NF"
 
-static instruction mk_arith_inst(uinst_t flagbits, const char *name, opclass op, argtype args, uinst_t alu_mode, bool backward) {
-    std::stringstream ss;
-    ss << name << (flagbits ? "" : NOFLAGSUFFIX);
-
+static instruction mk_alu_inst(const char *name, opclass op, argtype args, uinst_t alu_mode, bool backward, regval_t oc_flag, const char *suffix, uinst_t out_mode) {
     if(backward && args.count != 2) {
         throw arch_error("can only reverse 2 args");
     }
 
-    uinst_t tgt, srcs;
+    uinst_t srcs;
+    uinst_t tgt;
     switch(args.count) {
         case 0: throw arch_error("zero arg arith instruction");
         case 1: {
@@ -211,29 +209,45 @@ static instruction mk_arith_inst(uinst_t flagbits, const char *name, opclass op,
         default: throw arch_error("too many args!");
     }
 
-    return instruction(ss.str(), op.add_flag(flagbits ? 0 : ICFLAG_ALU1_NOFGS), args, {
+    std::stringstream ss;
+    ss << name << suffix;
+
+    return instruction(ss.str(), op.add_flag(oc_flag), args, {
         ACTRL_INPUT_EN | alu_mode | srcs | RCTRL_IU1_BUSA_O,
-        ACTRL_DATA_OUT | flagbits | tgt  | GCTRL_FT_ENTER,
+                         out_mode | ((out_mode & ACTRL_DATA_OUT) ? tgt : 0) | GCTRL_FT_ENTER,
     });
 }
 
-static void gen_alu_flagables(uinst_t flagbits) {
-    reg_inst(mk_arith_inst(flagbits, "ADD2", I_ADD2, ARGS_2_1CONST , ACTRL_MODE_ADD , false)); // c.f. the ADD3 variant
-    reg_inst(mk_arith_inst(flagbits, "SUB" , I_SUB , ARGS_2_1CONST , ACTRL_MODE_SUB , false));
-    reg_inst(mk_arith_inst(flagbits, "BSUB", I_BSUB, ARGS_2_1CONST , ACTRL_MODE_SUB , true ));
-    reg_inst(mk_arith_inst(flagbits, "AND" , I_AND , ARGS_2_1CONST , ACTRL_MODE_AND , false));
-    reg_inst(mk_arith_inst(flagbits, "OR"  , I_OR  , ARGS_2_1CONST , ACTRL_MODE_OR  , false));
-    reg_inst(mk_arith_inst(flagbits, "XOR" , I_XOR , ARGS_2_1CONST , ACTRL_MODE_XOR , false));
-    reg_inst(mk_arith_inst(flagbits, "LSFT", I_LSFT, ARGS_1_NOCONST, ACTRL_MODE_LSFT, false));
-    reg_inst(mk_arith_inst(flagbits, "RSFT", I_RSFT, ARGS_1_NOCONST, ACTRL_MODE_RSFT, false));
-    reg_inst(mk_arith_inst(flagbits, "TST" , I_TST , ARGS_1        , ACTRL_MODE_TST , false));
-
-    reg_inst(mk_arith_inst(flagbits, "ADD3", I_ADD3, ARGS_3_1CONST , ACTRL_MODE_ADD , false));
+static void gen_alu_variant_group(const char *suffix, regval_t oc_flag, uinst_t out_mode) {
+    reg_inst(mk_alu_inst("ADD2", I_ADD2, ARGS_2_1CONST , ACTRL_MODE_ADD , false, oc_flag, suffix, out_mode)); // c.f. the ADD3 variant
+    reg_inst(mk_alu_inst("SUB" , I_SUB , ARGS_2_1CONST , ACTRL_MODE_SUB , false, oc_flag, suffix, out_mode));
+    reg_inst(mk_alu_inst("BSUB", I_BSUB, ARGS_2_1CONST , ACTRL_MODE_SUB , true , oc_flag, suffix, out_mode));
+    reg_inst(mk_alu_inst("AND" , I_AND , ARGS_2_1CONST , ACTRL_MODE_AND , false, oc_flag, suffix, out_mode));
+    reg_inst(mk_alu_inst("OR"  , I_OR  , ARGS_2_1CONST , ACTRL_MODE_OR  , false, oc_flag, suffix, out_mode));
+    reg_inst(mk_alu_inst("XOR" , I_XOR , ARGS_2_1CONST , ACTRL_MODE_XOR , false, oc_flag, suffix, out_mode));
+    reg_inst(mk_alu_inst("LSFT", I_LSFT, ARGS_1_NOCONST, ACTRL_MODE_LSFT, false, oc_flag, suffix, out_mode));
+    reg_inst(mk_alu_inst("RSFT", I_RSFT, ARGS_1_NOCONST, ACTRL_MODE_RSFT, false, oc_flag, suffix, out_mode));
 }
 
+#define ALU_OUTMODE_NORMAL    (ACTRL_DATA_OUT | ACTRL_FLAGS_OUT | ACTION_GCTRL_USE_ALT | GCTRL_ALT_P_O_CHNMI_OR_I_ALUFG | GCTRL_CREG_I)
+#define ALU_OUTMODE_NOFLAGS   (ACTRL_DATA_OUT)
+#define ALU_OUTMODE_FLAGSONLY (                 ACTRL_FLAGS_OUT | ACTION_GCTRL_USE_ALT | GCTRL_ALT_P_O_CHNMI_OR_I_ALUFG | GCTRL_CREG_I)
+
 static void gen_alu() {
-    gen_alu_flagables(ACTRL_FLAGS_OUT | ACTION_GCTRL_USE_ALT | GCTRL_ALT_P_O_CHNMI_OR_I_ALUFG | GCTRL_CREG_I);
-    gen_alu_flagables(0);
+    gen_alu_variant_group(""  ,                 0, ALU_OUTMODE_NORMAL );
+    gen_alu_variant_group("NF", ICFLAG_ALU1_NOFGS, ALU_OUTMODE_NOFLAGS);
+
+    // The ADD3[NF] instructions live in a different ITYPE to those above, so we won't reuse ICFLAG_ALU1_NOFGS
+    // in order to pass between the variants (currently, this works by coincidence).
+    reg_inst(mk_alu_inst("ADD3"  , I_ADD3  , ARGS_3_1CONST, ACTRL_MODE_ADD, false, 0, "", ALU_OUTMODE_NORMAL));
+    reg_inst(mk_alu_inst("ADD3NF", I_ADD3NF, ARGS_3_1CONST, ACTRL_MODE_ADD, false, 0, "", ALU_OUTMODE_NOFLAGS));
+
+    // The TST instruction has no NOFLAGS (NF) variant, since then it would have no effect.
+    reg_inst(mk_alu_inst("TST", I_TST, ARGS_1, ACTRL_MODE_TST, false, 0, "", ALU_OUTMODE_NORMAL));
+
+    // Subtract one operand from the other to perform the comparison.
+    // e.g. FLAG_SIGN tells you which is greater.
+    reg_inst(mk_alu_inst("CMP", I_CMP, ARGS_2_1CONST, ACTRL_MODE_SUB, true, 0, "", ALU_OUTMODE_FLAGSONLY));
 }
 
 static void gen_stk() {

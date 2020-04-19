@@ -106,7 +106,7 @@ namespace kcpu {
 #define I_ENTERFR2  OC(IT_STK, 0b1010)
 #define I_LEAVE1    OC(IT_STK, 0b1011)
 
-// ALU1 (8/8)
+// ALU1 (NF-variant possible) (8/8)
 #define I_ADD2      OC(IT_ALU1, 0b0000)
 #define I_SUB       OC(IT_ALU1, 0b0001)
 #define I_BSUB      OC(IT_ALU1, 0b0010)
@@ -116,8 +116,9 @@ namespace kcpu {
 #define I_LSFT      OC(IT_ALU1, 0b0110)
 #define I_RSFT      OC(IT_ALU1, 0b0111)
 
-// ALU2 (1/16)
+// ALU2 (2/16)
 #define I_TST       OC(IT_ALU2, 0b0000)
+#define I_CMP       OC(IT_ALU2, 0b0001)
 
 // MEM (9/16)
 #define I_STPFX     OC(IT_MEM, 0b0001)
@@ -146,8 +147,9 @@ namespace kcpu {
 #define I_JMP_DI    OC(IT_JMP, 0b1110)
 #define I_JMP_EI    OC(IT_JMP, 0b1111)
 
-// IU3_ALL_GRP1 (1/2)
+// IU3_ALL_GRP1 (2/2)
 #define I_ADD3      OCANY_IU3(IT_IU3_ALL_GRP1, 0b0)
+#define I_ADD3NF    OCANY_IU3(IT_IU3_ALL_GRP1, 0b1)
 
 // IU3_ALL_GRP2 (2/2)
 #define I_LDWO      OCANY_IU3(IT_IU3_ALL_GRP2, 0b0)

@@ -24,10 +24,5 @@ JNZ l5
 ABRT
 
 l5:
-TSTNF $0
-JNZ l6
-ABRT
-
-l6:
 
 HLT
