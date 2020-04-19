@@ -1,6 +1,17 @@
 
 
+  Where do we use floating levels?:
+    * In the implementation of TST
+    * In the implementation of the byte-store-with-zero instructions
+    * During IO instructions which take a few cycles to complete
+
+
+
   REMAINING HARDWARE TO SIMULATE:
+
+
+
+
 
 
     * A jumper/soft flag to issue an NMI after every instruction? (so we can have debugging (over serial?) in the real thing!)
