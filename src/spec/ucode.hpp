@@ -178,6 +178,12 @@ static bool does_override_iu3_via_gctrl_alt(uinst_t ui) {
 #define RCTRL_IU3_BUSB_I (0b110ULL << (6 + RCTRL_BASE))
 #define RCTRL_IU3_BUSB_O (0b111ULL << (6 + RCTRL_BASE))
 
+// HARDWARE NOTE: In hardware we prohibit inputing a
+// register referenced by an IU at the same time it is
+// commanded to output as referenced by a different IU,
+// by just inhibiting each individual register store pin
+// when the output pin is active.
+
 // NONBIT: RCTRL decoding
 #define MASK_RCTRL_IU 0b111ULL
 #define MASK_RCTRL_IU1 (MASK_RCTRL_IU << (0 + RCTRL_BASE))

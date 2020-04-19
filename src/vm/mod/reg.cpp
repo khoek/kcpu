@@ -81,16 +81,67 @@ static preg_t consider_iu3_override(uinst_t ui, regval_t inst) {
     return iu3_reg;
 }
 
+struct iu_state {
+    regval_t dec[3];
+    preg_t iu[3];
+};
+
+static iu_state parse_ius(uinst_t ui, regval_t inst) {
+    iu_state state;
+    state.dec[0] = RCTRL_DECODE_IU1(ui);
+    state.iu[0] = INST_GET_IU1(inst);
+    state.dec[1] = RCTRL_DECODE_IU2(ui);
+    state.iu[1] = INST_GET_IU2(inst);
+    state.dec[2] = RCTRL_DECODE_IU3(ui);
+    state.iu[2] = consider_iu3_override(ui, inst);
+    return state;
+}
+
+/*
+    HARDWARE NOTE: This function emulates the much simpler hardware
+    protection mechanism, which is just to inhbit the I line to each
+    register (after passing through the IU machinery) if the O line
+    is also asserted.
+*/
+static iu_state filter_simultaneous_i_and_o(iu_state is) {
+    for(int i = 0; i < 3; i++) {
+        if(!RCTRL_IU_IS_EN(is.dec[i])) {
+            continue;
+        }
+
+        for(int j = 0; j < 3; j++) {
+            if(i == j || !RCTRL_IU_IS_EN(is.dec[j])) {
+                continue;
+            }
+
+            if(is.iu[i] == is.iu[j]) {
+                bool has_i = RCTRL_IU_IS_INPUT(is.iu[i]) || RCTRL_IU_IS_INPUT(is.iu[j]);
+                bool has_o = RCTRL_IU_IS_OUTPUT(is.iu[i]) || RCTRL_IU_IS_OUTPUT(is.iu[j]);
+                if(has_i && has_o) {
+                    is.dec[RCTRL_IU_IS_INPUT(is.iu[i]) ? i : j] = 0;
+                }
+            }
+        }
+    }
+    return is;
+}
+
 void mod_reg::clock_outputs(uinst_t ui, bus_state &s, regval_t inst) {
-    maybe_assign(s, inst, ui, 1, RCTRL_DECODE_IU1(ui), INST_GET_IU1(inst));
-    maybe_assign(s, inst, ui, 2, RCTRL_DECODE_IU2(ui), INST_GET_IU2(inst));
-    maybe_assign(s, inst, ui, 3, RCTRL_DECODE_IU3(ui), consider_iu3_override(ui, inst));
+    iu_state is = parse_ius(ui, inst);
+    is = filter_simultaneous_i_and_o(is);
+
+    maybe_assign(s, inst, ui, 1, is.dec[0], is.iu[0]);
+    maybe_assign(s, inst, ui, 2, is.dec[1], is.iu[1]);
+    maybe_assign(s, inst, ui, 3, is.dec[2], is.iu[2]);
 }
 
 void mod_reg::clock_inputs(uinst_t ui, bus_state &s, regval_t inst) {
-    maybe_read(s, inst, ui, 1, RCTRL_DECODE_IU1(ui), INST_GET_IU1(inst));
-    maybe_read(s, inst, ui, 2, RCTRL_DECODE_IU2(ui), INST_GET_IU2(inst));
-    maybe_read(s, inst, ui, 3, RCTRL_DECODE_IU3(ui), consider_iu3_override(ui, inst));
+    iu_state is = parse_ius(ui, inst);
+    is = filter_simultaneous_i_and_o(is);
+
+    maybe_read(s, inst, ui, 1, is.dec[0], is.iu[0]);
+    maybe_read(s, inst, ui, 2, is.dec[1], is.iu[1]);
+    maybe_read(s, inst, ui, 3, is.dec[2], is.iu[2]);
 }
 
 }

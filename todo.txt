@@ -26,14 +26,6 @@
         - Add a test; enable the jumper with a debug IO command, then have NMIs count the number of instructions in the test.
 
 
-    * PROHIBIT MOV %rx %rx in hardware (it would be undefined)
-            -> I think what I had here was way too complex---just have an output signal to each register inhbit an input signal? Yeah, there are only 8.
-               Then add a test!
-
-               It was:
-                -> The best way to do this is to compute if IU1 == IU2, and if so inhibit the any IU[1/2]_I if there is any IU[1/2]_O asserted.
-                -> If we do this, definitely simulate in VM to check implementation!
-
 
 
 
@@ -42,7 +34,7 @@
 
     * FLAG-ONLY versions of the ALU insts (we already value-only versions).
       -> When dealing with constants we can just do the operation on RID, so how much do we need this
-         (that argument doesn't work with SUB, since it is ordered, but we do need a RSUB (reverse) anyway to implement a better NEG)
+      -> It benefits CMP
 
     * Compress ucode! (should we really do this anymore at this point?)
 
@@ -98,7 +90,12 @@ HARDWARE:
   Remember for designs:
     * Remember, BUS_A and BUS_B should both be pulled low.
     * WE ADDED HARDWARE INC AND DEC COMMANDS TO RSP. AND THE RSP INC/DEC MECHANISM IS COMPLEX, OCCURING A HALF CYCLE BEFORE (check the timings work out).
-    * We are hardware latching a mask or something in mod_ctl
+    * We are hardware latching the ucode in mod_ctl
+
+    * PROHIBIT MOV %rx %rx in hardware (it would be undefined)
+            -> I think what I had here was way too complex---just have an output signal to each register inhbit an input signal? Yeah, there are only 8.
+
+
 
 
   Bugs in current revisions:
@@ -106,11 +103,8 @@ HARDWARE:
         to the ALU flags register float!!!!
     ALU: It also has two floating gates!!!
 
-  Improvements future revisions:
+  Improvements for future revisions:
   * remove the zero registers from the REG module? (or, can we change the VM code so that we never use a pull-down behaviour?)
-  * remote the one register and deal with it in the microcode?---once we fix NEG, we only need REG_ONE for NOT.
-    ---much more useful would be a constant=2 reg, we should see where these are and see if we can fix by adding hardware decrements (do these exist?),
-       and if they don't maybe consider adding a "2" register.
   * mod_alu: OR and AND are swapped physically on the board vs the mode signal numbers
 
 
