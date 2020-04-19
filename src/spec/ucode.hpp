@@ -78,21 +78,6 @@ namespace kcpu {
 // NOT A REAL BIT, JUST A HELPER FOR THE 4 FLAG JMs
 #define GCTRL_JM_INVERTCOND  (0b0100ULL << (0 + GCTRL_BASE))
 
-// FIXME switch the function of ACTION_GCTRL_CREG_EN to more of a switching between two alternate sets of actions
-// type thing (then this field is not active, then the zero-val of the GCTRL_CREG of the selected set better do
-// nothing!).
-//
-// Then make COMMAND_IO_READWRITE one of these functions (we will then have an unused COMMAND_xxxxx). Make
-// IU3_OVERRIDE_SELECT_RSP another. Use IU3_OVERRIDE_SELECT_RSP to remove all of the X_blah instructions.
-// We will have to keep X_ENTERFR (since the alias passes the basepointer as well), but we can remove it off the
-// IU3_SINGLE opclass list and change its opcode to a normal one, fitting in with the other ENTER/LEAVE stuff.
-// (We will still need X_ENTER and X_LEAVE as well.)
-//
-// NOTE when we change stuff like X_PUSH over to use IU3 to get RSP, remember to rename the IU2 reference to an IU1 reference.
-//
-// Finally, make the _DO_INT handler use this mechanism as well, and thus change its code in mod_ctl (no longer)
-// needs to be passed REG_RSP in IU1.
-
 // The GCTRL modes
 
 /*
