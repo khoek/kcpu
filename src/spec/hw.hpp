@@ -43,30 +43,29 @@ enum bus_t {
 enum preg_t {
 // NOTE PREG_NAMES must be kept in-sync with this list.
     REG_ID = 0,
-    REG_ONE = 1,
-    REG_SP = 2,
-    REG_BP = 3,
-    REG_A = 4,
-    REG_B = 5,
-    REG_C = 6,
-    REG_D = 7,
+    REG_SP = 1,
+    REG_BP = 2,
+    REG_A  = 3,
+    REG_B  = 4,
+    REG_C  = 5,
+    REG_D  = 6,
+    REG_E  = 7,
 };
-#define PREG_NUL ((preg_t) 0)
 
 static const char * PREG_NAMES[] = {
     "id",
-    "1",
     "sp",
     "bp",
     "a",
     "b",
     "c",
     "d",
+    "e",
 };
 
-#define NUM_SREGS 7
+#define NUM_SREGS 6
 enum sreg_t {
-// First 0-3 are "c(ontrol)reg"s, remainder are private.
+// First 0-1 are "c(ontrol)reg"s, remainder are private.
 // HARDWARE NOTE: the CREG-codes in the ucode depend
 //                on this order of the first 4.
 
@@ -75,12 +74,12 @@ enum sreg_t {
 // to control CBIT_IE only). This means that the only the low byte
 // of the memory of REG_FG_RAW is actually ever nonzero while
 // we are simulating in the VM.
-    REG_FG_RAW   = 1,
-    REG_IHP      = 2,
+    REG_FG_RAW   = 0,
+    REG_IHP      = 1,
 
-    REG_IP       = 4,
-    REG_UC       = 5,
-    REG_IR       = 6,
+    REG_IP       = 2,
+    REG_UC       = 3,
+    REG_IR       = 4,
 // HARDWARE NOTE: 3 unused registers
 };
 

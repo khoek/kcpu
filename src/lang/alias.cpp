@@ -52,17 +52,16 @@ static void gen_mem() {
 }
 
 static void gen_alu() {
-    // XOR with all 1s
+    // XOR the oprand with 0xFFFF
     reg_alias(alias("NOT", ARGS_1_NOCONST,
-        virtual_instruction(I_XOR, { slot_reg(REG_ONE), slot_arg(0) })));
+        virtual_instruction(I_XOR , { slot_constval(0xFFFF), slot_arg(0) })));
 
-    // FIXME just subtract from zero! need a "sub the other way" instruction for this
-    // Negate then add 1
+    // Subtract the operand from zero
     reg_alias(alias("NEG", ARGS_1_NOCONST, {
-        virtual_instruction(I_XOR , { slot_reg(REG_ONE), slot_arg(0) }),
-        virtual_instruction(I_ADD2, { slot_constval(0x0001), slot_arg(0) }),
+        virtual_instruction(I_BSUB, { slot_constval(0x0000), slot_arg(0) }),
     }));
 
+    // Add one to the operand
     reg_alias(alias("INC", ARGS_1_NOCONST, {
         virtual_instruction(I_ADD2, { slot_constval(0x0001), slot_arg(0) }),
     }));

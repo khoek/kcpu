@@ -9,7 +9,6 @@ mod_reg::mod_reg(vm_logger &logger) : logger(logger) {
     for(int i = 0; i < NUM_PREGS; i++) {
         reg[i] = 0;
     }
-    reg[REG_ONE] = ~0;
 }
 
 void mod_reg::dump_registers() {

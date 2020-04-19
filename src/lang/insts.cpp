@@ -190,9 +190,13 @@ static void gen_ctl() {
 
 #define NOFLAGSUFFIX "NF"
 
-static instruction mk_arith_inst(uinst_t flagbits, const char *name, opclass op, argtype args, uinst_t alu_mode) {
+static instruction mk_arith_inst(uinst_t flagbits, const char *name, opclass op, argtype args, uinst_t alu_mode, bool backward) {
     std::stringstream ss;
     ss << name << (flagbits ? "" : NOFLAGSUFFIX);
+
+    if(backward && args.count != 2) {
+        throw arch_error("can only reverse 2 args");
+    }
 
     uinst_t tgt, srcs;
     switch(args.count) {
@@ -203,8 +207,13 @@ static instruction mk_arith_inst(uinst_t flagbits, const char *name, opclass op,
             break;
         }
         case 2: {
-            srcs = RCTRL_IU1_BUSA_O | RCTRL_IU2_BUSB_O;
-            tgt = RCTRL_IU2_BUSA_I;
+            if(backward) {
+                srcs = RCTRL_IU2_BUSA_O | RCTRL_IU1_BUSB_O;
+                tgt = RCTRL_IU2_BUSA_I;
+            } else {
+                srcs = RCTRL_IU1_BUSA_O | RCTRL_IU2_BUSB_O;
+                tgt = RCTRL_IU2_BUSA_I;
+            }
             break;
         }
         case 3: {
@@ -215,23 +224,24 @@ static instruction mk_arith_inst(uinst_t flagbits, const char *name, opclass op,
         default: throw arch_error("too many args!");
     }
 
-    return instruction(ss.str(), op.add_flag(flagbits ? 0 : ICFLAG_ALU_NOFGS), args, {
+    return instruction(ss.str(), op.add_flag(flagbits ? 0 : ICFLAG_ALU1_NOFGS), args, {
         ACTRL_INPUT_EN | alu_mode | srcs | RCTRL_IU1_BUSA_O,
         ACTRL_DATA_OUT | flagbits | tgt  | GCTRL_FT_ENTER,
     });
 }
 
 static void gen_alu_flagables(uinst_t flagbits) {
-    reg_inst(mk_arith_inst(flagbits, "ADD2", I_ADD2, ARGS_2_1CONST , ACTRL_MODE_ADD )); // c.f. the ADD3 variant
-    reg_inst(mk_arith_inst(flagbits, "SUB" , I_SUB , ARGS_2_1CONST , ACTRL_MODE_SUB ));
-    reg_inst(mk_arith_inst(flagbits, "AND" , I_AND , ARGS_2_1CONST , ACTRL_MODE_AND ));
-    reg_inst(mk_arith_inst(flagbits, "OR"  , I_OR  , ARGS_2_1CONST , ACTRL_MODE_OR  ));
-    reg_inst(mk_arith_inst(flagbits, "XOR" , I_XOR , ARGS_2_1CONST , ACTRL_MODE_XOR ));
-    reg_inst(mk_arith_inst(flagbits, "LSFT", I_LSFT, ARGS_1_NOCONST, ACTRL_MODE_LSFT));
-    reg_inst(mk_arith_inst(flagbits, "RSFT", I_RSFT, ARGS_1_NOCONST, ACTRL_MODE_RSFT));
-    reg_inst(mk_arith_inst(flagbits, "TST" , I_TST , ARGS_1        , ACTRL_MODE_TST ));
+    reg_inst(mk_arith_inst(flagbits, "ADD2", I_ADD2, ARGS_2_1CONST , ACTRL_MODE_ADD , false)); // c.f. the ADD3 variant
+    reg_inst(mk_arith_inst(flagbits, "SUB" , I_SUB , ARGS_2_1CONST , ACTRL_MODE_SUB , false));
+    reg_inst(mk_arith_inst(flagbits, "BSUB", I_BSUB, ARGS_2_1CONST , ACTRL_MODE_SUB , true ));
+    reg_inst(mk_arith_inst(flagbits, "AND" , I_AND , ARGS_2_1CONST , ACTRL_MODE_AND , false));
+    reg_inst(mk_arith_inst(flagbits, "OR"  , I_OR  , ARGS_2_1CONST , ACTRL_MODE_OR  , false));
+    reg_inst(mk_arith_inst(flagbits, "XOR" , I_XOR , ARGS_2_1CONST , ACTRL_MODE_XOR , false));
+    reg_inst(mk_arith_inst(flagbits, "LSFT", I_LSFT, ARGS_1_NOCONST, ACTRL_MODE_LSFT, false));
+    reg_inst(mk_arith_inst(flagbits, "RSFT", I_RSFT, ARGS_1_NOCONST, ACTRL_MODE_RSFT, false));
+    reg_inst(mk_arith_inst(flagbits, "TST" , I_TST , ARGS_1        , ACTRL_MODE_TST , false));
 
-    reg_inst(mk_arith_inst(flagbits, "ADD3", I_ADD3, ARGS_3_1CONST , ACTRL_MODE_ADD ));
+    reg_inst(mk_arith_inst(flagbits, "ADD3", I_ADD3, ARGS_3_1CONST , ACTRL_MODE_ADD , false));
 }
 
 static void gen_alu() {

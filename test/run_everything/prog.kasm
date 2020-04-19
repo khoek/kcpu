@@ -3,66 +3,68 @@
 STPFX $0x0080
 FAR STPFX $0x0080
 
-ADD2 %ra %rb
-ADD2NF %ra %rb
-ADD3 %ra %rb %rc
-ADD3NF %ra %rb %rc
-AND %ra %rb
-ANDNF %ra %rb
-CMP %ra %rb
+ADD2 %rb %rc
+ADD2NF %rb %rc
+ADD3 %rb %rc %rd
+ADD3NF %rb %rc %rd
+AND %rb %rc
+ANDNF %rb %rc
+BSUB %rb %rc
+BSUBNF %rb %rc
+CMP %rb %rc
 DI
 EI
 ENTER
-ENTERFR %ra
-FAR LDBH %ra %rb
-FAR LDBHZ %ra %rb
-FAR LDBL %ra %rb
-FAR LDBLZ %ra %rb
-FAR LDW %ra %rb
-FAR LDWO %ra %rb %rc
-FAR STBH %ra %rb
-FAR STBL %ra %rb
-FAR STW %ra %rb
-FAR STWO %ra %rb %rc
-INC %ra
-LDBH %ra %rb
-LDBHZ %ra %rb
-LDBL %ra %rb
-LDBLZ %ra %rb
-LDW %ra %rb
-LDWO %ra %rb %rc
+ENTERFR %rb
+FAR LDBH %rb %rc
+FAR LDBHZ %rb %rc
+FAR LDBL %rb %rc
+FAR LDBLZ %rb %rc
+FAR LDW %rb %rc
+FAR LDWO %rb %rc %rd
+FAR STBH %rb %rc
+FAR STBL %rb %rc
+FAR STW %rb %rc
+FAR STWO %rb %rc %rd
+INC %rb
+LDBH %rb %rc
+LDBHZ %rb %rc
+LDBL %rb %rc
+LDBLZ %rb %rc
+LDW %rb %rc
+LDWO %rb %rc %rd
 LEAVE
-LFG %ra
-LIHP %ra
-LSFT %ra
-LSFTNF %ra
-MOV %ra %rb
-NEG %ra
+LFG %rb
+LIHP %rb
+LSFT %rb
+LSFTNF %rb
+MOV %rb %rc
+NEG %rb
 NOP
-NOT %ra
-OR %ra %rb
-ORNF %ra %rb
-POP %ra
+NOT %rb
+OR %rb %rc
+ORNF %rb %rc
+POP %rb
 POPA
-PUSH %ra
+PUSH %rb
 PUSHA
-RSFT %ra
-RSFTNF %ra
-STBH %ra %rb
-STBL %ra %rb
-STW %ra %rb
-STWO %ra %rb %rc
-SUB %ra %rb
-SUBNF %ra %rb
-TST %ra
-TSTNF %ra
-XOR %ra %rb
-XORNF %ra %rb
-X_ENTER %ra %rb
-X_ENTERFR %ra %rb
-X_LEAVE %ra %rb
-X_POP %ra %rb
-X_PUSH %ra %rb
+RSFT %rb
+RSFTNF %rb
+STBH %rb %rc
+STBL %rb %rc
+STW %rb %rc
+STWO %rb %rc %rd
+SUB %rb %rc
+SUBNF %rb %rc
+TST %rb
+TSTNF %rb
+XOR %rb %rc
+XORNF %rb %rc
+X_ENTER %rb %rc
+X_ENTERFR %rb %rc
+X_LEAVE %rb %rc
+X_POP %rb %rc
+X_PUSH %rb %rc
 
 PUSHFG
 POPFG

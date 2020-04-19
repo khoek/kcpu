@@ -121,7 +121,6 @@ std::optional<bound_parameter> inst_assembler::lookup_reg(std::string s) {
         if(trunc == PREG_NAMES[i]) {
             switch(i) {
                 // case REG_ID: throw_parse_error("cannot refer to REG_ID!");
-                case REG_ONE: throw_parse_error("cannot refer to REG_ONE!");
                 default: return bound_parameter(type, (preg_t) i, lo_or_hi);
             }
         }

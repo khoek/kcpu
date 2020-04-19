@@ -53,7 +53,8 @@ namespace kcpu {
 #define IT__MEMF            0b0011 // MEM (FAR, don't use directly, use IT_MEM and ITFLAG_MEM_FAR instead)
 #define IT__JMP             0b0100 // JMP (don't use directly, use IT_JMP and ITFLAG_JMP_LD instead)
 #define IT__JMPLD           0b0101 // JMP (don't use directly, use IT_JMP and ITFLAG_JMP_LD instead)
-#define IT_ALU              0b0110 // ALU
+#define IT_ALU1             0b0110 // ALU (insts with a NF (noflags) variant)
+#define IT_ALU2             0b0111 // ALU (other ALU insts)
 // reserved itypes for IU3_ALL/_SINGLE opclasses
 #define IT_IU3_SINGLE_GRP1  0b0111 // It is very wasteful to have a separate itype for IU3_SINGLEs, but lets just be lazy for now.
 #define IT_IU3_ALL_GRP1     0b1000
@@ -65,7 +66,7 @@ namespace kcpu {
 #define IT_JMP 0b0100
 #define ITFLAG_MEM_FAR     ITFLAG(0b0001)
 #define ITFLAG_JMP_LD      ITFLAG(0b0001)
-#define ICFLAG_ALU_NOFGS   ICFLAG(0b1000)
+#define ICFLAG_ALU1_NOFGS   ICFLAG(0b1000)
 #define ICFLAG_MEM_IU3_FAR ICFLAG(0b1000)
 
 // BEGIN DECLS
@@ -105,14 +106,16 @@ namespace kcpu {
 #define I_X_IRET    OC(IT_X  , 0b1000)
 
 // ALU (8/8)
-#define I_ADD2      OC(IT_ALU, 0b0000)
-#define I_SUB       OC(IT_ALU, 0b0001)
-#define I_AND       OC(IT_ALU, 0b0010)
-#define I_OR        OC(IT_ALU, 0b0011)
-#define I_XOR       OC(IT_ALU, 0b0100)
-#define I_LSFT      OC(IT_ALU, 0b0101)
-#define I_RSFT      OC(IT_ALU, 0b0110)
-#define I_TST       OC(IT_ALU, 0b0111)
+#define I_ADD2      OC(IT_ALU1, 0b0000)
+#define I_SUB       OC(IT_ALU1, 0b0001)
+#define I_BSUB      OC(IT_ALU1, 0b0010)
+#define I_AND       OC(IT_ALU1, 0b0011)
+#define I_OR        OC(IT_ALU1, 0b0100)
+#define I_XOR       OC(IT_ALU1, 0b0101)
+#define I_LSFT      OC(IT_ALU1, 0b0110)
+#define I_RSFT      OC(IT_ALU1, 0b0111)
+
+#define I_TST       OC(IT_ALU2, 0b0000)
 
 // MEM (9/16)
 #define I_STPFX     OC(IT_MEM, 0b0001)
