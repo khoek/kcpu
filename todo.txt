@@ -17,7 +17,7 @@
 
 
     * A jumper/soft flag to issue an NMI after every instruction? (so we can have debugging (over serial?) in the real thing!)
-        - To implement this we basically just need a line which is `!CBIT_HNMI && !CBIT_INSTMASK` which triggers the interrupt,
+        - To implement this we basically just need a line which is `!CBIT_HNMI && !CBIT_INSTMASK && NOT_CLOCK` which triggers the interrupt,
           and the only thing we need to check is that this does not set a pending interrupt while an NMI is being serviced
           (i.e. that there isn't a window after the NMI is acked by the CPU but before CBIT_HNMI is set which causes the PIC
           to mark it pending a second time---since then we would get in a loop.)
@@ -25,6 +25,19 @@
 
         - Add a test; enable the jumper with a debug IO command, then have NMIs count the number of instructions in the test.
 
+
+
+
+
+    * A type-checked language to record the microcode would prevent silly mistakes like using a GCTRL_ALT_xxx and GCTRL_NRM_xxx
+      operation at the same time, whereas right now you just get bit soup.
+    * Perhaps at the same time, consider modelling the hardware ucode decoder----can we change around some existing modules to make
+      this work directly?---I think ALU is unchanged, but MEM has changed. We could even simuluate the REG IU->CHIP translation
+      by emulating the in/out signal lines to each chip
+
+      The rest of the bits (the CTRL/GCTRL ones) can be split into two further categories; 1) directly relating to operation of the
+      RIP management stuff and control register management stuff---i.e. conditional jump decoder, IHPR/FG register loading/control, etc,
+      and 2) the ad-hoc mutually exclusive stuff which have their tendrils making minor tweaks in many of the previous described submodules.
 
 
 
