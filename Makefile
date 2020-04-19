@@ -6,6 +6,9 @@ EXTRALIBS ?= -lSDL2 -pthread
 
 .PHONY: all clean cloc run run-step run-quiet test test-noninteractive dump
 
+AUTOTESTDIR := test/auto
+AUTOTESTSRC := $(AUTOTESTDIR)/prog.kasm
+
 SRCS := $(shell find src -type f -name "*.cpp")
 OBJS := $(SRCS:.cpp=.o)
 HDRS := $(shell find src -type f -name "*.hpp")
@@ -64,6 +67,9 @@ bin/bios.bin: asm/bios.kasm $(TOOLBINS)
 
 bin/prog.bin: asm/prog.kasm $(TOOLBINS)
 	bin/kasm asm/prog.kasm bin/prog.bin
+
+$(AUTOTESTSRC): bin/gen_test_auto
+	bin/gen_test_auto
 
 $(KASMOBJS): %.bin: %.kasm ./bin/kasm
 	bin/kasm $< $@
