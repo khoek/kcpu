@@ -14,8 +14,10 @@ BSUBNF %rb %rc
 CMP %rb %rc
 DI
 EI
-ENTER
-ENTERFR %rb
+ENTER0
+ENTER1 %rb
+ENTERFR1 %rb
+ENTERFR2 %rb %rc
 FAR LDBH %rb %rc
 FAR LDBHZ %rb %rc
 FAR LDBL %rb %rc
@@ -33,8 +35,8 @@ LDBL %rb %rc
 LDBLZ %rb %rc
 LDW %rb %rc
 LDWO %rb %rc %rd
-LEAVE
-LFG %rb
+LEAVE0
+LEAVE1 %rb
 LIHP %rb
 LSFT %rb
 LSFTNF %rb
@@ -46,8 +48,10 @@ OR %rb %rc
 ORNF %rb %rc
 POP %rb
 POPA
+POPx2 %rb %rc
 PUSH %rb
 PUSHA
+PUSHx2 %rb %rc
 RSFT %rb
 RSFTNF %rb
 STBH %rb %rc
@@ -60,13 +64,10 @@ TST %rb
 TSTNF %rb
 XOR %rb %rc
 XORNF %rb %rc
-X_ENTER %rb %rc
-X_ENTERFR %rb %rc
-X_LEAVE %rb %rc
-X_POP %rb %rc
-X_PUSH %rb %rc
 
 PUSHFG
+LD %rsp %ra
+LFG %ra
 POPFG
 
 HLT

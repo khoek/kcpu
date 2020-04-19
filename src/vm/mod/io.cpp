@@ -34,44 +34,40 @@ pic_interface & mod_io::get_pic() {
 }
 
 void mod_io::clock_outputs(uinst_t ui, bus_state &s) {
-    switch(ui & MASK_CTRL_COMMAND) {
-        case COMMAND_NONE:
-        case COMMAND_RCTRL_RSP_EARLY_DEC_NOIM:
-        case COMMAND_RCTRL_RSP_EARLY_INC: {
+    switch(ui & MASK_CTRL_ACTION) {
+        case ACTION_CTRL_NONE:
+        case ACTION_GCTRL_RIP_BUSA_O:
+        case ACTION_MCTRL_BUSMODE_X: {
             break;
         }
-        case COMMAND_IO_READWRITE: {
-            if((ui & MASK_GCTRL_DIR) == GCTRL_CREG_I) {
-                iodev_manager.before_clock_outputs_read(s.early_read(BUS_A));
-            } else {
-                iodev_manager.before_clock_outputs_write(s.early_read(BUS_A), s.early_read(BUS_B));
-            }
+        case ACTION_GCTRL_USE_ALT: {
+
             break;
         }
         default: throw vm_error("unknown CTRL_COMMAND");
     }
 
+    if(is_gctrl_nrm_io_readwrite(ui)) {
+        if((ui & MASK_GCTRL_DIR) == GCTRL_CREG_I) {
+            iodev_manager.before_clock_outputs_read(s.early_read(BUS_A));
+        } else {
+            iodev_manager.before_clock_outputs_write(s.early_read(BUS_A), s.early_read(BUS_B));
+        }
+    }
+
     iodev_manager.process_halfcycle(id_pic, false);
 
-    switch(ui & MASK_CTRL_COMMAND) {
-        case COMMAND_NONE:
-        case COMMAND_RCTRL_RSP_EARLY_DEC_NOIM:
-        case COMMAND_RCTRL_RSP_EARLY_INC: {
-            iodev_manager.after_clock_outputs_none();
-            break;
-        }
-        case COMMAND_IO_READWRITE: {
-            if((ui & MASK_GCTRL_DIR) == GCTRL_CREG_I) {
-                if(iodev_manager.is_io_done()) {
-                    s.assign(BUS_B, iodev_manager.get_read_result());
-                }
-                iodev_manager.after_clock_outputs_read();
-            } else {
-                iodev_manager.after_clock_outputs_write();
+    if(is_gctrl_nrm_io_readwrite(ui)) {
+        if((ui & MASK_GCTRL_DIR) == GCTRL_CREG_I) {
+            if(iodev_manager.is_io_done()) {
+                s.assign(BUS_B, iodev_manager.get_read_result());
             }
-            break;
+            iodev_manager.after_clock_outputs_read();
+        } else {
+            iodev_manager.after_clock_outputs_write();
         }
-        default: throw vm_error("unknown CTRL_COMMAND");
+    } else {
+        iodev_manager.after_clock_outputs_none();
     }
 }
 

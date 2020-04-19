@@ -14,32 +14,26 @@ namespace kcpu {
 
 // Random mutually exclusive "ACTION"s
 #define ACTION_CTRL_NONE        (0b00ULL << (0 + CTRL_BASE))
-/*
-    NOTE: A SOURCE OF MANY UNUSED BITS (if needed)
-    When `ACTION_GCTRL_CREG_EN` is low all of the
-    `GCTRL_CREG_xxx` (xxx = a reg) and `GCTRL_CREG_I/O` bits
-    are completely unused, with the sole exception of
-    `GCTRL_CREG_I/O` controlling `COMMAND_IO_READWRITE`.
-*/
-#define ACTION_GCTRL_CREG_EN    (0b01ULL << (0 + CTRL_BASE))
+#define ACTION_GCTRL_USE_ALT    (0b01ULL << (0 + CTRL_BASE))
 #define ACTION_GCTRL_RIP_BUSA_O (0b10ULL << (0 + CTRL_BASE))
 #define ACTION_MCTRL_BUSMODE_X  (0b11ULL << (0 + CTRL_BASE))
 
-#define COMMAND_NONE          (0b00ULL << (2 + CTRL_BASE))
+#define COMMAND_NONE         (0b00ULL << (2 + CTRL_BASE))
 /*
-    GCTRL_CREG_I means do an IO read, and ..._O means do an IO write.
+    HARDWARE NOTE: `COMMAND_INHIBIT_JMFT` disallows the instmask-setting
+    and UC-resetting behaviour of all JMs/FTs, just for that uop. This
+    is currently used to implement `_DO_INT`.
 */
-#define COMMAND_IO_READWRITE  (0b01ULL << (2 + CTRL_BASE))
+#define COMMAND_INHIBIT_JMFT (0b01ULL << (2 + CTRL_BASE))
 /*
     There next two increment/decrement RSP ON THE CLOCK RISING EDGE.
     (RSP is usually decremented on the offclock cycle by an instruction register bit.)
 
-    HARDWARE NOTE: As the name suggests, `COMMAND_RCTRL_RSP_EARLY_DEC_NOIM` also
-    disallowes the instmask-setting and UC-resetting behaviour of all JMs/FTs,
-    just for that uop. This is currently used to implement `_DO_INT`.
+    HARDWARE NOTE: COMMAND_RCTRL_RSP_EARLY_DEC_IU3RSP implicitly activates the
+    IU3_OVERRIDE_O_SELECT_RSP behaviour.
 */
-#define COMMAND_RCTRL_RSP_EARLY_DEC_NOIM (0b10ULL << (2 + CTRL_BASE))
-#define COMMAND_RCTRL_RSP_EARLY_INC      (0b11ULL << (2 + CTRL_BASE))
+#define COMMAND_RCTRL_RSP_EARLY_DEC_IU3RSP (0b10ULL << (2 + CTRL_BASE))
+#define COMMAND_RCTRL_RSP_EARLY_INC (0b11ULL << (2 + CTRL_BASE))
 
 // NONBIT: CTRL decoding
 #define MASK_CTRL_ACTION (0b11ULL << (0 + CTRL_BASE))
@@ -84,19 +78,55 @@ namespace kcpu {
 // NOT A REAL BIT, JUST A HELPER FOR THE 4 FLAG JMs
 #define GCTRL_JM_INVERTCOND  (0b0100ULL << (0 + GCTRL_BASE))
 
-// Note there is space here for one more possibility, CREG_NONE active but GCTRL_CREG_BUSB_O selected
-#define GCTRL_CREG_FG     (0b00ULL << (4 + GCTRL_BASE))
-#define GCTRL_CREG_IHPR   (0b01ULL << (4 + GCTRL_BASE))
-// NOTE next two bits not real registers. The first is just a bit
-// which is set with I and cleared with O below (not actually
-// inputing or outputting). The other is an ad-hoc compactification
-// of two mutually exclusive operations.
-// P_IE is the "interrupt enable" flag.
-#define GCTRL_CREG_P_IE   (0b10ULL << (4 + GCTRL_BASE))
+// FIXME switch the function of ACTION_GCTRL_CREG_EN to more of a switching between two alternate sets of actions
+// type thing (then this field is not active, then the zero-val of the GCTRL_CREG of the selected set better do
+// nothing!).
+//
+// Then make COMMAND_IO_READWRITE one of these functions (we will then have an unused COMMAND_xxxxx). Make
+// IU3_OVERRIDE_SELECT_RSP another. Use IU3_OVERRIDE_SELECT_RSP to remove all of the X_blah instructions.
+// We will have to keep X_ENTERFR (since the alias passes the basepointer as well), but we can remove it off the
+// IU3_SINGLE opclass list and change its opcode to a normal one, fitting in with the other ENTER/LEAVE stuff.
+// (We will still need X_ENTER and X_LEAVE as well.)
+//
+// NOTE when we change stuff like X_PUSH over to use IU3 to get RSP, remember to rename the IU2 reference to an IU1 reference.
+//
+// Finally, make the _DO_INT handler use this mechanism as well, and thus change its code in mod_ctl (no longer)
+// needs to be passed REG_RSP in IU1.
+
+// The GCTRL modes
+
+/*
+    These "normal" modes are selected by the absence of ACTION_GCTRL_USE_ALT.
+*/
+#define GCTRL_NRM_NONE         (0b00ULL << (4 + GCTRL_BASE))
+/*
+    GCTRL_CREG_I means do an IO read. GCTRL_CREG_O means do an IO write.
+*/
+#define GCTRL_NRM_IO_READWRITE (0b01ULL << (4 + GCTRL_BASE))
+/*
+    GCTRL_CREG_O means to force IU3 to RSP. GCTRL_CREG_I is UNUSED.
+*/
+#define GCTRL_NRM_IU3_OVERRIDE_O_SELECT_RSP_I__UNUSED (0b10ULL << (4 + GCTRL_BASE))
+#define GCTRL_NRM__UNUSED      (0b11ULL << (4 + GCTRL_BASE))
+
+/*
+    These "alternate" modes occupy the same bits as the "normal" modes,
+    and are selected by ACTION_GCTRL_USE_ALT.
+*/
+#define GCTRL_ALT_CREG_FG     (0b00ULL << (4 + GCTRL_BASE))
+#define GCTRL_ALT_CREG_IHPR   (0b01ULL << (4 + GCTRL_BASE))
+/*
+    NOTE next two bits not registers. The first is just a bit (IE)
+    which is set with I and cleared with O below (not actually
+    inputing or outputting). The other is an ad-hoc compactification
+    of two mutually exclusive operations.
+    P_IE is the "interrupt enable" flag.
+*/
+#define GCTRL_ALT_P_IE   (0b10ULL << (4 + GCTRL_BASE))
 // HARDWARE NOTE
 // GCTRL_CREG_P_O_CHNMI_OR_I_ALUFG on O: clears "handling NMI" flag,
 // on I: loads only the ALU bits of FG
-#define GCTRL_CREG_P_O_CHNMI_OR_I_ALUFG (0b11ULL << (4 + GCTRL_BASE))
+#define GCTRL_ALT_P_O_CHNMI_OR_I_ALUFG (0b11ULL << (4 + GCTRL_BASE))
 
 // HARDWARE NOTE
 // These two bits, when a normal CREG (FG or IHPR) are selected,
@@ -107,10 +137,29 @@ namespace kcpu {
 
 // NONBIT: GCTRL decoding
 #define MASK_GCTRL_FTJM (0b1111ULL << (0 + GCTRL_BASE))
-#define MASK_GCTRL_CREG (0b11ULL << (4 + GCTRL_BASE))
+#define MASK_GCTRL_MODE (0b11ULL << (4 + GCTRL_BASE))
 #define MASK_GCTRL_DIR (0b1ULL << (6 + GCTRL_BASE))
 #define GCTRL_CREG_IS_INPUT(dec) ((dec & MASK_GCTRL_DIR) == GCTRL_CREG_I)
 #define GCTRL_CREG_IS_OUTPUT(dec) ((dec & MASK_GCTRL_DIR) == GCTRL_CREG_O)
+
+// HARDWARE NOTE: These are helper macros, but they should be actual signal lines on the board.
+static bool is_gctrl_nrm_io_readwrite(uinst_t ui) {
+    return ((ui & MASK_CTRL_ACTION) != ACTION_GCTRL_USE_ALT) && ((ui & MASK_GCTRL_MODE) == GCTRL_NRM_IO_READWRITE);
+}
+
+static bool is_gctrl_nrm_iu3_override_o_select_rsp(uinst_t ui) {
+    return ((ui & MASK_CTRL_ACTION) != ACTION_GCTRL_USE_ALT) && ((ui & MASK_GCTRL_MODE) == GCTRL_NRM_IU3_OVERRIDE_O_SELECT_RSP_I__UNUSED);
+}
+
+static bool does_override_iu3_via_command(uinst_t ui) {
+    return ((ui & MASK_CTRL_COMMAND) == COMMAND_RCTRL_RSP_EARLY_DEC_IU3RSP);
+}
+
+static bool does_override_iu3_via_gctrl_alt(uinst_t ui) {
+    return ((ui & MASK_CTRL_ACTION) != ACTION_GCTRL_USE_ALT)
+                && ((ui & MASK_GCTRL_MODE) == GCTRL_NRM_IU3_OVERRIDE_O_SELECT_RSP_I__UNUSED)
+                && ((ui & MASK_GCTRL_DIR) == GCTRL_CREG_O);
+}
 
 // RCTRL
 #define RCTRL_BASE GCTRL_END

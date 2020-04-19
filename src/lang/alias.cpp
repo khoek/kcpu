@@ -7,46 +7,23 @@ namespace kcpu {
 #define reg_alias arch::self().reg_alias
 
 static void gen_ctl() {
-    reg_alias(alias("CALL"   , ARGS_1, virtual_instruction(I_X_CALL   , { slot_reg(REG_SP), slot_arg(0) })));
-    reg_alias(alias("RET"    , ARGS_0, virtual_instruction(I_X_RET    , { slot_reg(REG_SP) })));
-    reg_alias(alias("IRET"   , ARGS_0, virtual_instruction(I_X_IRET   , { slot_reg(REG_SP) })));
-    reg_alias(alias("ENTER"  , ARGS_0, virtual_instruction(I_X_ENTER  , { slot_reg(REG_SP), slot_reg(REG_BP) })));
-    reg_alias(alias("LEAVE"  , ARGS_0, virtual_instruction(I_X_LEAVE  , { slot_reg(REG_SP), slot_reg(REG_BP) })));
-    reg_alias(alias("ENTERFR", ARGS_1, virtual_instruction(I_X_ENTERFR, { slot_reg(REG_BP), slot_arg(0) })));
+    // The usual versions of ENTER[FR]/LEAVE which use RBP as the base pointer.
+    reg_alias(alias("ENTER0"  , ARGS_0, virtual_instruction(I_ENTER1  , { slot_reg(REG_BP) })));
+    reg_alias(alias("ENTERFR1", ARGS_1, virtual_instruction(I_ENTERFR2, { slot_reg(REG_BP), slot_arg(0) })));
+    reg_alias(alias("LEAVE0"  , ARGS_0, virtual_instruction(I_LEAVE1  , { slot_reg(REG_BP) })));
 }
 
 static void gen_mem() {
-    // NOTE `PUSH %rsp` writes the NEW %rsp to the NEW address. (This happens to be the old 8086 behaviour, but not 286 and beyond.)
-    // NOTE `POP  %rsp` writes the OLD TOP OF STACK to the NEW %rsp (unchanged).
-    reg_alias(alias("PUSH", ARGS_1        , virtual_instruction(I_X_PUSH, { slot_reg(REG_SP), slot_arg(0) })));
-    reg_alias(alias("POP" , ARGS_1_NOCONST, virtual_instruction(I_X_POP , { slot_reg(REG_SP), slot_arg(0) })));
-
-    reg_alias(alias("PUSHFG", ARGS_0, virtual_instruction(I_X_PUSHFG, { slot_reg(REG_SP) })));
-    reg_alias(alias("POPFG" , ARGS_0, virtual_instruction(I_X_POPFG , { slot_reg(REG_SP) })));
-
-    // FIXME A single X_PUSH/POP takes 2 uops, so we could create 3 for-purpose
-    // instructions for each case below to speed everything up.
-    //
-    // Ooh, but a caveat is that we would have to make heavy use of IU3 (to store
-    // RSP in each case, and our 2-PUSH/POP for one instructions would each have
-    // to of course use IU3 where the original X_PUSH/POP uops use IU1---and also
-    // of course, we'll need to use IU1 and IU2 in the right places).
     reg_alias(alias("PUSHA" , ARGS_0, {
         /********** Don't forget to save RID! **********/
-        virtual_instruction(I_X_PUSH, { slot_reg(REG_SP), slot_reg(REG_ID) }),
-        virtual_instruction(I_X_PUSH, { slot_reg(REG_SP), slot_reg(REG_A ) }),
-        virtual_instruction(I_X_PUSH, { slot_reg(REG_SP), slot_reg(REG_B ) }),
-        virtual_instruction(I_X_PUSH, { slot_reg(REG_SP), slot_reg(REG_C ) }),
-        virtual_instruction(I_X_PUSH, { slot_reg(REG_SP), slot_reg(REG_D ) }),
-        virtual_instruction(I_X_PUSH, { slot_reg(REG_SP), slot_reg(REG_BP) }),
+        virtual_instruction(I_PUSHx2, { slot_reg(REG_ID), slot_reg(REG_A ) }),
+        virtual_instruction(I_PUSHx2, { slot_reg(REG_B ), slot_reg(REG_C ) }),
+        virtual_instruction(I_PUSHx2, { slot_reg(REG_D ), slot_reg(REG_BP) }),
     }));
     reg_alias(alias("POPA" , ARGS_0, {
-        virtual_instruction(I_X_POP , { slot_reg(REG_SP), slot_reg(REG_BP) }),
-        virtual_instruction(I_X_POP , { slot_reg(REG_SP), slot_reg(REG_D ) }),
-        virtual_instruction(I_X_POP , { slot_reg(REG_SP), slot_reg(REG_C ) }),
-        virtual_instruction(I_X_POP , { slot_reg(REG_SP), slot_reg(REG_B ) }),
-        virtual_instruction(I_X_POP , { slot_reg(REG_SP), slot_reg(REG_A ) }),
-        virtual_instruction(I_X_POP , { slot_reg(REG_SP), slot_reg(REG_ID) }),
+        virtual_instruction(I_POPx2 , { slot_reg(REG_BP), slot_reg(REG_D ) }),
+        virtual_instruction(I_POPx2 , { slot_reg(REG_C ), slot_reg(REG_B ) }),
+        virtual_instruction(I_POPx2 , { slot_reg(REG_A ), slot_reg(REG_ID) }),
         /********** Don't forget to restore RID! **********/
     }));
 }

@@ -31,7 +31,7 @@ static bool should_perform_rsp_early_inc(uinst_t ui) {
 }
 
 static bool should_perform_rsp_early_dec(uinst_t ui) {
-    return (ui & MASK_CTRL_COMMAND) == COMMAND_RCTRL_RSP_EARLY_DEC_NOIM;
+    return (ui & MASK_CTRL_COMMAND) == COMMAND_RCTRL_RSP_EARLY_DEC_IU3RSP;
 }
 
 void mod_reg::maybe_assign(bus_state &s, regval_t inst, uinst_t ui, uint8_t iunum, uint8_t iu, preg_t r) {
@@ -71,16 +71,26 @@ void mod_reg::offclock_pulse(uinst_t ui) {
     }
 }
 
+static preg_t consider_iu3_override(uinst_t ui, regval_t inst) {
+    preg_t iu3_reg = INST_GET_IU3(inst);
+
+    if(does_override_iu3_via_command(ui) || does_override_iu3_via_gctrl_alt(ui)) {
+        iu3_reg = REG_SP;
+    }
+
+    return iu3_reg;
+}
+
 void mod_reg::clock_outputs(uinst_t ui, bus_state &s, regval_t inst) {
     maybe_assign(s, inst, ui, 1, RCTRL_DECODE_IU1(ui), INST_GET_IU1(inst));
     maybe_assign(s, inst, ui, 2, RCTRL_DECODE_IU2(ui), INST_GET_IU2(inst));
-    maybe_assign(s, inst, ui, 3, RCTRL_DECODE_IU3(ui), INST_GET_IU3(inst));
+    maybe_assign(s, inst, ui, 3, RCTRL_DECODE_IU3(ui), consider_iu3_override(ui, inst));
 }
 
 void mod_reg::clock_inputs(uinst_t ui, bus_state &s, regval_t inst) {
     maybe_read(s, inst, ui, 1, RCTRL_DECODE_IU1(ui), INST_GET_IU1(inst));
     maybe_read(s, inst, ui, 2, RCTRL_DECODE_IU2(ui), INST_GET_IU2(inst));
-    maybe_read(s, inst, ui, 3, RCTRL_DECODE_IU3(ui), INST_GET_IU3(inst));
+    maybe_read(s, inst, ui, 3, RCTRL_DECODE_IU3(ui), consider_iu3_override(ui, inst));
 }
 
 }

@@ -47,8 +47,8 @@ namespace kcpu {
 #define P_I_LOADDATA (1 << 15)
 
 // itype ranges (AAAA):
-#define IT_SYS              0b0000 // SYS (NOP, INT must occupy hardcoded positions)
-#define IT_X                0b0001 // X   (X_xxxx codes)
+#define IT_CTL              0b0000 // CTL (NOP, INT must occupy hardcoded positions)
+#define IT_STK              0b0001 // STK (Stack manipulation, call/return, IRET, etc.)
 #define IT__MEMC            0b0010 // MEM (CLOSE, don't use directly, use IT_MEM and ITFLAG_MEM_FAR instead)
 #define IT__MEMF            0b0011 // MEM (FAR, don't use directly, use IT_MEM and ITFLAG_MEM_FAR instead)
 #define IT__JMP             0b0100 // JMP (don't use directly, use IT_JMP and ITFLAG_JMP_LD instead)
@@ -56,54 +56,55 @@ namespace kcpu {
 #define IT_ALU1             0b0110 // ALU (insts with a NF (noflags) variant)
 #define IT_ALU2             0b0111 // ALU (other ALU insts)
 // reserved itypes for IU3_ALL/_SINGLE opclasses
-#define IT_IU3_SINGLE_GRP1  0b1000 // It is very wasteful to have a separate itype for IU3_SINGLEs, but lets just be lazy for now.
-#define IT_IU3_ALL_GRP1     0b1001
-#define IT_IU3_ALL_GRP2     0b1010
-#define IT_IU3_ALL_GRP3     0b1011
+#define IT_IU3_ALL_GRP1     0b1000
+#define IT_IU3_ALL_GRP2     0b1001
+#define IT_IU3_ALL_GRP3     0b1010
+// Don't forget that the `GCTRL_NRM_IU3_OVERRIDE_O_SELECT_RSP_I__UNUSED` mechanism exists largely
+// to prevent the creation of IU3_SINGLE opclassess.
+// #define IT_IU3_SINGLE_GRP1 0b1000 // It is very wasteful to have a separate itype for IU3_SINGLEs, but lets just be lazy for now.
 
 // Fake ICs (to implement flags) and flags at the itype/icode level
 #define IT_MEM 0b0010
 #define IT_JMP 0b0100
 #define ITFLAG_MEM_FAR     ITFLAG(0b0001)
 #define ITFLAG_JMP_LD      ITFLAG(0b0001)
-#define ICFLAG_ALU1_NOFGS   ICFLAG(0b1000)
+#define ICFLAG_ALU1_NOFGS  ICFLAG(0b1000)
 #define ICFLAG_MEM_IU3_FAR ICFLAG(0b1000)
 
 // BEGIN DECLS
 
-// SYS/MISC (12/16)
-#define I_NOP       OC(IT_SYS, 0b0000)
-#define I__DO_INT   OC(IT_SYS, 0b0001)
-// #define I__UNUSED   OC(IT_SYS, 0b0010)
+// CTL/MISC (12/16)
+#define I_NOP       OC(IT_CTL, 0b0000)
+#define I__DO_INT   OC(IT_CTL, 0b0001)
 
-#define I_MOV       OC(IT_SYS, 0b0011)
-#define I_LCFG      OC(IT_SYS, 0b0100)
-#define I_LFG       OC(IT_SYS, 0b0101)
-#define I_LIHP      OC(IT_SYS, 0b0110)
-// #define I__UNUSED   OC(IT_SYS, 0b0111)
+#define I_MOV       OC(IT_CTL, 0b0011)
+#define I_LCFG      OC(IT_CTL, 0b0100)
+#define I_LFG       OC(IT_CTL, 0b0101)
+#define I_LIHP      OC(IT_CTL, 0b0110)
 
-#define I_IOR       OC(IT_SYS, 0b1000)
-#define I_IOW       OC(IT_SYS, 0b1001)
+#define I_IOR       OC(IT_CTL, 0b1000)
+#define I_IOW       OC(IT_CTL, 0b1001)
 
-#define I_DI        OC(IT_SYS, 0b1100)
-#define I_EI        OC(IT_SYS, 0b1101)
+#define I_DI        OC(IT_CTL, 0b1100)
+#define I_EI        OC(IT_CTL, 0b1101)
 
-#define I_HLT       OC(IT_SYS, 0b1110)
-#define I_ABRT      OC(IT_SYS, 0b1111)
+#define I_HLT       OC(IT_CTL, 0b1110)
+#define I_ABRT      OC(IT_CTL, 0b1111)
 
-// X (9/16)
-#define I_X_ENTER   OC(IT_X  , 0b0000)
-#define I_X_LEAVE   OC(IT_X  , 0b0001)
+// STK (12/16)
+#define I_PUSH      OC(IT_STK, 0b0000)
+#define I_POP       OC(IT_STK, 0b0001)
+#define I_PUSHx2    OC(IT_STK, 0b0010)
+#define I_POPx2     OC(IT_STK, 0b0011)
+#define I_PUSHFG    OC(IT_STK, 0b0100)
+#define I_POPFG     OC(IT_STK, 0b0101)
+#define I_CALL      OC(IT_STK, 0b0110)
+#define I_RET       OC(IT_STK, 0b0111)
 
-#define I_X_PUSH    OC(IT_X  , 0b0010)
-#define I_X_POP     OC(IT_X  , 0b0011)
-#define I_X_CALL    OC(IT_X  , 0b0100)
-#define I_X_RET     OC(IT_X  , 0b0101)
-
-#define I_X_PUSHFG  OC(IT_X  , 0b0110)
-#define I_X_POPFG   OC(IT_X  , 0b0111)
-
-#define I_X_IRET    OC(IT_X  , 0b1000)
+#define I_IRET      OC(IT_STK, 0b1000)
+#define I_ENTER1    OC(IT_STK, 0b1001)
+#define I_ENTERFR2  OC(IT_STK, 0b1010)
+#define I_LEAVE1    OC(IT_STK, 0b1011)
 
 // ALU1 (8/8)
 #define I_ADD2      OC(IT_ALU1, 0b0000)
@@ -155,9 +156,6 @@ namespace kcpu {
 // IU3_ALL_GRP3 (2/2)
 #define I_STWO      OCANY_IU3(IT_IU3_ALL_GRP3, 0b0)
 #define I_STWO_FAR  OCANY_IU3(IT_IU3_ALL_GRP3, 0b1) // REMINDER UNREFERENCED, use I_STWO and ICFLAG_MEM_IU3_FAR instead.
-
-// IU3_SINGLE_GRP1 (~1/16)
-#define I_X_ENTERFR OCSINGLE_IU3(IT_IU3_SINGLE_GRP1, 0b0, REG_SP)
 
 // END DECLS
 

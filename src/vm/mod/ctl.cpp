@@ -35,9 +35,9 @@ void mod_ctl::dump_registers() {
     );
 }
 
-// HARDWARE NOTE: Ensure that the INT instruction has SP in IU1!
-#define LOAD_INSTVAL INST_MK(false, 0x0,      0, 0, 0)
-#define INT_INSTVAL  INST_MK(false, 0x1, REG_SP, 0, 0)
+// We used to have to ensure that the _DO_INT instruction had SP in IU1---this is no longer the case.
+#define LOAD_INSTVAL INST_MK(false, 0x0, 0, 0, 0)
+#define INT_INSTVAL  INST_MK(false, 0x1, 0, 0, 0)
 
 regval_t mod_ctl::get_inst() {
     // HARDWARE NOTE: CBIT_IO_WAIT inhibits CBIT_INSTMASK, for obvious reasons,
@@ -84,36 +84,52 @@ void mod_ctl::clock_outputs(uinst_t ui, bus_state &s) {
         s.assign(BUS_B, reg[REG_IP]);
     }
 
+    if((ui & MASK_CTRL_ACTION) == ACTION_GCTRL_USE_ALT) {
+        switch(ui & MASK_GCTRL_MODE) {
+            case GCTRL_ALT_P_IE:
+            case GCTRL_ALT_P_O_CHNMI_OR_I_ALUFG: {
+                break;
+            }
+            case GCTRL_ALT_CREG_FG: {
+                if(GCTRL_CREG_IS_OUTPUT(ui)) {
+                    s.assign(BUS_B, get_reg_fg());
+                }
+                break;
+            }
+            case GCTRL_ALT_CREG_IHPR: {
+                if(GCTRL_CREG_IS_OUTPUT(ui)) {
+                    s.assign(BUS_B, reg[REG_IHP]);
+                }
+                break;
+            }
+            default: throw vm_error("unknown GCTRL ALT mode");
+        }
+    } else {
+        switch(ui & MASK_GCTRL_MODE) {
+            case GCTRL_NRM_IU3_OVERRIDE_O_SELECT_RSP_I__UNUSED:
+            case GCTRL_NRM_NONE: {
+                break;
+            }
+            case GCTRL_NRM_IO_READWRITE: {
+                // The condition `is_gctrl_nrm_io_readwrite()` above actually exactly handles this case.
+                break;
+            }
+            default: throw vm_error("unknown GCTRL NRM mode");
+        }
+    }
+
     switch(ui & MASK_CTRL_ACTION) {
         case ACTION_CTRL_NONE:
         case ACTION_MCTRL_BUSMODE_X: {
             break;
         }
+        case ACTION_GCTRL_USE_ALT: {
+            // This case is handled in the `if` above.
+            break;
+        }
         case ACTION_GCTRL_RIP_BUSA_O: {
             if(!cbits[CBIT_IO_WAIT]) {
                 s.assign(BUS_A, reg[REG_IP]);
-            }
-            break;
-        }
-        case ACTION_GCTRL_CREG_EN: {
-            switch(ui & MASK_GCTRL_CREG) {
-                case GCTRL_CREG_P_IE:
-                case GCTRL_CREG_P_O_CHNMI_OR_I_ALUFG: {
-                    break;
-                }
-                case GCTRL_CREG_FG: {
-                    if(GCTRL_CREG_IS_OUTPUT(ui)) {
-                        s.assign(BUS_B, get_reg_fg());
-                    }
-                    break;
-                }
-                case GCTRL_CREG_IHPR: {
-                    if(GCTRL_CREG_IS_OUTPUT(ui)) {
-                        s.assign(BUS_B, reg[REG_IHP]);
-                    }
-                    break;
-                }
-                default: throw vm_error("unknown GCTRL CREG");
             }
             break;
         }
@@ -134,7 +150,7 @@ void mod_ctl::set_instmask_enabled(uinst_t ui, bool state, bool pint, bool nmi) 
         HARDWARE NOTE: note that we do not just inhibit UC reset, we also do not raise any of the
                        CBITS here.
     */
-    if((ui & MASK_CTRL_COMMAND) == COMMAND_RCTRL_RSP_EARLY_DEC_NOIM) {
+    if((ui & MASK_CTRL_COMMAND) == COMMAND_INHIBIT_JMFT) {
         return;
     }
 
@@ -205,56 +221,50 @@ void mod_ctl::clock_inputs(uinst_t ui, bus_state &s, pic_out_interface &pic) {
     }
 
     // HARDWARE NOTE: As per comment at definition, CBIT_IO_WAIT must be set AFTER it is checked to incrememnt REG_UC.
-    switch(ui & MASK_CTRL_COMMAND) {
-        case COMMAND_NONE:
-        case COMMAND_RCTRL_RSP_EARLY_DEC_NOIM:
-        case COMMAND_RCTRL_RSP_EARLY_INC: {
-            break;
-        }
-        case COMMAND_IO_READWRITE: {
-            cbits[CBIT_IO_WAIT] = true;
-            break;
-        }
-        default: throw vm_error("unknown CTRL_COMMAND");
+    if(is_gctrl_nrm_io_readwrite(ui)) {
+        cbits[CBIT_IO_WAIT] = true;
     }
 
-    switch(ui & MASK_CTRL_ACTION) {
-        case ACTION_CTRL_NONE:
-        case ACTION_MCTRL_BUSMODE_X:
-        case ACTION_GCTRL_RIP_BUSA_O: {
-            break;
-        }
-        case ACTION_GCTRL_CREG_EN: {
-            switch(ui & MASK_GCTRL_CREG) {
-                case GCTRL_CREG_P_IE: {
-                    cbits[CBIT_IE] = (ui & MASK_GCTRL_DIR) == GCTRL_CREG_I;
-                    break;
-                }
-                case GCTRL_CREG_P_O_CHNMI_OR_I_ALUFG: {
-                    if((ui & MASK_GCTRL_DIR) == GCTRL_CREG_O) {
-                        cbits[CBIT_HNMI] = false;
-                    } else {
-                        set_reg_fg_alu(s.read(BUS_B));
-                    }
-                    break;
-                }
-                case GCTRL_CREG_FG: {
-                    if(GCTRL_CREG_IS_INPUT(ui)) {
-                        set_reg_fg_entire(s.read(BUS_B));
-                    }
-                    break;
-                }
-                case GCTRL_CREG_IHPR: {
-                    if(GCTRL_CREG_IS_INPUT(ui)) {
-                        reg[REG_IHP] = s.read(BUS_B);
-                    }
-                    break;
-                }
-                default: throw vm_error("unknown GCTRL CREG");
+    if((ui & MASK_CTRL_ACTION) == ACTION_GCTRL_USE_ALT) {
+        switch(ui & MASK_GCTRL_MODE) {
+            case GCTRL_ALT_P_IE: {
+                cbits[CBIT_IE] = (ui & MASK_GCTRL_DIR) == GCTRL_CREG_I;
+                break;
             }
-            break;
+            case GCTRL_ALT_P_O_CHNMI_OR_I_ALUFG: {
+                if((ui & MASK_GCTRL_DIR) == GCTRL_CREG_O) {
+                    cbits[CBIT_HNMI] = false;
+                } else {
+                    set_reg_fg_alu(s.read(BUS_B));
+                }
+                break;
+            }
+            case GCTRL_ALT_CREG_FG: {
+                if(GCTRL_CREG_IS_INPUT(ui)) {
+                    set_reg_fg_entire(s.read(BUS_B));
+                }
+                break;
+            }
+            case GCTRL_ALT_CREG_IHPR: {
+                if(GCTRL_CREG_IS_INPUT(ui)) {
+                    reg[REG_IHP] = s.read(BUS_B);
+                }
+                break;
+            }
+            default: throw vm_error("unknown GCTRL ALT mode");
         }
-        default: throw vm_error("unknown GCTRL_ACTION");
+    } else {
+        switch(ui & MASK_GCTRL_MODE) {
+            case GCTRL_NRM_IU3_OVERRIDE_O_SELECT_RSP_I__UNUSED:
+            case GCTRL_NRM_NONE: {
+                break;
+            }
+            case GCTRL_NRM_IO_READWRITE: {
+                // The condition `is_gctrl_nrm_io_readwrite()` above actually exactly handles this case.
+                break;
+            }
+            default: throw vm_error("unknown GCTRL NRM mode");
+        }
     }
 
     switch(ui & MASK_GCTRL_FTJM) {

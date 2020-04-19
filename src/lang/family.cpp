@@ -9,6 +9,23 @@ namespace kcpu {
 // alias for a const argument if we want, which I think can save a few uops in a few
 // places.
 
+static void gen_ctl() {
+    reg_family(family("ENTER", {
+        family::mapping("ENTER0", { }),
+        family::mapping("ENTER1", { param_wreg_noconst() }),
+    }));
+
+    reg_family(family("ENTERFR", {
+        family::mapping("ENTERFR1", { param_wreg() }),
+        family::mapping("ENTERFR2", { param_wreg_noconst(), param_wreg() }),
+    }));
+
+    reg_family(family("LEAVE", {
+        family::mapping("LEAVE0", { }),
+        family::mapping("LEAVE1", { param_wreg_noconst() }),
+    }));
+}
+
 static void gen_mem() {
     // FIXME check during registration that there are no potential mapping collisions!
 
@@ -47,6 +64,7 @@ static void gen_alu() {
 }
 
 void internal::register_families() {
+    gen_ctl();
     gen_mem();
     gen_alu();
 }

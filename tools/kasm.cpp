@@ -3,7 +3,7 @@
 #include <fstream>
 #include <fstream>
 
-#include "lib/compiler.hpp"
+#include "lib/binutils.hpp"
 #include "src/lang/arch.hpp"
 
 int main(int argc, char **argv) {

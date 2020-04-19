@@ -5,6 +5,8 @@
     * In the implementation of the byte-store-with-zero instructions
     * During IO instructions which take a few cycles to complete
 
+    - So, if we want we can remove, but I think this is a really bad idea if the design is to have all of these CMOS components passively connected and acting on clocks.
+
 
 
   REMAINING HARDWARE TO SIMULATE:

@@ -190,10 +190,10 @@ void instruction::check_valid() {
             }
         }
 
-        if(uis[i] & MASK_RCTRL_IU3) {
+        if((uis[i] & MASK_RCTRL_IU3) && !(does_override_iu3_via_command(uis[i]) || does_override_iu3_via_gctrl_alt(uis[i]))) {
             if(op.cls == opclass::NO_IU3) {
                 std::stringstream ss;
-                ss << "ucode for instruction " << name << " refers to IU3 but does not declare this in the opcode, at position " << i << "/" << uis.size();
+                ss << "ucode for instruction " << name << " refers to IU3 (without an IU3 override mechanism active) but does not declare this in the opcode, at position " << i << "/" << uis.size();
                 throw ss.str();
             }
         }

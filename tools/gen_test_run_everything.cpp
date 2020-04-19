@@ -37,7 +37,7 @@ int main() {
             manual args.
         */
         "STPFX", "FAR STPFX",
-        "PUSHFG", "POPFG", "X_PUSHFG", "X_POPFG",
+        "PUSHFG", "POPFG", "LFG",
         "HLT", "ABRT",
 
         /*
@@ -46,7 +46,7 @@ int main() {
         */
         "IOR", "IOW",
         "_DO_INT",
-        "CALL", "RET", "IRET", "X_CALL", "X_RET", "X_IRET",
+        "CALL", "RET", "IRET",
         "JMP", "LJMP", "JMP+DI", "JMP+EI",
         "LDJMP", "LDLJMP", "LDJMP+DI", "LDJMP+EI",
         "JC", "JO", "JS", "JZ", "JE", "JL", "JGE",
@@ -79,6 +79,8 @@ int main() {
 
     of_everything << std::endl;
     of_everything << "PUSHFG" << std::endl;
+    of_everything << "LD %rsp %ra" << std::endl;
+    of_everything << "LFG %ra" << std::endl;
     of_everything << "POPFG" << std::endl;
 
     of_everything << std::endl;
