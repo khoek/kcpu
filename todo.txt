@@ -32,10 +32,6 @@
 
   Instruction/ucode design:
 
-    * FLAG-ONLY versions of the ALU insts (we already value-only versions).
-      -> When dealing with constants we can just do the operation on RID, so how much do we need this
-      -> It benefits CMP
-
     * Compress ucode! (should we really do this anymore at this point?)
 
     * MOAR TESTS
