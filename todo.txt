@@ -58,6 +58,8 @@
             ---> It would probably be best to do this after loading and before executing the binary, so that
                  we don't get confused when we are in the middle of a few instructions all part of the same alias.
 
+    * Of course then we can do the same for families.
+
 
   In the VM:
 

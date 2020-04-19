@@ -1,0 +1,56 @@
+
+
+MOV $0x1337 %ra
+MOV $0xDEAD %rb
+MOV $0xF00F %rc
+MOV $0x0FF0 %rd
+MOV $0xD00D %re
+MOV $0x7154 %rbp
+MOV $0xBEEF %rid
+
+PUSHA
+
+MOV $0xFFFF %ra
+MOV $0xFFFF %rb
+MOV $0xFFFF %rc
+MOV $0xFFFF %rd
+MOV $0xFFFF %re
+MOV $0xFFFF %rbp
+MOV $0xFFFF %rid
+
+POPA
+
+# We don't use CMP directly here since RID will be overridden when the constant is loaded.
+PUSH %ra
+MOV %rid %ra
+CMP $0xBEEF %ra
+JNZ fail
+POP %ra
+
+CMP $0xBEEF %rid
+JNZ fail
+
+CMP $0x7154 %rbp
+JNZ fail
+
+CMP $0xD00D %re
+JNZ fail
+
+CMP $0x0FF0 %rd
+JNZ fail
+
+CMP $0xF00F %rc
+JNZ fail
+
+CMP $0xDEAD %rb
+JNZ fail
+
+CMP $0x1337 %ra
+JNZ fail
+
+
+HLT
+
+
+fail:
+    ABRT

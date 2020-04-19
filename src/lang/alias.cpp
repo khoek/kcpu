@@ -18,10 +18,12 @@ static void gen_mem() {
         /********** Don't forget to save RID! **********/
         virtual_instruction(I_PUSHx2, { slot_reg(REG_ID), slot_reg(REG_A ) }),
         virtual_instruction(I_PUSHx2, { slot_reg(REG_B ), slot_reg(REG_C ) }),
-        virtual_instruction(I_PUSHx2, { slot_reg(REG_D ), slot_reg(REG_BP) }),
+        virtual_instruction(I_PUSHx2, { slot_reg(REG_D ), slot_reg(REG_E ) }),
+        virtual_instruction(I_PUSH  , { slot_reg(REG_BP) }),
     }));
     reg_alias(alias("POPA" , ARGS_0, {
-        virtual_instruction(I_POPx2 , { slot_reg(REG_BP), slot_reg(REG_D ) }),
+        virtual_instruction(I_POP   , { slot_reg(REG_BP) }),
+        virtual_instruction(I_POPx2 , { slot_reg(REG_E ), slot_reg(REG_D ) }),
         virtual_instruction(I_POPx2 , { slot_reg(REG_C ), slot_reg(REG_B ) }),
         virtual_instruction(I_POPx2 , { slot_reg(REG_A ), slot_reg(REG_ID) }),
         /********** Don't forget to restore RID! **********/
