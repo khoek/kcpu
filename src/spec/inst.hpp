@@ -17,6 +17,7 @@ namespace kcpu {
 
 #define ITFLAG(bits) ((bits) << ITYPE_SHIFT)
 #define ICFLAG(bits) ((bits) << 0)
+#define ICFLAG_IU3(bits) ((bits) << IU_WIDTH)
 
 #define OC(ic, raw) opclass(((ic) << ITYPE_SHIFT) | (raw))
 #define OCSINGLE_IU3(ic, raw, iu3) opclass_iu3_single(((ic) << ITYPE_SHIFT) | ((raw) << IU_WIDTH) | (iu3), (iu3))
@@ -69,7 +70,8 @@ namespace kcpu {
 #define ITFLAG_MEM_FAR     ITFLAG(0b0001)
 #define ITFLAG_JMP_LD      ITFLAG(0b0001)
 #define ICFLAG_ALU1_NOFGS  ICFLAG(0b1000)
-#define ICFLAG_MEM_IU3_FAR ICFLAG(0b1000)
+#define ICFLAG_MEM_IU3_FAR ICFLAG_IU3(0b1)
+#define ICFLAG_ADD3_IU3_NF ICFLAG_IU3(0b1)
 
 // BEGIN DECLS
 
@@ -149,7 +151,7 @@ namespace kcpu {
 
 // IU3_ALL_GRP1 (2/2)
 #define I_ADD3      OCANY_IU3(IT_IU3_ALL_GRP1, 0b0)
-#define I_ADD3NF    OCANY_IU3(IT_IU3_ALL_GRP1, 0b1)
+#define I_ADD3NF    OCANY_IU3(IT_IU3_ALL_GRP1, 0b1) // REMINDER UNREFERENCED, use I_ADD3 and ICFLAG_ADD3_IU3_NF instead.
 
 // IU3_ALL_GRP2 (2/2)
 #define I_LDWO      OCANY_IU3(IT_IU3_ALL_GRP2, 0b0)
