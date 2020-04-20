@@ -13,8 +13,9 @@ namespace kcpu {
 
 class vm {
     private:
-    uint32_t total_clocks;
-    vm_logger logger;
+    vm_logger &logger;
+    uint64_t total_clocks = 0;
+    uint64_t real_ns_elapsed = 0;
 
     void disassemble_current();
     void print_debug_info(regval_t i, uinst_t ui, bool pint);
@@ -35,10 +36,13 @@ class vm {
     mod_alu alu;
     mod_io  ioc;
 
-    vm(vm_logger logger);
+    vm(vm_logger &logger);
     void dump_registers();
 
-    uint32_t get_total_clocks();
+    uint64_t get_total_clocks();
+    uint64_t get_real_ns_elapsed();
+    double get_effective_MHz_freq();
+
     state get_state();
 
     state ustep();

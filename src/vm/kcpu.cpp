@@ -5,10 +5,18 @@
 
 namespace kcpu {
 
-vm::vm(vm_logger l) : total_clocks(0), logger(l), ctl(logger), reg(logger), mem(logger), alu(logger), ioc(logger, ctl) { }
+vm::vm(vm_logger &logger) : logger(logger), ctl(logger), reg(logger), mem(logger), alu(logger), ioc(logger, ctl) { }
 
-uint32_t vm::get_total_clocks() {
+uint64_t vm::get_total_clocks() {
     return total_clocks;
+}
+
+uint64_t vm::get_real_ns_elapsed() {
+    return real_ns_elapsed;
+}
+
+double vm::get_effective_MHz_freq() {
+    return (((double) total_clocks) * 1000.0) / ((double) real_ns_elapsed);
 }
 
 vm::state vm::get_state() {
@@ -58,6 +66,8 @@ void vm::print_debug_info(regval_t i, uinst_t ui, bool pint) {
 }
 
 vm::state vm::ustep() {
+    auto then = std::chrono::high_resolution_clock::now();
+
     total_clocks++;
 
     if(ctl.cbits[CBIT_HALTED]) {
@@ -96,6 +106,10 @@ vm::state vm::ustep() {
     reg.clock_inputs(ui, state, i);
     alu.clock_inputs(ui, state);
     ctl.clock_inputs(ui, state, ioc.get_pic());
+
+    auto now = std::chrono::high_resolution_clock::now();
+
+    real_ns_elapsed += std::chrono::duration_cast<std::chrono::nanoseconds>(now - then).count();
 
     return get_state();
 }

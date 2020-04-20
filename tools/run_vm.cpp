@@ -35,7 +35,8 @@ int main(int argc, char **argv) {
 
     graphics::get_graphics().configure(headless);
 
-    kcpu::vm cpu(kcpu::vm_logger{disasm_mode, verbose, verbose});
+    kcpu::vm_logger logger(disasm_mode, verbose, verbose);
+    kcpu::vm cpu(logger);
     load_binary("BIOS", args[0], BIOS_SIZE, cpu.mem.bios.data());
     load_binary("PROG", args[1], PROG_SIZE, cpu.mem.prog.data());
 
@@ -68,7 +69,12 @@ int main(int argc, char **argv) {
         }
     } while(cpu.get_state() == kcpu::vm::state::RUNNING);
 
-    printf("CPU %s, %d uinstructions executed\n", cpu.get_state() == kcpu::vm::state::HALTED ? "Halted" : "Aborted", cpu.get_total_clocks());
+    printf("CPU %s, %ld uinstructions executed taking %ldms (%lfMHz)\n",
+        cpu.get_state() == kcpu::vm::state::HALTED ? "Halted" : "Aborted",
+        cpu.get_total_clocks(),
+        cpu.get_real_ns_elapsed() / 1000 / 1000,
+        cpu.get_effective_MHz_freq()
+    );
 
     return 0;
 }

@@ -6,7 +6,7 @@
 #include "src/vm/kcpu.hpp"
 
 #define PADDING_WIDTH 20
-#define MAX_USTEPS 5000000
+#define MAX_USTEPS 500000000
 
 static std::filesystem::path suite_path("test");
 
@@ -36,7 +36,9 @@ static std::string colour_str(std::string s, bool good) {
 }
 
 static bool run_test(bool verbose, uint32_t num, const std::filesystem::path path) {
-    kcpu::vm cpu(kcpu::vm_logger {verbose});
+    kcpu::vm_logger logger(verbose);
+    kcpu::vm cpu(logger);
+
     load_binary_maybedefault("BIOS", path, "bios.bin", BIOS_SIZE, cpu.mem.bios.data());
     load_binary_maybedefault("PROG", path, "prog.bin", PROG_SIZE, cpu.mem.prog.data());
 
@@ -46,11 +48,14 @@ static bool run_test(bool verbose, uint32_t num, const std::filesystem::path pat
 
         if(verbose) printf("\nCPU Start\n");
         kcpu::vm::state s = cpu.run(MAX_USTEPS);
-        if(verbose) printf("\nCPU %s, %d uinstructions executed\n", cpu.get_state() == kcpu::vm::state::HALTED ? "Halted" : "Aborted", cpu.get_total_clocks());
+        if(verbose) printf("\nCPU %s, %ld uinstructions executed taking %ldms\n", cpu.get_state() == kcpu::vm::state::HALTED ? "Halted" : "Aborted", cpu.get_total_clocks(), cpu.get_real_ns_elapsed() / 1000 / 1000);
 
         switch(s) {
             case kcpu::vm::state::HALTED: {
-                std::cout << colour_str("PASS", true) << "  @" << std::setfill(' ') << std::setw(8) << cpu.get_total_clocks()
+                std::cout << colour_str("PASS", true)
+                          << "  @" << std::setfill(' ') << std::setw(9) << cpu.get_total_clocks()
+                          <<  "  " << std::setfill(' ') << std::setw(4) << (cpu.get_real_ns_elapsed() / 1000 / 1000) << "ms"
+                          <<  "  (" << std::setfill(' ') << std::setprecision(2) << std::fixed << std::showpoint << std::setw(4) << cpu.get_effective_MHz_freq() << "MhZ)"
                           << std::setw(0) << std::setfill(' ') << std::endl;
                 return true;
             }
@@ -97,7 +102,7 @@ int main(int argc, char **argv) {
 
     graphics::get_graphics().configure(headless);
 
-    std::cout << "--------------------------------------------" << std::endl;
+    std::cout << "--------------------------------------------------------------" << std::endl;
 
     std::vector<std::filesystem::path> tests;
     for(const auto & entry : std::filesystem::directory_iterator(suite_path)) {
@@ -118,7 +123,7 @@ int main(int argc, char **argv) {
         }
     }
 
-    std::cout << "--------------------------------------------" << std::endl;
+    std::cout << "--------------------------------------------------------------" << std::endl;
     std::cout << "Test Suite Result: " << colour_str(((tests.size() == passes) ? "SUCCESS" : "FAILED"), tests.size() == passes)
               << ", " << passes << "/" << tests.size() << " passes" << std::endl;
 
