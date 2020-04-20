@@ -48,7 +48,7 @@ void diasm(regval_t ir, uinst_t ui) {
 
     printf("disasm: %04X(%04X:%01X:%01X) " UINST_FMT "\n\n", ir, i, INST_GET_IU1(ir), INST_GET_IU2(ir), ui);
 
-    // FIXME This is not up to date with everything
+    // FIXME This is super old now
 
     // GCTRL
     check_option(ui, MASK_GCTRL_FTJM, GCTRL_FT_NONE,         "FT_NONE");
