@@ -1,3 +1,5 @@
+#include <iostream>
+
 #include "lib/binutils.hpp"
 #include "src/lang/arch.hpp"
 #include "src/spec/ucode.hpp"
@@ -40,7 +42,7 @@ int main(int argc, char **argv) {
     load_binary("BIOS", args[0], BIOS_SIZE, cpu.mem.bios.data());
     load_binary("PROG", args[1], PROG_SIZE, cpu.mem.prog.data());
 
-    printf("CPU Start\n");
+    std::cout << "CPU Start" << std::endl;
 
     do {
         kcpu::vm::state s = step_mode ? cpu.step() : cpu.run();
@@ -53,28 +55,25 @@ int main(int argc, char **argv) {
         }
 
         if(s == kcpu::vm::state::ABORTED) {
-            printf("CPU Aborted, continue(y)? ");
+            std::cout << "CPU Aborted, continue(y)? ";
 
             char c;
             std::cin >> std::noskipws >> c;
             if(c == 'n' || c == 'N') {
-                printf("Stopping...\n");
+                std::cout << "Stopping..." << std::endl;
 
                 cpu.dump_registers();
                 break;
             }
 
-            printf("Continuing...\n");
+            std::cout << "Continuing..." << std::endl;
             cpu.resume();
         }
     } while(cpu.get_state() == kcpu::vm::state::RUNNING);
 
-    printf("CPU %s, %ld uinstructions executed taking %ldms (%lfMHz)\n",
-        cpu.get_state() == kcpu::vm::state::HALTED ? "Halted" : "Aborted",
-        cpu.get_total_clocks(),
-        cpu.get_real_ns_elapsed() / 1000 / 1000,
-        cpu.get_effective_MHz_freq()
-    );
+    std::cout << std::endl << "CPU " << (cpu.get_state() == kcpu::vm::state::HALTED ? "Halted" : "Aborted")
+              << ", " << cpu.get_total_clocks() << " uinstructions executed taking "
+              << (cpu.get_real_ns_elapsed() / 1000 / 1000) << "ms" << std::endl;
 
     return 0;
 }

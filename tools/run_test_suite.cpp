@@ -45,10 +45,17 @@ static bool run_test(bool verbose, uint32_t num, const std::filesystem::path pat
     try {
         std::cout << "Test " << std::setw(2) << num << std::left << std::setw(PADDING_WIDTH) << ": '" + path.filename().string() + "' "
                   << std::right << std::setw(0);
+        if(verbose) {
+            std::cout << std::endl << "CPU Start" << std::endl;
+        }
 
-        if(verbose) printf("\nCPU Start\n");
         kcpu::vm::state s = cpu.run(MAX_USTEPS);
-        if(verbose) printf("\nCPU %s, %ld uinstructions executed taking %ldms\n", cpu.get_state() == kcpu::vm::state::HALTED ? "Halted" : "Aborted", cpu.get_total_clocks(), cpu.get_real_ns_elapsed() / 1000 / 1000);
+
+        if(verbose) {
+            std::cout << std::endl << "CPU " << (cpu.get_state() == kcpu::vm::state::HALTED ? "Halted" : "Aborted")
+                      << ", " << cpu.get_total_clocks() << " uinstructions executed taking "
+                      << (cpu.get_real_ns_elapsed() / 1000 / 1000) << "ms" << std::endl;
+        }
 
         switch(s) {
             case kcpu::vm::state::HALTED: {
