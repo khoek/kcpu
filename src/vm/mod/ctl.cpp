@@ -336,7 +336,7 @@ void mod_ctl::offclock_pulse(bool io_done) {
     if(io_done || !cbits[CBIT_IO_WAIT]) {
         uinst_latch_val = arch::self().ucode_read(get_inst(), reg[REG_UC]);
         if(logger.dump_bus) {
-            logger.logf("uinst latch <- 0x%X@0x%lX\n", get_inst(), uinst_latch_val);
+            logger.logf("uinst latch <- 0x%X@" UINST_FMT "\n", get_inst(), uinst_latch_val);
         }
     }
 }

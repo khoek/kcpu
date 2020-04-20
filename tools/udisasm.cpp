@@ -46,7 +46,7 @@ void gap() {
 void diasm(regval_t ir, uinst_t ui) {
     regval_t i = ir >> 6;
 
-    printf("disasm: %04X(%04X:%01X:%01X) %04lX\n\n", ir, i, INST_GET_IU1(ir), INST_GET_IU2(ir), ui);
+    printf("disasm: %04X(%04X:%01X:%01X) " UINST_FMT "\n\n", ir, i, INST_GET_IU1(ir), INST_GET_IU2(ir), ui);
 
     // FIXME This is not up to date with everything
 

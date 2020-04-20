@@ -5,7 +5,8 @@
 
 namespace kcpu {
 
-#define UCODE_BITS ((sizeof(uinst_t) / sizeof(uint8_t)) * 8)
+#define UCODE_TYPE_BITS ((sizeof(uinst_t) / sizeof(uint8_t)) * 8)
+#define UCODE_MAX_BITS 32
 
 // BEGIN DECLS
 
@@ -253,7 +254,8 @@ static bool does_override_iu3_via_gctrl_alt(uinst_t ui) {
 // every uinst in which they should be disabled).
 #define MASK_I_INVERT (0)
 
-static_assert(UCODE_END <= UCODE_BITS, "The UCODE is too long!");
+static_assert(UCODE_END <= UCODE_TYPE_BITS, "The UCODE is too long!");
+static_assert(UCODE_END <= UCODE_MAX_BITS, "The UCODE is too long!");
 
 }
 

@@ -49,7 +49,7 @@ void vm::print_debug_info(regval_t i, uinst_t ui, bool pint) {
     }
 
     if(logger.dump_bus) {
-        logger.logf("IP/UC @ I/UI: 0x%04X/0x%04X @ 0x%04X/0x%04lX %s\n", ctl.reg[REG_IP], ctl.reg[REG_UC], i, ui, pint ? "(PINT)" : "");
+        logger.logf("IP/UC @ I/UI: 0x%04X/0x%04X @ 0x%04X/" UINST_FMT " %s\n", ctl.reg[REG_IP], ctl.reg[REG_UC], i, ui, pint ? "(PINT)" : "");
     }
 
     if(logger.dump_registers) {
