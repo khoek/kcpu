@@ -1,13 +1,15 @@
 CXX ?= g++
-AR := gcc-ar
+AR ?= ar
 
-LTOFLAGS ?= -flto=jobserver -fno-fat-lto-objects
+CXXLTOFLAGS ?= -flto=jobserver -fno-fat-lto-objects
+ARLTOFLAGS ?=
 SDLFLAGS ?= -DENABLE_SDL_GRAPHICS -D_REENTRANT -I/usr/include/SDL2
 SDLLIBS ?= -lSDL2
 
-CXXFLAGS ?= -std=c++17 -rdynamic -O3 $(LTOFLAGS) $(SDLFLAGS)
-TOOLFLAGS ?= -I.
-EXTRALIBS ?= $(SDLLIBS) -pthread
+CXXFLAGS := -std=c++17 -rdynamic -O3 $(CXXLTOFLAGS) $(SDLFLAGS)
+ARFLAGS := $(ARLTOFLAGS)
+TOOLFLAGS := -I.
+EXTRALIBS := $(SDLLIBS) -pthread
 
 .PHONY: all clean cloc run run-step run-quiet test test-noninteractive dump
 
@@ -90,8 +92,8 @@ $(TOOLBINS): bin/%: tools/%.cpp $(HDRS) $(LIB) $(TOOLLIB) Makefile
 
 $(LIB): $(OBJS) Makefile
 	mkdir -p bin/lib
-	$(AR) rvs $(LIB) $(OBJS)
+	$(AR) $(ARLTOFLAGS) rvs $(LIB) $(OBJS)
 
 $(TOOLLIB): $(TOOLLIBOBJS) Makefile
 	mkdir -p bin/lib
-	$(AR) rvs $(TOOLLIB) $(TOOLLIBOBJS)
+	$(AR) $(ARFLAGS) rvs $(TOOLLIB) $(TOOLLIBOBJS)
