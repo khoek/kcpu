@@ -46,14 +46,20 @@ jobs:
           echo "::set-env name=CC::gcc-${{ matrix.version }}"
           echo "::set-env name=CXX::g++-${{ matrix.version }}"
           echo "::set-env name=AR::gcc-ar-${{ matrix.version }}"
+        
+          echo "::set-env name=CXXLTOFLAGS::-flto=jobserver -fno-fat-lto-objects"
+          echo "::set-env name=ARLTOFLAGS::"
+          echo "::set-env name=SDLFLAGS::"
+          echo "::set-env name=SDLLIBS::"
         else
           echo "::set-env name=CC::clang-${{ matrix.version }}"
           echo "::set-env name=CXX::clang++-${{ matrix.version }}"
-        fi
         
-        echo "::set-env name=LTOFLAGS::"
-        echo "::set-env name=SDLFLAGS::"
-        echo "::set-env name=SDLLIBS::"
+          echo "::set-env name=CXXLTOFLAGS::-fuse-ld=lld -flto"
+          echo "::set-env name=ARLTOFLAGS::"
+          echo "::set-env name=SDLFLAGS::"
+          echo "::set-env name=SDLLIBS::"
+        fi
 
     - name: prepare tools (macOS)
       if: runner.os == 'macOS'
@@ -62,7 +68,8 @@ jobs:
         echo "::set-env name=AR::gcc-ar-${{ matrix.version }}"
         echo "::set-env name=CXX::g++-${{ matrix.version }}"
         
-        echo "::set-env name=LTOFLAGS::"
+        echo "::set-env name=CXXLTOFLAGS::-fuse-linker-plugin -flto=jobserver -fno-fat-lto-objects"
+        echo "::set-env name=ARLTOFLAGS::"
         echo "::set-env name=SDLFLAGS::"
         echo "::set-env name=SDLLIBS::"
 
