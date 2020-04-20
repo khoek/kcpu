@@ -2,7 +2,7 @@
 
 An assembler and hardware-simulating virtual machine for my CPU architecture `kCPU`.
 
-It exists to test the robustness of the design of the electrical hardware (over at [khoek/komputer](https://github.com/khoek/komputer)), simulating buses (detecting collisions, etc.) and different hardware modules, so a much faster soft-implementation is possible.
+It exists to test the robustness of the design of the electrical hardware (over at [khoek/komputer](https://github.com/khoek/komputer)), simulating buses (detecting collisions, etc.) and different hardware modules, so a much faster soft-implementation is possible. Rough tests show that the VM is about ~475x slower than bare metal, which given a 4.8GHz simulating CPU ends up about 5x faster than the planned hardware clock speed of 2MHz.
 
 ## Compiling and Testing
 
