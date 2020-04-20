@@ -49,7 +49,7 @@ clean:
 	rm -rf bin
 
 cloc:
-	cloc --read-lang-def=.cloc_lang_def.txt src asm test tools
+	cloc --read-lang-def=.cloc_lang_def.txt .
 
 run: $(SANDBOXKASMOBJS) $(TOOLBINS)
 	bin/run_vm -d $(SANDBOXARGS)
