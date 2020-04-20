@@ -39,18 +39,20 @@ class pic : public pic_interface, public single_port_io_device {
     regval_t get_next_pending_bit(bool expect_nonzero, bool nmi_only);
 
     vm_logger &logger;
+    ctl_out_interface &ctl;
 
     public:
-    pic(vm_logger &logger);
+    pic(vm_logger &logger, ctl_out_interface &ctl);
     void dump_registers();
 
     bool is_pint_active() override;
     bool is_pnmi_active() override;
     void assert(regval_t bit) override;
-    void handle_aint(bool aint) override;
 
     std::pair<regval_t, halfcycle_count_t> read() override;
     halfcycle_count_t write(regval_t val) override;
+
+    void process_halfcycle(bool offclock) override;
 };
 
 }

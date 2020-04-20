@@ -19,7 +19,7 @@ CALL test_port
 SUB $4 %rsp
 
 PUSH $0xF4
-PUSH $0xD00D
+PUSH $0xD10D
 CALL test_port
 SUB $4 %rsp
 

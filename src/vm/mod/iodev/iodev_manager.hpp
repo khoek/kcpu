@@ -53,7 +53,7 @@ class io_device_manager {
     void after_clock_outputs_none();
     void after_clock_outputs_read();
     void after_clock_outputs_write();
-    void process_halfcycle(pic_in_interface &pic, bool offclock);
+    void process_halfcycle(bool offclock);
 };
 
 }

@@ -12,7 +12,7 @@ test_read:
     LIHP int_norm
     MOV $0x0008 %rb
     MOV $0x8020 %rbp
-    MOV $0xD0 %rc
+    MOV $0xD1 %rc
 
     # begin time critical section
 

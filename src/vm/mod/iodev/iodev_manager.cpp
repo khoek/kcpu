@@ -150,9 +150,9 @@ void io_device_manager::after_clock_outputs_write() {
     }
 }
 
-void io_device_manager::process_halfcycle(pic_in_interface &pic, bool offclock) {
+void io_device_manager::process_halfcycle(bool offclock) {
     for(auto dev : devices) {
-        dev.get().process_halfcycle(pic, offclock);
+        dev.get().process_halfcycle(offclock);
     }
 
     switch(state) {

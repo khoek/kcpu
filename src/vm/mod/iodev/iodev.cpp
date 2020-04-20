@@ -3,7 +3,7 @@
 
 namespace kcpu {
 
-void io_device::process_halfcycle(pic_in_interface &pic, bool offclock) {
+void io_device::process_halfcycle(bool offclock) {
 }
 
 single_port_io_device::single_port_io_device(regval_t port) : port(port) {

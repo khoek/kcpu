@@ -5,7 +5,7 @@
 
 namespace kcpu {
 
-vm::vm(vm_logger l) : total_clocks(0), logger(l), ctl(logger), reg(logger), mem(logger), alu(logger), ioc(logger) { }
+vm::vm(vm_logger l) : total_clocks(0), logger(l), ctl(logger), reg(logger), mem(logger), alu(logger), ioc(logger, ctl) { }
 
 uint32_t vm::get_total_clocks() {
     return total_clocks;
@@ -96,9 +96,6 @@ vm::state vm::ustep() {
     reg.clock_inputs(ui, state, i);
     alu.clock_inputs(ui, state);
     ctl.clock_inputs(ui, state, ioc.get_pic());
-
-    // This is a bit of a hack since the PIC handles aint asynchronously (at least I think that is how it will be implemented)
-    ioc.get_pic().handle_aint(ctl.is_aint_active());
 
     return get_state();
 }

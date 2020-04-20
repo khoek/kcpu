@@ -13,7 +13,7 @@ MOV $0xDEAD %ra
 test_read:
     LIHP int_success
     MOV $5 %rb
-    MOV $0x00D0 %rc
+    MOV $0xD1 %rc
     MOV $0xF4 %rd
 
     # begin time critical section
@@ -35,7 +35,7 @@ test_write:
     LIHP int_success
     MOV $0x1337 %ra
     MOV $5 %rb
-    MOV $0x00D0 %rc
+    MOV $0xD1 %rc
     MOV $0xF4 %rd
 
     # begin time critical section

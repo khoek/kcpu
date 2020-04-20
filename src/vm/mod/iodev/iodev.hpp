@@ -3,6 +3,7 @@
 
 #include <vector>
 #include "../../common.hpp"
+#include "../interface/ctl.hpp"
 #include "../interface/pic.hpp"
 
 // This class is not a module. It just simulates external IO device hardware
@@ -18,7 +19,7 @@ class io_device {
     virtual std::pair<regval_t, halfcycle_count_t> read(regval_t port) = 0;
     virtual halfcycle_count_t write(regval_t port, regval_t val) = 0;
 
-    virtual void process_halfcycle(pic_in_interface &pic, bool offclock);
+    virtual void process_halfcycle(bool offclock);
 };
 
 class single_port_io_device : public io_device {

@@ -4,7 +4,9 @@
 
 namespace kcpu {
 
-mod_io::mod_io(vm_logger &logger) : logger(logger), iodev_manager(logger), id_probe(iodev_manager.get_ports()), id_pic(logger) {
+mod_io::mod_io(vm_logger &logger, ctl_out_interface &ctl) : logger(logger), iodev_manager(logger),
+        id_probe(iodev_manager.get_ports()), id_pic(logger, ctl),
+        id_jumpers(ctl, id_pic), id_slow_ints(id_pic) {
     iodev_manager.register_iodev(id_probe);
     iodev_manager.register_iodev(id_pic);
 
@@ -17,6 +19,7 @@ mod_io::mod_io(vm_logger &logger) : logger(logger), iodev_manager(logger), id_pr
     // devices.push_back(<a serial thing? :D>); (this one would be disabled by default.)
 
     iodev_manager.register_iodev(id_slow_registers);
+    iodev_manager.register_iodev(id_jumpers);
     iodev_manager.register_iodev(id_slow_ints);
 }
 
@@ -55,7 +58,7 @@ void mod_io::clock_outputs(uinst_t ui, bus_state &s) {
         }
     }
 
-    iodev_manager.process_halfcycle(id_pic, false);
+    iodev_manager.process_halfcycle(false);
 
     if(is_gctrl_nrm_io_readwrite(ui)) {
         if((ui & MASK_GCTRL_DIR) == GCTRL_CREG_I) {
@@ -75,7 +78,7 @@ void mod_io::clock_inputs(uinst_t ui, bus_state &s) {
 }
 
 void mod_io::offclock_pulse() {
-    iodev_manager.process_halfcycle(id_pic, true);
+    iodev_manager.process_halfcycle(true);
 }
 
 }

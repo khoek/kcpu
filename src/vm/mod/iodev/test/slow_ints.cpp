@@ -2,7 +2,7 @@
 
 namespace kcpu::iodev {
 
-slow_ints::slow_ints() : single_port_io_device(PORT_BASE) {
+slow_ints::slow_ints(pic_in_interface &pic) : single_port_io_device(PORT_BASE), pic(pic) {
 }
 
 std::pair<regval_t, halfcycle_count_t> slow_ints::read() {
@@ -21,7 +21,7 @@ halfcycle_count_t slow_ints::write(regval_t val) {
     return 0;
 }
 
-void slow_ints::single_count_process_halfcycle(pic_in_interface &pic, int count_num, int int_num) {
+void slow_ints::single_count_process_halfcycle(int count_num, int int_num) {
     if(!count[count_num]) {
         return;
     }
@@ -33,9 +33,9 @@ void slow_ints::single_count_process_halfcycle(pic_in_interface &pic, int count_
     }
 }
 
-void slow_ints::process_halfcycle(pic_in_interface &pic, bool offclock) {
-    single_count_process_halfcycle(pic, 0, INT_NUM);
-    single_count_process_halfcycle(pic, 1, NMI_NUM);
+void slow_ints::process_halfcycle(bool offclock) {
+    single_count_process_halfcycle(0, INT_NUM);
+    single_count_process_halfcycle(1, NMI_NUM);
 }
 
 }

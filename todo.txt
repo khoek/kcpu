@@ -12,8 +12,17 @@
   REMAINING HARDWARE TO SIMULATE:
 
 
+    WHY DOESN'T FLAG_TUI2NMI infinite loop NOPs?
 
 
+    * Add a "DEBUG" iodev which managers various jumpers. If a particular jumper is set DURING AN OFFCLOCK PULSE we check ctl.is_tui_active()
+      and if so we set the NMI pending in the PIC. THis implements the method described below.
+
+      Add a test! to check that with the jumper flag constantly enabled, the processor always makes forward progress exactly on instruction at a time,
+      before the NMI.
+
+
+      (We could make the BIOS write enable jumper a bit in this io register as well if we want. (and add a test for being able to write to bios memory))
 
 
     * A jumper/soft flag to issue an NMI after every instruction? (so we can have debugging (over serial?) in the real thing!)

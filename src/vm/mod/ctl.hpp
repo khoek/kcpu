@@ -2,6 +2,7 @@
 #define VM_MOD_CTL_H
 
 #include "../common.hpp"
+#include "interface/ctl.hpp"
 #include "interface/pic.hpp"
 
 namespace kcpu {
@@ -77,7 +78,7 @@ HARDWARE NOTE: ACTUALLY, THIS HAS CHANGED A BIT, SEE IMPLEMENTATION of `set_inst
 
 #define FG_CBIT_IE (1 << 8)
 
-class mod_ctl {
+class mod_ctl : public ctl_out_interface {
     private:
     vm_logger &logger;
 
@@ -100,7 +101,16 @@ class mod_ctl {
 
     regval_t get_inst();
     uinst_t get_uinst();
-    bool is_aint_active();
+    bool is_aint_active() override;
+    /*
+        "True uinstruction". True on the falling edge before
+        a clock where a uinst which is part of a "true instruction",
+        i.e. not an instruction fetch or interrupt handling.
+
+        HARDWARE NOTE: This signal should only be inspected when
+        the clock is going LOW.
+    */
+    bool is_tui_active() override;
 
     void clock_outputs(uinst_t ui, bus_state &s);
     void clock_inputs(uinst_t ui, bus_state &s, pic_out_interface &pic);

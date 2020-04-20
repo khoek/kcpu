@@ -21,7 +21,7 @@ try_wait_for_int:
     ST data.had_int %ra
 
     LIHP int_success
-    IOW $0x00D0 %rc
+    IOW $0xD1 %rc
 
     NOP
     NOP

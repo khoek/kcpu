@@ -62,6 +62,18 @@ bool mod_ctl::is_aint_active() {
     return /* cbits[CBIT_INSTMASK] && */ cbits[CBIT_INT_ENTER];
 }
 
+/*
+    "True uinstruction". True on the falling edge before
+    a clock where a uinst which is part of a "true instruction",
+    i.e. not an instruction fetch or interrupt handling.
+
+    HARDWARE NOTE: This signal should only be inspected when
+    the clock is going LOW.
+*/
+bool mod_ctl::is_tui_active() {
+    return !cbits[CBIT_HNMI] && !cbits[CBIT_INSTMASK];
+}
+
 regval_t mod_ctl::get_reg_fg() {
     return (reg[REG_FG_RAW] & 0x00FF) | (cbits[CBIT_IE] ? FG_CBIT_IE : 0);
 }

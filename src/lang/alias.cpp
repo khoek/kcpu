@@ -4,7 +4,14 @@
 
 namespace kcpu {
 
-#define reg_alias arch::self().reg_alias
+static void reg_alias(alias a) {
+    arch::self().reg_alias(a);
+}
+
+/*
+    IMPORTANT NOTE: If we re-add aliases which share REG_ID between multiple instructions,
+    we need to save/restore it in PUSHA/POPA.
+*/
 
 static void gen_ctl() {
     // The usual versions of ENTER[FR]/LEAVE which use RBP as the base pointer.
@@ -15,18 +22,14 @@ static void gen_ctl() {
 
 static void gen_mem() {
     reg_alias(alias("PUSHA" , ARGS_0, {
-        /********** Don't forget to save RID! **********/
-        virtual_instruction(I_PUSHx2, { slot_reg(REG_ID), slot_reg(REG_A ) }),
-        virtual_instruction(I_PUSHx2, { slot_reg(REG_B ), slot_reg(REG_C ) }),
-        virtual_instruction(I_PUSHx2, { slot_reg(REG_D ), slot_reg(REG_E ) }),
-        virtual_instruction(I_PUSH  , { slot_reg(REG_BP) }),
+        virtual_instruction(I_PUSHx2, { slot_reg(REG_A ), slot_reg(REG_B ) }),
+        virtual_instruction(I_PUSHx2, { slot_reg(REG_C ), slot_reg(REG_D ) }),
+        virtual_instruction(I_PUSHx2, { slot_reg(REG_E ), slot_reg(REG_BP) }),
     }));
     reg_alias(alias("POPA" , ARGS_0, {
-        virtual_instruction(I_POP   , { slot_reg(REG_BP) }),
-        virtual_instruction(I_POPx2 , { slot_reg(REG_E ), slot_reg(REG_D ) }),
-        virtual_instruction(I_POPx2 , { slot_reg(REG_C ), slot_reg(REG_B ) }),
-        virtual_instruction(I_POPx2 , { slot_reg(REG_A ), slot_reg(REG_ID) }),
-        /********** Don't forget to restore RID! **********/
+        virtual_instruction(I_POPx2 , { slot_reg(REG_BP), slot_reg(REG_E ) }),
+        virtual_instruction(I_POPx2 , { slot_reg(REG_D ), slot_reg(REG_C ) }),
+        virtual_instruction(I_POPx2 , { slot_reg(REG_B ), slot_reg(REG_A ) }),
     }));
 }
 
