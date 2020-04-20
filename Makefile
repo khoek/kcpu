@@ -92,8 +92,8 @@ $(TOOLBINS): bin/%: tools/%.cpp $(HDRS) $(LIB) $(TOOLLIB) Makefile
 
 $(LIB): $(OBJS) Makefile
 	mkdir -p bin/lib
-	$(AR) $(ARLTOFLAGS) rvs $(LIB) $(OBJS)
+	$(AR) $(ARLTOFLAGS) rvcs $(LIB) $(OBJS)
 
 $(TOOLLIB): $(TOOLLIBOBJS) Makefile
 	mkdir -p bin/lib
-	$(AR) $(ARFLAGS) rvs $(TOOLLIB) $(TOOLLIBOBJS)
+	$(AR) $(ARFLAGS) rvcs $(TOOLLIB) $(TOOLLIBOBJS)
