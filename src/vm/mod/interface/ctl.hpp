@@ -9,7 +9,7 @@ class ctl_out_interface {
     public:
     virtual bool is_aint_active() = 0;
     /*
-        "True uinstruction". True on the falling edge before
+        "True uinstruction". High on the falling edge before
         a clock where a uinst which is part of a "true instruction",
         i.e. not an instruction fetch or interrupt handling.
 
