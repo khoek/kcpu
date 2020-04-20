@@ -1,6 +1,7 @@
 CXX ?= g++
+AR := gcc-ar
 
-CXXFLAGS ?= -std=c++17 -rdynamic -O3 -DENABLE_SDL_GRAPHICS -D_REENTRANT -I/usr/include/SDL2
+CXXFLAGS ?= -std=c++17 -rdynamic -O3 -flto=jobserver -fno-fat-lto-objects -DENABLE_SDL_GRAPHICS -D_REENTRANT -I/usr/include/SDL2
 TOOLFLAGS ?= -I.
 EXTRALIBS ?= -lSDL2 -pthread
 
@@ -75,18 +76,18 @@ $(KASMOBJS): %.bin: %.kasm ./bin/kasm
 	bin/kasm $< $@
 
 $(OBJS): %.o: %.cpp $(HDRS) Makefile
-	$(CXX) $(CXXFLAGS) -c $< -o $@
+	+$(CXX) $(CXXFLAGS) -c $< -o $@
 
 $(TOOLLIBOBJS): %.o: %.cpp $(HDRS) $(TOOLLIBHDRS) Makefile
-	$(CXX) $(CXXFLAGS) $(TOOLFLAGS) -c -o $@ $<
+	+$(CXX) $(CXXFLAGS) $(TOOLFLAGS) -c -o $@ $<
 
 $(TOOLBINS): bin/%: tools/%.cpp $(HDRS) $(LIB) $(TOOLLIB) Makefile
-	$(CXX) $(TOOLFLAGS) $(CXXFLAGS) -o $@ $< $(TOOLLIB) $(LIB) $(EXTRALIBS)
+	+$(CXX) $(CXXFLAGS) $(TOOLFLAGS) -o $@ $< $(TOOLLIB) $(LIB) $(EXTRALIBS)
 
 $(LIB): $(OBJS) Makefile
 	mkdir -p bin/lib
-	ar rvs $(LIB) $(OBJS)
+	$(AR) rvs $(LIB) $(OBJS)
 
 $(TOOLLIB): $(TOOLLIBOBJS) Makefile
 	mkdir -p bin/lib
-	ar rvs $(TOOLLIB) $(TOOLLIBOBJS)
+	$(AR) rvs $(TOOLLIB) $(TOOLLIBOBJS)
