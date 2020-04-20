@@ -6,6 +6,7 @@ MOV $0xF00F %rc
 MOV $0x0FF0 %rd
 MOV $0xD10D %re
 MOV $0x7154 %rbp
+# RID has to come last
 MOV $0xBEEF %rid
 
 PUSHA
