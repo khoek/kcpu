@@ -62,6 +62,7 @@ static bool run_test(bool verbose, uint32_t num, const std::filesystem::path pat
                 std::cout << colour_str("FAIL, DETERMINISTIC TIMEOUT", false) << std::endl;
                 return false;
             }
+            default: break;
         }
     } catch(kcpu::vm_error &e) {
         std::cout << colour_str("FAIL, EXCEPTION", false) << ": " << e.what() << std::endl;
