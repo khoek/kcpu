@@ -51,8 +51,9 @@ jobs:
           echo "::set-env name=CXX::clang++-${{ matrix.version }}"
         fi
         
-        echo "::set-env name=CXXFLAGS::-std=c++17 -rdynamic -O3"
-        echo "::set-env name=EXTRALIBS::-pthread"
+        echo "::set-env name=LTOFLAGS::"
+        echo "::set-env name=SDLFLAGS::"
+        echo "::set-env name=SDLLIBS::"
 
     - name: prepare tools (macOS)
       if: runner.os == 'macOS'
@@ -61,8 +62,9 @@ jobs:
         echo "::set-env name=AR::gcc-ar-${{ matrix.version }}"
         echo "::set-env name=CXX::g++-${{ matrix.version }}"
         
-        echo "::set-env name=CXXFLAGS::-std=c++17 -rdynamic -O3"
-        echo "::set-env name=EXTRALIBS::-pthread"
+        echo "::set-env name=LTOFLAGS::"
+        echo "::set-env name=SDLFLAGS::"
+        echo "::set-env name=SDLLIBS::"
 
     - name: make
       run: make

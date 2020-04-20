@@ -1,9 +1,13 @@
 CXX ?= g++
 AR := gcc-ar
 
-CXXFLAGS ?= -std=c++17 -rdynamic -O3 -flto=jobserver -fno-fat-lto-objects -DENABLE_SDL_GRAPHICS -D_REENTRANT -I/usr/include/SDL2
+LTOFLAGS ?= -flto=jobserver -fno-fat-lto-objects
+SDLFLAGS ?= -DENABLE_SDL_GRAPHICS -D_REENTRANT -I/usr/include/SDL2
+SDLLIBS ?= -lSDL2
+
+CXXFLAGS ?= -std=c++17 -rdynamic -O3 $(LTOFLAGS) $(SDLFLAGS)
 TOOLFLAGS ?= -I.
-EXTRALIBS ?= -lSDL2 -pthread
+EXTRALIBS ?= $(SDLLIBS) -pthread
 
 .PHONY: all clean cloc run run-step run-quiet test test-noninteractive dump
 
