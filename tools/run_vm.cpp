@@ -58,6 +58,8 @@ int main(int argc, char **argv) {
             std::cin >> std::noskipws >> c;
             if(c == 'n' || c == 'N') {
                 printf("Stopping...\n");
+
+                cpu.dump_registers();
                 break;
             }
 

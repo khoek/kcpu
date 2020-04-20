@@ -16,7 +16,6 @@ class vm {
     uint32_t total_clocks;
     vm_logger logger;
 
-    void dump_registers();
     void disassemble_current();
     void print_debug_info(regval_t i, uinst_t ui, bool pint);
 
@@ -37,6 +36,8 @@ class vm {
     mod_io  ioc;
 
     vm(vm_logger logger);
+    void dump_registers();
+
     uint32_t get_total_clocks();
     state get_state();
 
