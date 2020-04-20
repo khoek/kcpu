@@ -170,8 +170,6 @@ void io_device_manager::process_halfcycle(bool offclock) {
         }
         case state::ONGOING_READ:
         case state::ONGOING_WRITE: {
-            vm_assert(halfcycles_remaining >= 0);
-
             if(halfcycles_remaining > 0) {
                 halfcycles_remaining--;
                 if(logger.dump_bus) logger.logf("io op ongoing, %d hcycles remaining\n", halfcycles_remaining);

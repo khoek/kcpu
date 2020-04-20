@@ -1,4 +1,5 @@
 #include <cstdio>
+#include <sys/types.h>
 
 #include "src/spec/hw.hpp"
 #include "src/spec/ucode.hpp"
@@ -112,7 +113,7 @@ void diasm(regval_t ir, uinst_t ui) {
     gap();
 
     // MCTRL BUSMODE
-    int match = 0;
+    uint match = 0;
     match += check_option(ui, MASK_MCTRL_BUSMODE, MCTRL_BUSMODE_CONH, "BUSMODE_CONH");
     match += check_option(ui, MASK_MCTRL_BUSMODE, MCTRL_BUSMODE_CONW_BUSM, "BUSMODE_CONW_BUSM");
     match += check_option(ui, MASK_MCTRL_BUSMODE, MCTRL_BUSMODE_CONW_BUSB, "BUSMODE_CONW_BUSB");
@@ -121,15 +122,15 @@ void diasm(regval_t ir, uinst_t ui) {
 
     gap();
 
-    int anom_max = 0;
-    for(int j = UCODE_END; j < sizeof(uinst_t) * 8; j++) {
+    uint anom_max = 0;
+    for(uint j = UCODE_END; j < sizeof(uinst_t) * 8; j++) {
         if(ui & (((uint64_t) 1) << j)) {
             anom_max = j;
         }
     }
 
     if(anom_max) {
-        for(int j = UCODE_END; j <= anom_max; j++) {
+        for(uint j = UCODE_END; j <= anom_max; j++) {
             check_cond(ui & (((uint64_t) 1) << j), "EXTRANEOUS BIT");
         }
     }

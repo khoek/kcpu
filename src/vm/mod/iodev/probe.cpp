@@ -2,7 +2,7 @@
 
 namespace kcpu::iodev {
 
-probe::probe(const std::unordered_map<regval_t, std::reference_wrapper<io_device>> & ports) : single_port_io_device(PORT_BASE), ports(ports), target_port(0) {
+probe::probe(const std::unordered_map<regval_t, std::reference_wrapper<io_device>> &ports) : single_port_io_device(PORT_BASE), target_port(0), ports(ports) {
 }
 
 halfcycle_count_t probe::write(regval_t val) {

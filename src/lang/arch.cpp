@@ -36,7 +36,7 @@ slot slot_constval(regval_t constval) {
 
 static std::vector<slot> get_slots(argtype args) {
     std::vector<slot> bi;
-    for(int i = 0; i < args.count; i++) {
+    for(uint i = 0; i < args.count; i++) {
         bi.push_back(slot_arg(i));
     }
     return bi;
@@ -72,8 +72,11 @@ regval_t virtual_instruction::build_inst(bool loaddata, std::vector<preg_t> ius)
     regval_t inst = ((loaddata) ? P_I_LOADDATA : 0) | (op.raw << INST_SHIFT);
     switch(bi.size()) {
         case 3: inst |= INST_MK_IU3(ius[2]);
+        /* FALLTHROUGH */
         case 2: inst |= INST_MK_IU2(ius[1]);
+        /* FALLTHROUGH */
         case 1: inst |= INST_MK_IU1(ius[0]);
+        /* FALLTHROUGH */
         case 0: break;
         default: throw arch_error("too many args!");
     }
@@ -158,7 +161,7 @@ std::optional<std::string> family::match(std::vector<parameter::kind> params) {
         }
 
         bool fail = false;
-        for(int j = 0; j < ps->params.size(); j++) {
+        for(uint j = 0; j < ps->params.size(); j++) {
             if(!ps->params[j].accepts(params[j])) {
                 fail = true;
                 break;
@@ -181,7 +184,7 @@ void instruction::check_valid() {
         throw ss.str();
     }
 
-    for(int i = 0; i < uis.size(); i++) {
+    for(uint i = 0; i < uis.size(); i++) {
         if((uis[i] & MASK_GCTRL_FTJM) == GCTRL_FT_ENTER) {
             if(name != "NOP" && i + 1 != uis.size()) {
                 std::stringstream ss;
@@ -284,7 +287,7 @@ void arch::reg_inst(instruction i) {
             break;
         }
         case opclass::IU3_ALL: {
-            for(int j = 0; j < NUM_PREGS; j++) {
+            for(uint j = 0; j < NUM_PREGS; j++) {
                 reg_opcode(i.op.resolve((preg_t) j), i);
             }
             break;

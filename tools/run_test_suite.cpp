@@ -110,7 +110,7 @@ int main(int argc, char **argv) {
 
     std::vector<std::pair<uint32_t, std::filesystem::path>> failed;
     uint32_t passes = 0;
-    for(int i = 0; i < tests.size(); i++) {
+    for(uint i = 0; i < tests.size(); i++) {
         if(run_test(false, i + 1, tests[i])) {
             passes++;
         } else {

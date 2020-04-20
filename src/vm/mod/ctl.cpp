@@ -6,11 +6,11 @@
 namespace kcpu {
 
 mod_ctl::mod_ctl(vm_logger &logger) : logger(logger) {
-    for(int i = 0; i < NUM_SREGS; i++) {
+    for(uint i = 0; i < NUM_SREGS; i++) {
         reg[i] = 0;
     }
 
-    for(int i = 0; i < NUM_CBITS; i++) {
+    for(uint i = 0; i < NUM_CBITS; i++) {
         cbits[i] = false;
     }
 

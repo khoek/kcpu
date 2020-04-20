@@ -25,7 +25,7 @@ video::vram_addr video::decode_addr(unsigned int addr) {
 
 std::vector<regval_t> video::get_reserved_ports() {
     std::vector<regval_t> ports;
-    for(int i = 0; i < REGISTER_COUNT; i++) {
+    for(uint i = 0; i < REGISTER_COUNT; i++) {
         ports.push_back(PORT_BASE + i);
     }
     return ports;
@@ -48,10 +48,10 @@ void video::handle_command(regval_t cmd) {
 void video::vram_write(unsigned int a, regval_t val) {
     vram_addr addr = decode_addr(a);
 
-    for(int r = 0; r < PIXEL_WIDTH; r++) {
-        for(int c = 0; c < PIXEL_WIDTH; c++) {
-            int new_r = r + (PIXEL_WIDTH * addr.r);
-            int new_c = c + (PIXEL_WIDTH * addr.c);
+    for(uint r = 0; r < PIXEL_WIDTH; r++) {
+        for(uint c = 0; c < PIXEL_WIDTH; c++) {
+            uint new_r = r + (PIXEL_WIDTH * addr.r);
+            uint new_c = c + (PIXEL_WIDTH * addr.c);
             rend->get_fb().get_fb_next()[(new_r * 4 * WIDTH * PIXEL_WIDTH) + (new_c * 4) + addr.comp] = val;
         }
     }
@@ -60,14 +60,14 @@ void video::vram_write(unsigned int a, regval_t val) {
 regval_t video::vram_read(unsigned int a) {
     vram_addr addr = decode_addr(a);
 
-    int new_r = (PIXEL_WIDTH * addr.r);
-    int new_c = (PIXEL_WIDTH * addr.c);
+    uint new_r = (PIXEL_WIDTH * addr.r);
+    uint new_c = (PIXEL_WIDTH * addr.c);
     return rend->get_fb().get_fb_next()[(new_r * 4 * WIDTH * PIXEL_WIDTH) + (new_c * 4) + addr.comp];
 }
 
 halfcycle_count_t video::write(regval_t port, regval_t val) {
-    int reg = port - PORT_BASE;
-    vm_assert(reg >= 0 && reg <= REGISTER_COUNT);
+    uint reg = port - PORT_BASE;
+    vm_assert(port >= PORT_BASE && reg <= REGISTER_COUNT);
 
     switch(reg) {
         case REG_CMD: {
@@ -97,8 +97,8 @@ halfcycle_count_t video::write(regval_t port, regval_t val) {
 }
 
 std::pair<regval_t, halfcycle_count_t> video::read(regval_t port) {
-    int reg = port - PORT_BASE;
-    vm_assert(reg >= 0 && reg <= REGISTER_COUNT);
+    uint reg = port - PORT_BASE;
+    vm_assert(port >= PORT_BASE && reg <= REGISTER_COUNT);
 
     switch(reg) {
         case REG_DATA: {

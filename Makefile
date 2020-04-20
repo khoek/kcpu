@@ -1,12 +1,15 @@
 CXX ?= g++
 AR ?= ar
 
+CXXWARNFLAGS ?=
 CXXLTOFLAGS ?= -flto=jobserver -fno-fat-lto-objects
 ARLTOFLAGS ?=
 SDLFLAGS ?= -DENABLE_SDL_GRAPHICS -D_REENTRANT -I/usr/include/SDL2
 SDLLIBS ?= -lSDL2
 
-CXXFLAGS := -std=gnu++2a -rdynamic -O3 $(CXXLTOFLAGS) $(SDLFLAGS)
+CXXFLAGS := -std=gnu++2a -rdynamic -O3 \
+    -Wall -Wextra -Wno-unused-function -Wno-unused-variable -Wno-unused-parameter -Werror \
+    $(CXXWARNFLAGS) $(CXXLTOFLAGS) $(SDLFLAGS)
 ARFLAGS := $(ARLTOFLAGS)
 TOOLFLAGS := -I.
 EXTRALIBS := $(SDLLIBS) -pthread

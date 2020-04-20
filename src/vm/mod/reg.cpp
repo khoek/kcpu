@@ -6,7 +6,7 @@
 namespace kcpu {
 
 mod_reg::mod_reg(vm_logger &logger) : logger(logger) {
-    for(int i = 0; i < NUM_PREGS; i++) {
+    for(uint i = 0; i < NUM_PREGS; i++) {
         reg[i] = 0;
     }
 }
@@ -104,12 +104,12 @@ static iu_state parse_ius(uinst_t ui, regval_t inst) {
     is also asserted.
 */
 static iu_state filter_simultaneous_i_and_o(vm_logger &logger, iu_state is) {
-    for(int i = 0; i < 3; i++) {
+    for(uint i = 0; i < 3; i++) {
         if(!RCTRL_IU_IS_EN(is.dec[i])) {
             continue;
         }
 
-        for(int j = 0; j < 3; j++) {
+        for(uint j = 0; j < 3; j++) {
             if(i == j || !RCTRL_IU_IS_EN(is.dec[j])) {
                 continue;
             }

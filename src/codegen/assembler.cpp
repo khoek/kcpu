@@ -27,7 +27,7 @@ codegen::internal_error::internal_error(uint32_t line, const std::string &msg) :
 class chunk {
     public:
     bool concrete;
-    bool label_def;
+    bool label_def = false;
     regval_t val;
     std::string label;
 
@@ -37,7 +37,7 @@ class chunk {
 
 chunk::chunk(regval_t raw) : concrete(true), val(raw) { }
 
-chunk::chunk(std::string label, bool label_def = false) : concrete(false), label(label), label_def(label_def) { }
+chunk::chunk(std::string label, bool label_def = false) : concrete(false), label_def(label_def), label(label) { }
 
 class bound_parameter {
     public:
@@ -117,7 +117,7 @@ std::optional<bound_parameter> inst_assembler::lookup_reg(std::string s) {
     }
 
     std::string trunc = s.substr(2);
-    for(int i = 0; i < NUM_PREGS; i++) {
+    for(uint i = 0; i < NUM_PREGS; i++) {
         if(trunc == PREG_NAMES[i]) {
             switch(i) {
                 // case REG_ID: throw_parse_error("cannot refer to REG_ID!");
@@ -168,7 +168,7 @@ void inst_assembler::bind_virtual(virtual_instruction uo, std::vector<bound_para
     std::vector<preg_t> ius(uo.bi.size());
 
     std::optional<chunk> constval;
-    for(int j = 0; j < uo.bi.size(); j++) {
+    for(uint j = 0; j < uo.bi.size(); j++) {
         if(j >= NUM_IUS) {
             throw_parse_error("too many args!");
         }

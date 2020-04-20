@@ -73,7 +73,7 @@ int main() {
         }
 
         of_everything << a.name;
-        for(int j = 0; j < a.args.count; j++) {
+        for(uint j = 0; j < a.args.count; j++) {
             assert(a.args.count < 8 - 3);
             of_everything << " %r" << kcpu::PREG_NAMES[j + 3];
         }

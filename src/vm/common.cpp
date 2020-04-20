@@ -31,7 +31,7 @@ const char * BUS_NAMES[] = {
 
 bus_state::bus_state(vm_logger &logger) : logger(logger) {
     frozen = false;
-    for(int i = 0; i < NUM_BUSES; i++) {
+    for(uint i = 0; i < NUM_BUSES; i++) {
         set[i] = false;
         bus[i] = 0;
     }
