@@ -1,8 +1,6 @@
 #ifndef TYPES_H
 #define TYPES_H
 
-#define __STDC_FORMAT_MACROS
-
 #include <cstdint>
 #include <cinttypes>
 #include <sys/types.h>
