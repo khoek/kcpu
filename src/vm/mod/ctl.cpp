@@ -155,7 +155,6 @@ void mod_ctl::set_instmask_enabled(uinst_t ui, bool state, bool pint, bool nmi) 
                         either the INTMASK_SET or INTMASK_CLEAR lines are
                         asserted.
 
-    /*
         This prevents the JM_YES from taking effect halfway through
         the _DO_INT handler.
 
