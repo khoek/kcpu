@@ -68,7 +68,7 @@ jobs:
         echo "::set-env name=AR::gcc-ar-${{ matrix.version }}"
         echo "::set-env name=CXX::g++-${{ matrix.version }}"
         
-        echo "::set-env name=CXXLTOFLAGS::-fuse-linker-plugin -flto=jobserver -fno-fat-lto-objects"
+        echo "::set-env name=CXXLTOFLAGS::-Wl,-fuse-ld=gold -flto=jobserver -fno-fat-lto-objects"
         echo "::set-env name=ARLTOFLAGS::"
         echo "::set-env name=SDLFLAGS::"
         echo "::set-env name=SDLLIBS::"
