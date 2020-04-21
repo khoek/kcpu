@@ -1,0 +1,20 @@
+{
+    "name": "lang-kasm",
+    "version": "0.0.1",
+    "engines": {
+        "vscode": ">=1.44.2"
+    },
+    "publisher": "Keeley Hoek",
+    "contributes": {
+        "languages": [{
+            "id": "kasm",
+            "aliases": ["KASM", "kasm"],
+            "extensions": [".ks", ".kasm"]
+        }],
+        "grammars": [{
+            "language": "kasm",
+            "scopeName": "source.kasm",
+            "path": "./syntaxes/kasm.json"
+        }]
+    }
+}
