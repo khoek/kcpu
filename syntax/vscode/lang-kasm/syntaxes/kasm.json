@@ -1,18 +1,19 @@
 {
     "name": "KASM",
     "scopeName": "source.kasm",
-    "fileTypes": [
-        "ks",
-        "kasm"
-    ],
+    "fileTypes": [ "ks", "kasm" ],
     "patterns": [
         {
-            "match": "(?i)(?x)(\\s*)%[rlh](?:\n\t\t\t# main registers\n\t\t\tid|a|b|c|d|e|bp|sp|\n\t\t)\\b",
+            "match": "(?i)(?x)(\\s*)%[rlh](?:id|a|b|c|d|e|bp|sp|)\\b",
             "name": "variable.registers.kcpu.assembly"
         },
         {
             "match": "(?i)(?x)(\\s*)\\b(?:ABRT|ADD|ADD2|ADD2NF|ADD3|ADD3NF|ADDNF|AND|ANDNF|BSUB|BSUBNF|CALL|CMP|DI|EI|ENTER|ENTER0|ENTER1|ENTERFR|ENTERFR1|ENTERFR2|FAR LDBH|FAR LDBHZ|FAR LDBL|FAR LDBLZ|FAR LDW|FAR LDWO|FAR STBH|FAR STBL|FAR STPFX|FAR STW|FAR STWO|HLT|INC|IOR|IOW|IRET|JC|JE|JGE|JL|JMP|JMP+DI|JMP+EI|JNC|JNE|JNL|JNO|JNS|JNZ|JO|JS|JZ|LD|LDBH|LDBHZ|LDBL|LDBLZ|LDJC|LDJE|LDJGE|LDJL|LDJMP|LDJMP+DI|LDJMP+EI|LDJNC|LDJNE|LDJNL|LDJNO|LDJNS|LDJNZ|LDJO|LDJS|LDJZ|LDLJMP|LDW|LDWO|LDZ|LEAVE|LEAVE0|LEAVE1|LFG|LIHP|LJMP|LSFT|LSFTNF|MOV|NEG|NOP|NOT|OR|ORNF|POP|POPA|POPFG|POPx2|PUSH|PUSHA|PUSHFG|PUSHx2|RET|RSFT|RSFTNF|ST|STBH|STBL|STPFX|STW|STWO|SUB|SUBNF|TST|XOR|XORNF|_DO_INT)\\b",
             "name": "keyword.kcpu.assembly"
+        },
+        {
+            "match": "(?i)(?x)^(\\s*)\\b(?![_a-zA-Z][a-zA-Z0-9-_.]*(?=:))(?!ABRT|ADD|ADD2|ADD2NF|ADD3|ADD3NF|ADDNF|AND|ANDNF|BSUB|BSUBNF|CALL|CMP|DI|EI|ENTER|ENTER0|ENTER1|ENTERFR|ENTERFR1|ENTERFR2|FAR LDBH|FAR LDBHZ|FAR LDBL|FAR LDBLZ|FAR LDW|FAR LDWO|FAR STBH|FAR STBL|FAR STPFX|FAR STW|FAR STWO|HLT|INC|IOR|IOW|IRET|JC|JE|JGE|JL|JMP|JMP+DI|JMP+EI|JNC|JNE|JNL|JNO|JNS|JNZ|JO|JS|JZ|LD|LDBH|LDBHZ|LDBL|LDBLZ|LDJC|LDJE|LDJGE|LDJL|LDJMP|LDJMP+DI|LDJMP+EI|LDJNC|LDJNE|LDJNL|LDJNO|LDJNS|LDJNZ|LDJO|LDJS|LDJZ|LDLJMP|LDW|LDWO|LDZ|LEAVE|LEAVE0|LEAVE1|LFG|LIHP|LJMP|LSFT|LSFTNF|MOV|NEG|NOP|NOT|OR|ORNF|POP|POPA|POPFG|POPx2|PUSH|PUSHA|PUSHFG|PUSHx2|RET|RSFT|RSFTNF|ST|STBH|STBL|STPFX|STW|STWO|SUB|SUBNF|TST|XOR|XORNF|_DO_INT)[a-zA-Z]*\\b",
+            "name": "invalid.kcpu.assembly"
         },
         {
             "match": "^[_a-zA-Z][a-zA-Z0-9-_.]*(?=:)",
@@ -25,8 +26,10 @@
         {
             "match": "[$](?:0x)?[0-9a-fA-F]+\\b",
             "name": "constant.numeric.kcpu.assembly"
+        },
+        {
+            "match": "[$](?:0x)?(?![0-9a-fA-F]+\\b)[0-9a-zA-Z]*\\b",
+            "name": "invalid.numeric.kcpu.assembly"
         }
-    ],
-    "match": "[$](?:0x)?[0-9a-fA-F]+\\b",
-    "scopeName": "source.kasm"
+    ]
 }
