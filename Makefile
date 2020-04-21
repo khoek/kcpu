@@ -17,7 +17,7 @@ EXTRALIBS := $(SDLLIBS) -pthread
 .PHONY: all clean cloc run run-step run-quiet test test-noninteractive dump
 
 AUTOTESTDIR := test/auto
-AUTOTESTSRC := $(AUTOTESTDIR)/prog.kasm
+AUTOTESTSRC := $(AUTOTESTDIR)/prog.ks
 
 SRCS := $(shell find src -type f -name "*.cpp")
 OBJS := $(SRCS:.cpp=.o)
@@ -32,11 +32,11 @@ TOOLLIBOBJS := $(patsubst %.cpp, %.o, $(TOOLLIBSRCS))
 TOOLLIBHDRS := $(shell find tools/lib -type f -name "*.hpp")
 TOOLLIB := bin/lib/libtools.a
 
-TESTKASMSRCS := $(shell find test -type f -name "*.kasm")
-TESTKASMOBJS := $(patsubst %.kasm, %.bin, $(TESTKASMSRCS))
+TESTKASMSRCS := $(shell find test -type f -name "*.ks")
+TESTKASMOBJS := $(patsubst %.ks, %.bin, $(TESTKASMSRCS))
 
-SANDBOXKASMSRCS := $(shell find sandbox -type f -name "*.kasm")
-SANDBOXKASMOBJS := $(patsubst %.kasm, %.bin, $(SANDBOXKASMSRCS))
+SANDBOXKASMSRCS := $(shell find sandbox -type f -name "*.ks")
+SANDBOXKASMOBJS := $(patsubst %.ks, %.bin, $(SANDBOXKASMSRCS))
 
 KASMOBJS := $(TESTKASMOBJS) $(SANDBOXKASMOBJS)
 
@@ -72,16 +72,16 @@ test-noninteractive: $(TOOLBINS) $(TESTKASMOBJS)
 dump: $(TOOLBINS)
 	bin/arch_dump
 
-bin/bios.bin: asm/bios.kasm $(TOOLBINS)
-	bin/kasm asm/bios.kasm bin/bios.bin
+bin/bios.bin: asm/bios.ks $(TOOLBINS)
+	bin/kasm asm/bios.ks bin/bios.bin
 
-bin/prog.bin: asm/prog.kasm $(TOOLBINS)
-	bin/kasm asm/prog.kasm bin/prog.bin
+bin/prog.bin: asm/prog.ks $(TOOLBINS)
+	bin/kasm asm/prog.ks bin/prog.bin
 
 $(AUTOTESTSRC): bin/gen_test_auto
 	bin/gen_test_auto
 
-$(KASMOBJS): %.bin: %.kasm ./bin/kasm
+$(KASMOBJS): %.bin: %.ks ./bin/kasm
 	bin/kasm $< $@
 
 $(OBJS): %.o: %.cpp $(HDRS) Makefile
