@@ -52,9 +52,11 @@ static bool run_test(bool verbose, uint32_t num, const std::filesystem::path pat
         kcpu::vm::state s = cpu.run(MAX_USTEPS);
 
         if(verbose) {
-            std::cout << std::endl << "CPU " << (cpu.get_state() == kcpu::vm::state::HALTED ? "Halted" : "Aborted")
-                      << ", " << cpu.get_total_clocks() << " uinstructions executed taking "
-                      << (cpu.get_real_ns_elapsed() / 1000 / 1000) << "ms" << std::endl;
+            std::cout << std::endl
+                << "CPU " << (cpu.get_state() == kcpu::vm::state::HALTED ? "Halted" : "Aborted")
+                << ", " << cpu.get_total_clocks() << " uinstructions executed taking "
+                << (cpu.get_real_ns_elapsed() / 1000 / 1000) << "ms "
+                << "(" << cpu.get_effective_MHz_freq() << "MHz)" << std::endl;
         }
 
         switch(s) {
@@ -62,7 +64,7 @@ static bool run_test(bool verbose, uint32_t num, const std::filesystem::path pat
                 std::cout << colour_str("PASS", true)
                           << "  @" << std::setfill(' ') << std::setw(9) << cpu.get_total_clocks()
                           <<  "  " << std::setfill(' ') << std::setw(4) << (cpu.get_real_ns_elapsed() / 1000 / 1000) << "ms"
-                          <<  "  (" << std::setfill(' ') << std::setprecision(2) << std::fixed << std::showpoint << std::setw(4) << cpu.get_effective_MHz_freq() << "MhZ)"
+                          <<  "  (" << std::setfill(' ') << std::setprecision(2) << std::fixed << std::showpoint << std::setw(4) << cpu.get_effective_MHz_freq() << "MHz)"
                           << std::setw(0) << std::setfill(' ') << std::endl;
                 return true;
             }

@@ -71,9 +71,11 @@ int main(int argc, char **argv) {
         }
     } while(cpu.get_state() == kcpu::vm::state::RUNNING);
 
-    std::cout << std::endl << "CPU " << (cpu.get_state() == kcpu::vm::state::HALTED ? "Halted" : "Aborted")
-              << ", " << cpu.get_total_clocks() << " uinstructions executed taking "
-              << (cpu.get_real_ns_elapsed() / 1000 / 1000) << "ms" << std::endl;
+    std::cout << std::endl
+        << "CPU " << (cpu.get_state() == kcpu::vm::state::HALTED ? "Halted" : "Aborted")
+        << ", " << cpu.get_total_clocks() << " uinstructions executed taking "
+        << (cpu.get_real_ns_elapsed() / 1000 / 1000) << "ms "
+        << "(" << cpu.get_effective_MHz_freq() << "MHz)" << std::endl;
 
     return 0;
 }
