@@ -2,7 +2,7 @@ CXX ?= g++
 AR ?= ar
 
 CXXWARNFLAGS ?=
-CXXLTOFLAGS ?= 
+CXXLTOFLAGS ?= -flto=jobserver -fno-fat-lto-objects
 ARLTOFLAGS ?=
 SDLFLAGS ?= -DENABLE_SDL_GRAPHICS -D_REENTRANT -I/usr/include/SDL2
 SDLLIBS ?= -lSDL2
