@@ -59,7 +59,7 @@ pub const ACTION_GCTRL_USE_ALT    : UInst = 0b01 << (0 + CTRL_BASE);
 pub const ACTION_GCTRL_RIP_BUSA_O : UInst = 0b10 << (0 + CTRL_BASE);
 pub const ACTION_MCTRL_BUSMODE_X  : UInst = 0b11 << (0 + CTRL_BASE);
 
-pub const COMMAND_NONE        : UInst = 0b00 << (2 + CTRL_BASE);
+pub const _COMMAND_NONE        : UInst = 0b00 << (2 + CTRL_BASE);
 /*
     HARDWARE NOTE: `COMMAND_INHIBIT_JMFT` disallows the instmask-setting
     and UC-resetting behaviour of all JMs/FTs, just for that uop. This
@@ -135,7 +135,7 @@ pub const GCTRL_NRM_IO_READWRITE: UInst = 0b01 << (4 + GCTRL_BASE);
     GCTRL_CREG_O means to force IU3 to RSP. GCTRL_CREG_I is UNUSED.
 */
 pub const GCTRL_NRM_IU3_OVERRIDE_O_SELECT_RSP_I__UNUSED: UInst = 0b10 << (4 + GCTRL_BASE);
-pub const GCTRL_NRM__UNUSED     : UInst = 0b11 << (4 + GCTRL_BASE);
+pub const _GCTRL_NRM__UNUSED     : UInst = 0b11 << (4 + GCTRL_BASE);
 
 /*
     These "alternate" modes occupy the same bits as the "normal" modes,
@@ -181,11 +181,6 @@ pub fn is_gctrl_nrm_io_readwrite(ui: UInst) -> bool {
     return ((ui & MASK_CTRL_ACTION) != ACTION_GCTRL_USE_ALT) && ((ui & MASK_GCTRL_MODE) == GCTRL_NRM_IO_READWRITE);
 }
 
-// RUSTFIX what is this even used for, it seems to not even be used in either version of the VM!?!?!
-pub fn is_gctrl_nrm_iu3_override_o_select_rsp(ui: UInst) -> bool {
-    return ((ui & MASK_CTRL_ACTION) != ACTION_GCTRL_USE_ALT) && ((ui & MASK_GCTRL_MODE) == GCTRL_NRM_IU3_OVERRIDE_O_SELECT_RSP_I__UNUSED);
-}
-
 pub fn does_override_iu3_via_command(ui: UInst) -> bool {
     (ui & MASK_CTRL_COMMAND) == COMMAND_RCTRL_RSP_EARLY_DEC_IU3RSP
 }
@@ -221,9 +216,6 @@ pub const RCTRL_IU3_BUSB_O: UInst = 0b111 << (6 + RCTRL_BASE);
 
 // NONBIT: RCTRL decoding
 pub const MASK_RCTRL_IU : UInst = 0b111;
-pub const MASK_RCTRL_IU1 : UInst = MASK_RCTRL_IU << (0 + RCTRL_BASE);
-pub const MASK_RCTRL_IU2 : UInst = MASK_RCTRL_IU << (3 + RCTRL_BASE);
-pub const MASK_RCTRL_IU3 : UInst = MASK_RCTRL_IU << (6 + RCTRL_BASE);
 
 //RUSTFIX use the `IU` enum to parse a particular parameter set
 pub const fn rctrl_decode_iu1(iu : UInst) -> u16 {
@@ -281,11 +273,11 @@ pub const MCTRL_BUSMODE_CONW_BUSM          : UInst = 0b001 << (3 + MCTRL_BASE);
 pub const MCTRL_BUSMODE_CONW_BUSB          : UInst = 0b011 << (3 + MCTRL_BASE);
 pub const MCTRL_BUSMODE_CONW_BUSB_MAYBEFLIP: UInst = 0b010 << (3 + MCTRL_BASE);
 pub const MCTRL_BUSMODE_CONH               : UInst = 0b100 << (3 + MCTRL_BASE);
-pub const MCTRL_BUSMODE__CONH_NO_X         : UInst = 0b100 << (3 + MCTRL_BASE);
-pub const MCTRL_BUSMODE__CONH_X            : UInst = 0b101 << (3 + MCTRL_BASE);
+pub const _MCTRL_BUSMODE__CONH_NO_X         : UInst = 0b100 << (3 + MCTRL_BASE);
+pub const _MCTRL_BUSMODE__CONH_X            : UInst = 0b101 << (3 + MCTRL_BASE);
 
-pub const MCTRL_BUSMODE__UNUSED_1          : UInst = 0b110 << (3 + MCTRL_BASE);
-pub const MCTRL_BUSMODE__UNUSED_2          : UInst = 0b111 << (3 + MCTRL_BASE);
+pub const _MCTRL_BUSMODE__UNUSED_1          : UInst = 0b110 << (3 + MCTRL_BASE);
+pub const _MCTRL_BUSMODE__UNUSED_2          : UInst = 0b111 << (3 + MCTRL_BASE);
 
 // NOTE: this bit position must be chosen with the actual values of the BUSMODE_xxx values
 pub const MCTRL_BUSMODE_WRITE : UInst = 0b001 << (3 + MCTRL_BASE);
@@ -319,15 +311,13 @@ pub const fn decode_actrl_mode(ui: UInst) -> u8 {
     ((ui & MASK_ACTRL_MODE) >> (3 + ACTRL_BASE)) as u8 
 }
 
+#[allow(unused)]
 pub const UCODE_END : u32 = ACTRL_END;
 
-pub const MASK_I_INVERT : UInst = 0;
+pub const _UCODE_TYPE_BITS : usize = std::mem::size_of::<UInst>() * 8;
+pub const _UCODE_MAX_BITS : usize = 32;
 
-
-pub const UCODE_TYPE_BITS : usize = std::mem::size_of::<UInst>() * 8;
-pub const UCODE_MAX_BITS : usize = 32;
-
-const_assert!(UCODE_END as usize <= UCODE_TYPE_BITS);
-const_assert!(UCODE_END as usize <= UCODE_MAX_BITS);
+const_assert!(UCODE_END as usize <= _UCODE_TYPE_BITS);
+const_assert!(UCODE_END as usize <= _UCODE_MAX_BITS);
 
 // END DECLS

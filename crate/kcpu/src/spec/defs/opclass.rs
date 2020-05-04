@@ -3,10 +3,10 @@ use crate::spec::types::{hw::{Word, IU}, schema::{Segment, OpClass}};
 // START PREAMBLE
 
 // RUSTFIX this is now officially a hack
-pub const fn ITFLAG(bits: Segment) -> Word { bits << OpClass::ITYPE_SHIFT }
-pub const fn ICFLAG(bits: Segment) -> Word { bits << 0 }
+pub const fn mk_itflag(bits: Segment) -> Word { bits << OpClass::ITYPE_SHIFT }
+pub const fn mk_icflag(bits: Segment) -> Word { bits << 0 }
 // RUSTFIX make this return an `Iu3Prefix`
-pub const fn ICFLAG_IU3(bits: Segment) -> Word { bits << IU::WIDTH }
+pub const fn mk_icflag_iu3(bits: Segment) -> Word { bits << IU::WIDTH }
 
 // END PREAMBLE
 
@@ -39,10 +39,10 @@ pub const fn ICFLAG_IU3(bits: Segment) -> Word { bits << IU::WIDTH }
 // itype ranges (AAAA):
 pub const IT_CTL    : Segment =           0b0000; // CTL (NOP, INT must occupy hardcoded positions)
 pub const IT_STK    : Segment =           0b0001; // STK (Stack manipulation, call/return, IRET, etc.)
-pub const IT__MEMC  : Segment =           0b0010; // MEM (CLOSE, don't use directly, use IT_MEM and ITFLAG_MEM_FAR instead)
-pub const IT__MEMF  : Segment =           0b0011; // MEM (FAR, don't use directly, use IT_MEM and ITFLAG_MEM_FAR instead)
-pub const IT__JMP   : Segment =           0b0100; // JMP (don't use directly, use IT_JMP and ITFLAG_JMP_LD instead)
-pub const IT__JMPLD : Segment =           0b0101; // JMP (don't use directly, use IT_JMP and ITFLAG_JMP_LD instead)
+pub const _IT_MEMC  : Segment =           0b0010; // MEM (CLOSE, don't use directly, use IT_MEM and ITFLAG_MEM_FAR instead)
+pub const _IT_MEMF  : Segment =           0b0011; // MEM (FAR, don't use directly, use IT_MEM and ITFLAG_MEM_FAR instead)
+pub const _IT_JMP   : Segment =           0b0100; // JMP (don't use directly, use IT_JMP and ITFLAG_JMP_LD instead)
+pub const _IT_JMPLD : Segment =           0b0101; // JMP (don't use directly, use IT_JMP and ITFLAG_JMP_LD instead)
 pub const IT_ALU1   : Segment =           0b0110; // ALU (insts with a NF (noflags) variant)
 pub const IT_ALU2   : Segment =           0b0111; // ALU (other ALU insts)
 // reserved itypes for IU3_ALL/_SINGLE opclasses
@@ -60,22 +60,21 @@ pub const IT_IU3_ALL_GRP3: Segment =      0b1010;
 // Fake ICs (to implement flags) and flags at the itype/icode level
 pub const IT_MEM : Segment = 0b0010;
 pub const IT_JMP : Segment = 0b0100;
-pub const ITFLAG_MEM_FAR     : Segment = ITFLAG(0b0001);
-pub const ITFLAG_JMP_LD      : Segment = ITFLAG(0b0001);
-pub const ICFLAG_ALU1_NOFGS  : Segment = ICFLAG(0b1000);
-pub const ICFLAG_MEM_IU3_FAR : Segment = ICFLAG_IU3(0b1);
-pub const ICFLAG_ADD3_IU3_NF : Segment = ICFLAG_IU3(0b1);
+pub const ITFLAG_MEM_FAR     : Segment = mk_itflag(0b0001);
+pub const ITFLAG_JMP_LD      : Segment = mk_itflag(0b0001);
+pub const ICFLAG_ALU1_NOFGS  : Segment = mk_icflag(0b1000);
+pub const ICFLAG_MEM_IU3_FAR : Segment = mk_icflag_iu3(0b1);
+pub const ICFLAG_ADD3_IU3_NF : Segment = mk_icflag_iu3(0b1);
 
 // BEGIN DECLS
 
-// CTL/MISC (12/16)
+// CTL/MISC (11/16)
 pub const I_NOP       : OpClass = OpClass::new(IT_CTL, 0b0000);
 pub const I__DO_INT   : OpClass = OpClass::new(IT_CTL, 0b0001);
 
 pub const I_MOV       : OpClass = OpClass::new(IT_CTL, 0b0011);
-pub const I_LCFG      : OpClass = OpClass::new(IT_CTL, 0b0100);
-pub const I_LFG       : OpClass = OpClass::new(IT_CTL, 0b0101);
-pub const I_LIHP      : OpClass = OpClass::new(IT_CTL, 0b0110);
+pub const I_LFG       : OpClass = OpClass::new(IT_CTL, 0b0100);
+pub const I_LIHP      : OpClass = OpClass::new(IT_CTL, 0b0101);
 
 pub const I_IOR       : OpClass = OpClass::new(IT_CTL, 0b1000);
 pub const I_IOW       : OpClass = OpClass::new(IT_CTL, 0b1001);
@@ -144,14 +143,14 @@ pub const I_JMP_EI    : OpClass = OpClass::new(IT_JMP, 0b1111);
 
 // IU3_ALL_GRP1 (2/2);
 pub const I_ADD3      : OpClass = OpClass::with_iu3_all(IT_IU3_ALL_GRP1, 0b0);
-pub const I_ADD3NF    : OpClass = OpClass::with_iu3_all(IT_IU3_ALL_GRP1, 0b1); // REMINDER UNREFERENCED, use I_ADD3 and ICFLAG_ADD3_IU3_NF instead.
+pub const _I_ADD3NF    : OpClass = OpClass::with_iu3_all(IT_IU3_ALL_GRP1, 0b1); // REMINDER UNREFERENCED, use I_ADD3 and ICFLAG_ADD3_IU3_NF instead.
 
 // IU3_ALL_GRP2 (2/2);
 pub const I_LDWO      : OpClass = OpClass::with_iu3_all(IT_IU3_ALL_GRP2, 0b0);
-pub const I_LDWO_FAR  : OpClass = OpClass::with_iu3_all(IT_IU3_ALL_GRP2, 0b1); // REMINDER UNREFERENCED, use I_LDWO and ICFLAG_MEM_IU3_FAR instead.
+pub const _I_LDWO_FAR  : OpClass = OpClass::with_iu3_all(IT_IU3_ALL_GRP2, 0b1); // REMINDER UNREFERENCED, use I_LDWO and ICFLAG_MEM_IU3_FAR instead.
 
 // IU3_ALL_GRP3 (2/2);
 pub const I_STWO      : OpClass = OpClass::with_iu3_all(IT_IU3_ALL_GRP3, 0b0);
-pub const I_STWO_FAR  : OpClass = OpClass::with_iu3_all(IT_IU3_ALL_GRP3, 0b1); // REMINDER UNREFERENCED, use I_STWO and ICFLAG_MEM_IU3_FAR instead.
+pub const _I_STWO_FAR  : OpClass = OpClass::with_iu3_all(IT_IU3_ALL_GRP3, 0b1); // REMINDER UNREFERENCED, use I_STWO and ICFLAG_MEM_IU3_FAR instead.
 
 // END DECLS

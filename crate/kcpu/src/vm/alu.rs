@@ -109,6 +109,12 @@ struct Op<'a> {
     func: OpFunc,
 }
 
+impl<'a> fmt::Display for Op<'a> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "Op({})", self.name)
+    }
+}
+
 impl<'a> Op<'a> {
     pub const fn new(ui_mode: UInst, name: &'a str, func: OpFunc) -> Self {
         Op {

@@ -4,6 +4,7 @@ use num_derive::FromPrimitive;
 use num_traits::FromPrimitive;
 use std::convert::TryInto;
 use strum_macros::EnumIter;
+use static_assertions::const_assert;
 
 pub type Byte = u8;
 pub type Word = u16;
@@ -75,10 +76,12 @@ pub const UCODE_LEN: usize = 1 << UADDR_WIDTH;
 
 pub const UCVAL_WIDTH: u32 = 2;
 pub const INST_WIDTH: u32 = 9;
+
+#[allow(unused)]
 pub const CHIP_SELECT_WIDTH: u32 = UADDR_WIDTH - (UCVAL_WIDTH + INST_WIDTH);
+const_assert!(CHIP_SELECT_WIDTH == 2);
 
 pub const UCVAL_MAX: usize = (1 << UCVAL_WIDTH) - 1;
-pub const OPCODE_LEN: usize = 1 << INST_WIDTH;
 
 #[derive(Debug, Clone, Copy, Enum, EnumIter)]
 pub enum IU {

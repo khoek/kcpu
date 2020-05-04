@@ -16,9 +16,9 @@ use crate::spec::{
 
 // RUSTIFIX find a way to get rid of all of the `to_owned()`s
 
-// Note that active low bits stored in MASK_I_INVERT are toggled during registration,
-// so we can treat them here as if they were active high---but we still use the xxx_N_xxxx
-// notation to name them (despite them having an active high meaning here).
+// HARDWARE NOTE that we used to do this thing where a few bits here were active-high and we toggled them,
+// but that is no longer the case. In particular, the signal lines to things like the `mem` module are now
+// all active low.
 
 fn gen_sys(builder: &mut Builder) {
     builder.register(InstDef::with_0(
