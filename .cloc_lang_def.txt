@@ -1,5 +1,6 @@
 KASM
     filter remove_matches ^\s*#
+    extension ks
     extension kasm
     3rd_gen_scale 0.25
 ABAP

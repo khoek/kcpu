@@ -1,0 +1,4 @@
+MOV $0xBEEF %ra
+MOV $0x1337 %rb
+
+HLT

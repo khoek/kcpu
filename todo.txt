@@ -1,5 +1,31 @@
 
 
+
+
+// RUST Idea Graveyard
+
+// RUSTFIX Actually, why not just require that you be explicit?
+//
+//         If we enable `ConstWordCoercedToByte`, ensure that a) we are only inserting a resolved placeholder with b) a value
+//         which fits in a byte and c) is not over-qualified in its number of digits. We check this last thing by passing-in
+//         X, the maximum value which the constant C could be if a) all its digits were made maximum and b) Y, if its highest digit was
+//         made zero and all other digits were made maximum. The formatted number is acceptable only if:
+//
+//              1. X still fits in a byte, so the number of digits used is clearly byte-size, or
+//              2. C > Y, so that we need the last digit to express the number (this is still assuming that C fits in a byte as required above).
+//
+//         Of course a specific (h) or (l) suffix overrides this.
+
+
+
+
+
+
+
+
+
+
+
   Where do we use floating levels?:
     * In the implementation of TST
     * In the implementation of the byte-store-with-zero instructions
@@ -10,6 +36,11 @@
 
 
   REMAINING HARDWARE TO SIMULATE:
+
+
+    * Is there any reason at all that we would want to be able to trigger an interrupt on the CPU using something like an INT instruction? No, right, because
+      we can always just write to the PIC to command this! Ok that's cool.
+
 
 
       (We could make the BIOS write enable jumper a bit in this io register as well if we want. (and add a test for being able to write to bios memory))

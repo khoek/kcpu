@@ -1,0 +1,28 @@
+[package]
+name = "kcpu"
+version = "0.1.0"
+authors = ["Keeley Hoek <keeley@hoek.io>"]
+edition = "2018"
+# FIXME why does this have to be manually specified?
+default-run = "kcpu"
+
+[profile.release]
+# FIXME make a real "bench" asm directory and optimize these again
+opt-level = 2
+lto = true
+# codegen-units = 1
+
+[dependencies]
+bitflags = "1.2.1"
+enum-map = "0.6.2"
+static_assertions = "1.1.0"
+num-traits = "0.2.11"
+num-derive = "0.3.0"
+once_cell = "1.3.1"
+derive_more = "0.99.5"
+bitintr = "0.3.0"
+strum = "0.18.0"
+strum_macros = "0.18.0"
+structopt = "0.3.14"
+itertools = "0.9.0"
+colored = "1.9.3"
