@@ -2,9 +2,12 @@ use derive_more::Display;
 use enum_map::Enum;
 use num_derive::FromPrimitive;
 use num_traits::FromPrimitive;
-use std::convert::TryInto;
-use strum_macros::EnumIter;
 use static_assertions::const_assert;
+use std::{
+    convert::{TryFrom, TryInto},
+    num::{TryFromIntError, Wrapping},
+};
+use strum_macros::EnumIter;
 
 pub type Byte = u8;
 pub type Word = u16;
@@ -43,6 +46,14 @@ pub fn words_to_bytes(v: Vec<Word>) -> Vec<Byte> {
         })
         .flatten()
         .collect()
+}
+
+pub fn word_from_i64_wrapping(i: i64) -> Result<u16, TryFromIntError> {
+    if i >= 0 {
+        Word::try_from(i)
+    } else {
+        Ok((Wrapping(0) - Wrapping(Word::try_from(-i)?)).0)
+    }
 }
 
 // RUSTFIX use a struct which checks the number of bits based on a fixed constant.

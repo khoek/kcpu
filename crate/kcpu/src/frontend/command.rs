@@ -147,7 +147,9 @@ pub fn run_suite(cmd: SubcommandRunSuite) -> ! {
     // RUSTFIX proper error handling, instead of just calling `unwrap()`.
     let success = run_suite::run_suite(
         kind,
-        &opts.suite_dir.unwrap_or(assets::get_default_testsuite_dir()),
+        &opts
+            .suite_dir
+            .unwrap_or(assets::get_default_testsuite_dir()),
         &opts.only,
         opts.max_clocks,
     )
@@ -165,7 +167,11 @@ fn summary_to_exit_code(summary: &Summary) -> i32 {
     }
 }
 
-fn execute_prog_with_opts(bios_bin: Option<&Vec<u8>>, prog_bin: &Vec<u8>, vm_opts: VmOpts) -> Summary {
+fn execute_prog_with_opts(
+    bios_bin: Option<&Vec<u8>>,
+    prog_bin: &Vec<u8>,
+    vm_opts: VmOpts,
+) -> Summary {
     super::execute::execute(
         Config {
             headless: vm_opts.headless,

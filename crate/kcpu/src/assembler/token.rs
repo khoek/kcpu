@@ -2,7 +2,7 @@ use super::parse::Error;
 use crate::asm::model::{Arg, Const, ConstBinding, RegRef};
 use crate::common;
 use crate::spec::types::{
-    hw::{Byte, PReg, Word},
+    hw::{word_from_i64_wrapping, Byte, PReg},
     schema::{Half, Width},
 };
 use std::convert::TryFrom;
@@ -177,12 +177,20 @@ impl Token {
 
     fn parse_numeric(raw: &str, width: Width) -> Result<Self, Error> {
         let val = if raw.starts_with("0x") {
-            Word::from_str_radix(&raw[2..], 16)
+            i64::from_str_radix(&raw[2..], 16)
+        } else if raw.starts_with("0o") {
+            i64::from_str_radix(&raw[2..], 8)
+        } else if raw.starts_with("0b") {
+            i64::from_str_radix(&raw[2..], 2)
         } else {
-            Word::from_str_radix(raw, 10)
+            i64::from_str_radix(raw, 10)
         }?;
 
+        let val = word_from_i64_wrapping(val)?;
+
         match width {
+            // RUSTFIX this would be a perfect place to add messages to the errors these give off using
+            // the `anyhow` crate, since you can't distinguish between `Word` and `Byte` from the message...
             Width::Word => Ok(Token::Const(Const::Word(val))),
             Width::Byte(half) => Ok(Token::Const(Const::Byte(Byte::try_from(val)?, half))),
         }

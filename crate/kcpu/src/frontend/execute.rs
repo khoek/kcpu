@@ -1,5 +1,5 @@
-use crate::vm::{Bank, BankType, DebugExecInfo, Instance, Logger, State};
 use super::assets;
+use crate::vm::{Bank, BankType, DebugExecInfo, Instance, Logger, State};
 use derive_more::Constructor;
 use std::{
     io,
@@ -77,8 +77,14 @@ pub fn execute(cfg: Config, raw_bios: Option<&Vec<u8>>, raw_prog: Option<&Vec<u8
     // RUSTFIX implement graphics
     // graphics::get_graphics().configure(self.headless);
 
-    let bios = Bank::new(BankType::Bios, (*raw_bios.unwrap_or_else(|| assets::get_default_bios())).clone());
-    let prog = Bank::new(BankType::Prog, (*raw_prog.unwrap_or_else(|| assets::get_default_prog())).clone());
+    let bios = Bank::new(
+        BankType::Bios,
+        (*raw_bios.unwrap_or_else(|| assets::get_default_bios())).clone(),
+    );
+    let prog = Bank::new(
+        BankType::Prog,
+        (*raw_prog.unwrap_or_else(|| assets::get_default_prog())).clone(),
+    );
 
     let logger = cfg.verbosity.to_logger();
     let mut vm = Instance::new(&logger, bios, prog);

@@ -18,7 +18,7 @@ impl From<ParseIntError> for Error {
 impl From<TryFromIntError> for Error {
     fn from(err: TryFromIntError) -> Self {
         // FIXME? right now this is blanket, but correct
-        Error::MalformedToken(err.to_string(), "value too large for byte")
+        Error::MalformedToken(err.to_string(), "integral value out of bounds")
     }
 }
 

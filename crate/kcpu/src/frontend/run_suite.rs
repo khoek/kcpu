@@ -156,7 +156,7 @@ fn find_cases(test_dir: &PathBuf) -> Vec<CaseSrc> {
         fn_cook_fake_test("stwo"),
         fn_cook_fake_test("add3"),
         fn_cook_fake_test("byte_ld"),
-        // fn_cook_fake_test("enter_fr"), ASM
+        fn_cook_fake_test("enter_fr"),
         // fn_cook_fake_test("flag_tui2nmi"), ASM
         // fn_cook_fake_test("int_during_io"), ASM
         fn_cook_fake_test("int_nmi"),
@@ -175,10 +175,10 @@ fn find_cases(test_dir: &PathBuf) -> Vec<CaseSrc> {
         fn_cook_fake_test("int_stackcheck"),
         // fn_cook_fake_test("io_video"), VM(unimplemented)
         fn_cook_fake_test2("ljmp"),
-        // fn_cook_fake_test("old_test"), ASM
+        // fn_cook_fake_test("old_test"), ASM(another integral parsing bug)
         fn_cook_fake_test("pushpop_a"),
         fn_cook_fake_test("simple"),
-        // fn_cook_fake_test("alu_noflags"), ASM
+        fn_cook_fake_test("alu_noflags"),
         fn_cook_fake_test("call_ret_1"),
         // fn_cook_fake_test("family"), ASM
         fn_cook_fake_test("int_disable_1"),

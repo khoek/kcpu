@@ -1,12 +1,12 @@
-use kcpu::vm::State;
 use kcpu::assembler;
-use kcpu::frontend::{assemble, execute::{self, BreakMode, Config, Verbosity, AbortAction}};
+use kcpu::frontend::{
+    assemble,
+    execute::{self, AbortAction, BreakMode, Config, Verbosity},
+};
+use kcpu::vm::State;
 
 pub fn run_test(bios_src: Option<&str>, prog_src: &str) -> Result<(), assembler::Error> {
-    let bios = bios_src
-        .as_deref()
-        .map(assemble::assemble)
-        .transpose()?;
+    let bios = bios_src.as_deref().map(assemble::assemble).transpose()?;
     let prog = assemble::assemble(&prog_src)?;
 
     let summary = execute::execute(
