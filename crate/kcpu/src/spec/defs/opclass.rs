@@ -89,8 +89,8 @@ pub const I_ABRT      : OpClass = OpClass::new(IT_CTL, 0b1111);
 // STK (12/16)
 pub const I_PUSH      : OpClass = OpClass::new(IT_STK, 0b0000);
 pub const I_POP       : OpClass = OpClass::new(IT_STK, 0b0001);
-pub const I_PUSHx2    : OpClass = OpClass::new(IT_STK, 0b0010);
-pub const I_POPx2     : OpClass = OpClass::new(IT_STK, 0b0011);
+pub const I_PUSHX2    : OpClass = OpClass::new(IT_STK, 0b0010);
+pub const I_POPX2     : OpClass = OpClass::new(IT_STK, 0b0011);
 pub const I_PUSHFG    : OpClass = OpClass::new(IT_STK, 0b0100);
 pub const I_POPFG     : OpClass = OpClass::new(IT_STK, 0b0101);
 pub const I_CALL      : OpClass = OpClass::new(IT_STK, 0b0110);

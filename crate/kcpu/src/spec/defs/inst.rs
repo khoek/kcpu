@@ -953,7 +953,7 @@ fn gen_io(builder: &mut Builder) {
 fn gen_optimizations(builder: &mut Builder) {
     builder.register(InstDef::with_2(
         "PUSHx2",
-        I_PUSHx2,
+        I_PUSHX2,
         ArgKind::new_word(ConstPolicy::Allow),
         ArgKind::new_word(ConstPolicy::Allow),
         vec![
@@ -976,7 +976,7 @@ fn gen_optimizations(builder: &mut Builder) {
 
     builder.register(InstDef::with_2(
         "POPx2",
-        I_POPx2,
+        I_POPX2,
         ArgKind::new_word(ConstPolicy::Never),
         ArgKind::new_word(ConstPolicy::Never),
         vec![

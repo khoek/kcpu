@@ -29,10 +29,10 @@ pub(crate) fn gen_mem(builder: &mut Builder) {
     builder.register_alias(Alias::with(
         "PUSHA",
         vec![
-            Virtual::with_2(I_PUSHx2, Slot::with_wreg(PReg::A), Slot::with_wreg(PReg::B)),
-            Virtual::with_2(I_PUSHx2, Slot::with_wreg(PReg::C), Slot::with_wreg(PReg::D)),
+            Virtual::with_2(I_PUSHX2, Slot::with_wreg(PReg::A), Slot::with_wreg(PReg::B)),
+            Virtual::with_2(I_PUSHX2, Slot::with_wreg(PReg::C), Slot::with_wreg(PReg::D)),
             Virtual::with_2(
-                I_PUSHx2,
+                I_PUSHX2,
                 Slot::with_wreg(PReg::E),
                 Slot::with_wreg(PReg::BP),
             ),
@@ -41,9 +41,9 @@ pub(crate) fn gen_mem(builder: &mut Builder) {
     builder.register_alias(Alias::with(
         "POPA",
         vec![
-            Virtual::with_2(I_POPx2, Slot::with_wreg(PReg::BP), Slot::with_wreg(PReg::E)),
-            Virtual::with_2(I_POPx2, Slot::with_wreg(PReg::D), Slot::with_wreg(PReg::C)),
-            Virtual::with_2(I_POPx2, Slot::with_wreg(PReg::B), Slot::with_wreg(PReg::A)),
+            Virtual::with_2(I_POPX2, Slot::with_wreg(PReg::BP), Slot::with_wreg(PReg::E)),
+            Virtual::with_2(I_POPX2, Slot::with_wreg(PReg::D), Slot::with_wreg(PReg::C)),
+            Virtual::with_2(I_POPX2, Slot::with_wreg(PReg::B), Slot::with_wreg(PReg::A)),
         ],
     ));
 }
