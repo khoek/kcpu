@@ -1,5 +1,4 @@
 use itertools::iproduct;
-use std::marker::PhantomData;
 
 pub fn accumulate<T, E>(it: impl Iterator<Item = Result<Vec<T>, E>>) -> Result<Vec<T>, E> {
     let mut result = Vec::new();
@@ -27,17 +26,3 @@ pub fn unwrap_singleton<T>(it: &mut impl Iterator<Item = T>) -> T {
     assert!(it.next().is_none());
     t
 }
-
-// RUSTFIX implement and use
-// RUSTFIX can't see a way to make this genertic over the `U32`.
-// pub struct U32FixedWith<Limit: typenum::Unsigned> {
-//     val: u32,
-//     phantom: PhantomData<Limit>,
-// }
-
-// impl<Limit: typenum::Unsigned> U32FixedWith<Limit> {
-//     pub fn new(val: u32) -> Self {
-//         assert!(Limit::to_u32() >= val);
-//         Self { val, phantom: PhantomData }
-//     }
-// }
