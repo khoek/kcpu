@@ -1,4 +1,4 @@
-FAR STPFX $0x80
+FAR.STPFX $0x80
 
 MOV $0x1337 %ra
 STW $0x136 %ra
@@ -6,12 +6,12 @@ MOV $0xBEEF %ra
 STW $0x138 %ra
 
 MOV $0xDEAD %ra
-FAR STW $0x136 %ra
+FAR.STW $0x136 %ra
 MOV $0x9876 %ra
-FAR STW $0x138 %ra
+FAR.STW $0x138 %ra
 
 LDW $0x136 %rc
-FAR LDW $0x138 %rsp
+FAR.LDW $0x138 %rsp
 MOV %rc %rb
 MOV %rd %ra
 MOV $1 %rc

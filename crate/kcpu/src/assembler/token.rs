@@ -90,7 +90,7 @@ impl Token {
         (CommandChar::Containing(" "), Token::parse_error),
         (CommandChar::Containing("#"), Token::parse_error),
         (CommandChar::Ending(":"), Token::parse_label_def),
-        (CommandChar::Starting("@"), Token::parse_special),
+        (CommandChar::Starting("!"), Token::parse_special),
         (CommandChar::Starting("%"), Token::parse_reg_ref),
         (CommandChar::Starting("$"), |s| {
             Token::parse_numeric(s, Width::Word)

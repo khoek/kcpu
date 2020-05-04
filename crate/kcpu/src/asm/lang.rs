@@ -81,7 +81,7 @@ impl Builder {
         let arglists = f
             .variants
             .iter()
-            .map(|v| self.lang.lookup_alias(v).expect("Unknown alias"))
+            .map(|v| self.lang.lookup_alias(v).expect(&format!("Unknown alias: \"{}\"", v)))
             .map(Alias::infer_type)
             .collect();
 

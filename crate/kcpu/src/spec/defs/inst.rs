@@ -69,7 +69,7 @@ fn gen_sys(builder: &mut Builder) {
     builder.register(InstDef::with_single_0("ABRT", I_ABRT, GCTRL_JM_ABRT));
 }
 
-const FARPREFIX: &str = "FAR ";
+const FARPREFIX: &str = "FAR.";
 
 fn mk_distanced_instruction(
     far: bool,
@@ -297,7 +297,7 @@ fn gen_mem(builder: &mut Builder) {
         MCTRL_MODE_STPFX | MCTRL_BUSMODE_CONW_BUSB | RCTRL_IU1_BUSB_O | GCTRL_FT_ENTER,
     ));
     builder.register(InstDef::with_single_1(
-        "FAR STPFX",
+        "FAR.STPFX",
         I_STPFX.add_flag(ITFLAG_MEM_FAR),
         ArgKind::new_word(ConstPolicy::Never),
         MCTRL_MODE_STPFX_FAR | MCTRL_BUSMODE_CONW_BUSB | RCTRL_IU1_BUSB_O | GCTRL_FT_ENTER,

@@ -10,23 +10,18 @@ use crate::asm::{lang::Builder, model::Family};
 
 fn gen_ctl(builder: &mut Builder) {
     builder.register_family(Family::with("ENTER", vec!["ENTER0", "ENTER1"]));
-
     builder.register_family(Family::with("ENTERFR", vec!["ENTERFR1", "ENTERFR2"]));
-
     builder.register_family(Family::with("LEAVE", vec!["LEAVE0", "LEAVE1"]));
 }
 
 fn gen_mem(builder: &mut Builder) {
     builder.register_family(Family::with("LD", vec!["LDW", "LDBL", "LDBH", "LDWO"]));
-
     builder.register_family(Family::with("LDZ", vec!["LDBLZ", "LDBHZ"]));
-
     builder.register_family(Family::with("ST", vec!["STW", "STBL", "STBH", "STWO"]));
 }
 
 fn gen_alu(builder: &mut Builder) {
     builder.register_family(Family::with("ADD", vec!["ADD2", "ADD3"]));
-
     builder.register_family(Family::with("ADDNF", vec!["ADD2NF", "ADD3NF"]));
 }
 
