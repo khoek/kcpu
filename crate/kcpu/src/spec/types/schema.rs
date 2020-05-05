@@ -21,7 +21,7 @@ impl Iu3Prefix {
 
     /// Returns an incomplete piece of an opcode (the IKind part) obtained by binding this
     /// prefix to the passed IU3 value.
-    pub fn bind(&self, iu3: PReg) -> OpCode {
+    pub fn bind(self, iu3: PReg) -> OpCode {
         // RUSTFIX move this to the constructor once `if` is allowed in const
         assert!(self.val == 0 || self.val == 1);
         (self.val << IU::WIDTH) | (iu3 as OpCode)
@@ -177,7 +177,7 @@ pub struct InstDef {
 }
 
 impl Half {
-    pub fn shift(&self) -> usize {
+    pub fn shift(self) -> usize {
         match self {
             Half::Lo => 0,
             Half::Hi => 8,
@@ -200,7 +200,7 @@ impl PartialOrd for ConstPolicy {
 }
 
 impl ConstPolicy {
-    pub fn is_only(&self) -> bool {
+    pub fn is_only(self) -> bool {
         match self {
             ConstPolicy::Only => true,
             _ => false,

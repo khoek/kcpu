@@ -59,8 +59,11 @@ fn is_flag_sign(val: u16) -> bool {
     val & 0x8000 != 0
 }
 
+// HARDWARE NOTE FORMERLY BUG IN ALL SIMULATORS (|| not &&), LIKELY BUG IN
+// CURRENT HARDWARE DESIGN.
+#[allow(clippy::nonminimal_bool)]
 fn is_flag_n_overflow(val: i16, a: i16, b: i16) -> bool {
-    !(a >= 0 && b >= 0 && val < 0) || !(a < 0 && b < 0 && val >= 0)
+    !(a >= 0 && b >= 0 && val < 0) && !(a < 0 && b < 0 && val >= 0)
 }
 
 fn encode_flags(carry: bool, n_zero: bool, sign: bool, n_overflow: bool) -> Flags {

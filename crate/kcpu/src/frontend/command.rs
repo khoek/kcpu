@@ -118,7 +118,7 @@ pub fn vm(cmd: SubcommandVm) -> ! {
         .in_bios_bin
         .map(|bios_bin| std::fs::read(bios_bin).unwrap());
     let prog_bin = std::fs::read(cmd.in_prog_bin).unwrap();
-    let summary = execute_prog_with_opts(bios_bin.as_ref(), &prog_bin, cmd.vm_opts);
+    let summary = execute_prog_with_opts(bios_bin.as_deref(), &prog_bin, cmd.vm_opts);
 
     std::process::exit(summary_to_exit_code(&summary));
 }
@@ -133,7 +133,7 @@ pub fn run(cmd: SubcommandRun) -> ! {
         .unwrap();
     let prog_bin = assemble::assemble_path(&cmd.in_prog_src).unwrap();
 
-    let summary = execute_prog_with_opts(bios_bin.as_ref(), &prog_bin, cmd.vm_opts);
+    let summary = execute_prog_with_opts(bios_bin.as_deref(), &prog_bin, cmd.vm_opts);
 
     std::process::exit(summary_to_exit_code(&summary));
 }
@@ -167,11 +167,7 @@ fn summary_to_exit_code(summary: &Summary) -> i32 {
     }
 }
 
-fn execute_prog_with_opts(
-    bios_bin: Option<&Vec<u8>>,
-    prog_bin: &Vec<u8>,
-    vm_opts: VmOpts,
-) -> Summary {
+fn execute_prog_with_opts(bios_bin: Option<&[u8]>, prog_bin: &[u8], vm_opts: VmOpts) -> Summary {
     super::execute::execute(
         Config {
             headless: vm_opts.headless,

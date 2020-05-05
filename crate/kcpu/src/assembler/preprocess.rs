@@ -4,7 +4,7 @@ const NEWLINE_CHAR: char = '\n';
 #[derive(Debug)]
 pub(super) enum Error {}
 
-fn strip_comments<'a>(raw: &str) -> String {
+fn strip_comments(raw: &str) -> String {
     let mut s = String::new();
 
     let mut in_comment = false;

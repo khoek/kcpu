@@ -16,7 +16,7 @@ enum Operation {
 }
 
 impl Operation {
-    fn agrees_with(&self, cmd: Command) -> bool {
+    fn agrees_with(self, cmd: Command) -> bool {
         match (self, cmd) {
             (Operation::Read { result: _ }, Command::Read { port: _ }) => true,
             (Operation::Write, Command::Write { port: _, value: _ }) => true,

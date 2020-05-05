@@ -135,7 +135,7 @@ pub struct Blob<Tag> {
 }
 
 impl ConstPolicy {
-    pub fn matches<Tag>(&self, arg: &Arg<Tag>) -> bool {
+    pub fn matches<Tag>(self, arg: &Arg<Tag>) -> bool {
         match (self, arg) {
             (ConstPolicy::Only, Arg::Reg(_)) => false,
             (ConstPolicy::Never, Arg::Const(_)) => false,
@@ -145,17 +145,17 @@ impl ConstPolicy {
 }
 
 impl Const {
-    pub fn to_width(&self) -> Width {
+    pub fn to_width(self) -> Width {
         match self {
             Const::Word(_) => Width::Word,
-            Const::Byte(_, half) => Width::Byte(*half),
+            Const::Byte(_, half) => Width::Byte(half),
         }
     }
 
-    pub fn encode(&self) -> Word {
+    pub fn encode(self) -> Word {
         match self {
-            Const::Word(val) => *val,
-            Const::Byte(val, half) => (*val as Word) << half.shift(),
+            Const::Word(val) => val,
+            Const::Byte(val, half) => (val as Word) << half.shift(),
         }
     }
 }
@@ -170,19 +170,15 @@ impl<T> ConstBinding<T> {
 }
 
 impl ArgKind {
-    pub fn collides(&self, other: &Self) -> bool {
+    pub fn collides(self, other: Self) -> bool {
         if self.width != other.width {
             return false;
         }
 
-        if !(self.policy >= other.policy) && !(self.policy <= other.policy) {
-            return false;
-        }
-
-        true
+        self.policy.partial_cmp(&other.policy).is_some()
     }
 
-    fn matches<Tag>(&self, arg: &Arg<Tag>) -> bool {
+    fn matches<Tag>(self, arg: &Arg<Tag>) -> bool {
         self.policy.matches(arg) && self.width == arg.to_width()
     }
 }
@@ -247,7 +243,7 @@ impl Alias {
         Self::new(name.to_owned(), vec![vinst])
     }
 
-    fn infer_type_from_virtuals(vinsts: &Vec<Virtual>) -> Vec<ArgKind> {
+    fn infer_type_from_virtuals(vinsts: &[Virtual]) -> Vec<ArgKind> {
         let mut max_idx = None;
         let mut idxs = HashMap::new();
         for vi in vinsts {
@@ -293,11 +289,11 @@ impl Alias {
     }
 
     // RUSTFIX this function re-infers the type, do we reall need it?
-    // pub fn matches<T>(&self, args: &Vec<Arg<Tag>>) -> bool {
+    // pub fn matches<T>(&self, args: &[Arg<Tag>]) -> bool {
     //     iproduct!(self.infer_type().iter(), args).all(|(kind, arg)| kind.matches(arg))
     // }
 
-    pub fn instantiate<Tag: Clone>(&self, args: &Vec<Arg<Tag>>) -> Option<Vec<Blob<Tag>>> {
+    pub fn instantiate<Tag: Clone>(&self, args: &[Arg<Tag>]) -> Option<Vec<Blob<Tag>>> {
         // We need to check the argument list length against our internally stored argument count,
         // since `Virtual::instantiate` panics when the argument list is too short, and we could
         // erroneously match argument lists which are too long.
@@ -351,7 +347,7 @@ impl Virtual {
     /// if there is a type mismatch between the argument list and the instruction
     /// represented by this virtual instruction. Panics if the argument list is not
     /// long enough to resolve a bound variable.
-    pub fn instantiate<Tag: Clone>(&self, args: &Vec<Arg<Tag>>) -> Option<Blob<Tag>> {
+    pub fn instantiate<Tag: Clone>(&self, args: &[Arg<Tag>]) -> Option<Blob<Tag>> {
         // RUSTFIX we want to be performing runtime checks with `opclass.is_compatible` in this method
         //         oop, actually, if an opcode has a "bind" instruction where it binds an EnumMap of ius,
         //         then we could just see that that failed.
@@ -367,7 +363,7 @@ impl Virtual {
             match slot {
                 None => (),
                 Some(slot) => {
-                    let arg = slot.bind(args);
+                    let arg = slot.resolve(args);
 
                     ius[iu] = Some(arg.to_preg());
 
@@ -393,26 +389,33 @@ impl Virtual {
 }
 
 impl InstDef {
-    // RUSTFIX Is this function for compile time checking?
-    fn bound_slots_match(&self, slots: EnumMap<IU, Option<Slot>>) -> bool {
-        // Check whether all of the slots which are not an unbound `ArgIdx` actually match the
-        // corresponding argument of the instruction which they claim to.
-        //
-        // In particular, we make sure that the used slots exactly correspond to occupied
-        // `ArgKind`s in the `InstDef`.
-        if !slots.iter().all(|(iu, slot)| {
-            // If `Slot::bound_to_arg` gives `None` then this just means we can't decide
+    /// If the passed `Slot` has an unbound `ArgIdx`, check if it actually matches the
+    /// corresponding argument of the instruction which they claim to.
+    fn kind_compatible_with_slot(k: Option<ArgKind>, a: Option<Slot>) -> bool {
+        match (k, a.map(|s| s.to_arg::<()>())) {
+            // If `Slot::to_arg` gives `None` then this just means we can't decide
             // wether the argument typechecks at startup-time; the argument is unbound.
             // On the other hand, if there is no argument at all then we can still
             // decided whether we should actually have one there, and vice versa if we
             // are trying to bind too many arguments.
-            match (self.args[iu], slot.map(|s| s.bound_to_arg::<()>())) {
-                (None, None) => true,
-                (Some(_), Some(None)) => true,
-                (Some(a), Some(Some(b))) => a.matches(&b),
-                _ => false,
-            }
-        }) {
+            (None, None) => true,
+            (Some(_), Some(None)) => true,
+            (Some(a), Some(Some(b))) => a.matches(&b),
+            _ => false,
+        }
+    }
+
+    // RUSTFIX Is this function for compile time checking?
+    fn bound_slots_match(&self, slots: EnumMap<IU, Option<Slot>>) -> bool {
+        // Check whether all of the bound slots are compatible with the `ArgKind` which
+        // they claim to bind to.
+        //
+        // In particular, we make sure that the used slots exactly correspond to occupied
+        // `ArgKind`s in the `InstDef`.
+        if !slots
+            .iter()
+            .all(|(iu, slot)| InstDef::kind_compatible_with_slot(self.args[iu], *slot))
+        {
             return false;
         }
 
@@ -429,7 +432,7 @@ impl InstDef {
         // all.
         for (iu, slot) in slots {
             if let Some(reg) = slot
-                .map(|slot| slot.bound_to_arg::<()>().map(|arg| arg.to_preg()))
+                .map(|slot| slot.to_arg::<()>().map(|arg| arg.to_preg()))
                 .flatten()
             {
                 if !self.opclass.is_compatible(iu, Some(reg)) {
@@ -475,24 +478,24 @@ impl Slot {
         Slot::Arg(idx)
     }
 
-    /// Weaker version of `bind` which returns `Some(arg)`
-    /// exactly when it is not an unbound argument already---i.e. a
+    /// Weaker version of `resolve` which returns `Some(arg)`
+    /// exactly when `self` is not an unbound argument already---i.e. a
     /// `Reg` or `Const`.
-    pub fn bound_to_arg<Tag>(&self) -> Option<Arg<Tag>> {
+    pub fn to_arg<Tag>(self) -> Option<Arg<Tag>> {
         match self {
-            Slot::Reg(r) => Some(Arg::Reg(*r)),
-            Slot::Const(c) => Some(Arg::Const(ConstBinding::Resolved(*c))),
+            Slot::Reg(r) => Some(Arg::Reg(r)),
+            Slot::Const(c) => Some(Arg::Const(ConstBinding::Resolved(c))),
             _ => None,
         }
     }
 
-    /// Binds the passed argument list (i.e resolving unbound arguments
+    /// Resolves the passed argument list (i.e resolving unbound arguments
     /// against the passed list), returning `None` only if the argument
     /// list was not long enough.
-    pub fn bind<Tag: Clone>(&self, args: &Vec<Arg<Tag>>) -> Arg<Tag> {
+    pub fn resolve<Tag: Clone>(self, args: &[Arg<Tag>]) -> Arg<Tag> {
         match self {
-            Slot::Arg(idx) => (*args.get(*idx as usize).unwrap()).clone(),
-            _ => self.bound_to_arg().unwrap(),
+            Slot::Arg(idx) => (*args.get(idx as usize).unwrap()).clone(),
+            _ => self.to_arg().unwrap(),
         }
     }
 }

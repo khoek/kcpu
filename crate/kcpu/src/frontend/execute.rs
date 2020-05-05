@@ -15,8 +15,8 @@ pub enum Verbosity {
 }
 
 impl Verbosity {
-    fn to_logger(&self) -> Logger {
-        match *self {
+    fn to_logger(self) -> Logger {
+        match self {
             Verbosity::Silent => Logger::silent(),
             Verbosity::MachineState => Logger::only_machine_state(),
             Verbosity::Disassemble => Logger::everything(),
@@ -73,17 +73,21 @@ impl Summary {
     }
 }
 
-pub fn execute(cfg: Config, raw_bios: Option<&Vec<u8>>, raw_prog: Option<&Vec<u8>>) -> Summary {
+pub fn execute(cfg: Config, raw_bios: Option<&[u8]>, raw_prog: Option<&[u8]>) -> Summary {
     // RUSTFIX implement graphics
     // graphics::get_graphics().configure(self.headless);
 
     let bios = Bank::new(
         BankType::Bios,
-        (*raw_bios.unwrap_or_else(|| assets::get_default_bios())).clone(),
+        raw_bios
+            .unwrap_or_else(|| assets::get_default_bios())
+            .to_vec(),
     );
     let prog = Bank::new(
         BankType::Prog,
-        (*raw_prog.unwrap_or_else(|| assets::get_default_prog())).clone(),
+        raw_prog
+            .unwrap_or_else(|| assets::get_default_prog())
+            .to_vec(),
     );
 
     let logger = cfg.verbosity.to_logger();

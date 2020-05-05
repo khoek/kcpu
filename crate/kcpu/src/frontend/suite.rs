@@ -55,8 +55,8 @@ impl CaseBin {
                 abort_action: AbortAction::Stop,
                 print_marginals: false,
             },
-            self.bios_bin.as_ref(),
-            self.prog_bin.as_ref(),
+            self.bios_bin.as_deref(),
+            self.prog_bin.as_deref(),
         )
     }
 }
@@ -160,7 +160,7 @@ fn find_cases(test_dir: &PathBuf) -> Vec<CaseSrc> {
     ]
 }
 
-fn run_tests(max_clocks: Option<u64>, tests: &Vec<CaseSrc>) -> bool {
+fn run_tests(max_clocks: Option<u64>, tests: &[CaseSrc]) -> bool {
     let name_pad = tests.iter().map(|test| test.name.len()).max().unwrap_or(0);
 
     println!("--------------------------------------------------------------");

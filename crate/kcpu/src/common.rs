@@ -15,7 +15,7 @@ pub fn eq_ignore_case(a: &str, b: &str) -> bool {
         .eq(b.chars().map(std::primitive::char::to_lowercase).flatten())
 }
 
-pub fn vec_pairwise_iter<T>(v: &Vec<T>) -> impl Iterator<Item = (&T, &T)> {
+pub fn vec_pairwise_iter<T>(v: &[T]) -> impl Iterator<Item = (&T, &T)> {
     iproduct!(0..v.len(), 0..v.len())
         .filter(|(i, j)| i != j)
         .map(move |(i, j)| (&v[i], &v[j]))

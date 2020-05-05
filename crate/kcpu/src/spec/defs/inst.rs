@@ -522,7 +522,7 @@ fn gen_ctl(builder: &mut Builder) {
     ));
 }
 
-fn mk_alu_inst<'a>(
+fn mk_alu_inst(
     name: &str,
     op: OpClass,
     args: Vec<ArgKind>,

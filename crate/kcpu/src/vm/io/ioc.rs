@@ -72,15 +72,12 @@ impl<'a> Ioc<'a> {
         self.manager
             .process_halfcycle(ClockedSignals::with_onclock(ctl));
 
-        match cmd {
-            Some(Command::Read { port: _ }) => {
-                if self.manager.is_io_done() {
-                    if let Some(result) = self.manager.get_read_result() {
-                        s.assign(Bus::B, result);
-                    }
+        if let Some(Command::Read { port: _ }) = cmd {
+            if self.manager.is_io_done() {
+                if let Some(result) = self.manager.get_read_result() {
+                    s.assign(Bus::B, result);
                 }
             }
-            _ => (),
         }
 
         self.manager.after_clock_outputs(cmd);

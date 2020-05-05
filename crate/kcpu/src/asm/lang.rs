@@ -73,18 +73,18 @@ impl Builder {
         self.register_family(Family::new(name.clone(), vec![name]))
     }
 
-    fn arg_kind_lists_collide(us: &Vec<ArgKind>, vs: &Vec<ArgKind>) -> bool {
-        us.len() == vs.len() && iproduct!(us.iter(), vs.iter()).all(|(u, v)| u.collides(v))
+    fn arg_kind_lists_collide(us: &[ArgKind], vs: &[ArgKind]) -> bool {
+        us.len() == vs.len() && iproduct!(us.iter(), vs.iter()).all(|(u, v)| u.collides(*v))
     }
 
     pub(super) fn register_family(&mut self, f: Family) {
-        let arglists = f
+        let arglists: Vec<_> = f
             .variants
             .iter()
             .map(|v| {
                 self.lang
                     .lookup_alias(v)
-                    .expect(&format!("Unknown alias: \"{}\"", v))
+                    .unwrap_or_else(|| panic!("Unknown alias: \"{}\"", v))
             })
             .map(Alias::infer_type)
             .collect();

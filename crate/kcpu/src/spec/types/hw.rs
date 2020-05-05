@@ -12,8 +12,10 @@ use strum_macros::EnumIter;
 pub type Byte = u8;
 pub type Word = u16;
 
+pub const BYTE_WIDTH: usize = 8;
+
 pub const fn byte_flip(v: Word) -> Word {
-    ((v & 0x00FF) << 8) | ((v & 0xFF00) >> 8)
+    ((v & 0x00FF) << BYTE_WIDTH) | ((v & 0xFF00) >> BYTE_WIDTH)
 }
 
 // RUSTFIX make this const when possible
@@ -117,13 +119,13 @@ impl IU {
     pub const WIDTH: u32 = 3;
     const MASK: Word = 0b111;
 
-    pub const fn encode(&self, reg: PReg) -> Word {
-        let idx = *self as u32;
+    pub const fn encode(self, reg: PReg) -> Word {
+        let idx = self as u32;
         (reg as u16) << (idx * IU::WIDTH)
     }
 
-    pub fn decode(&self, inst: Word) -> PReg {
-        let idx = *self as u32;
+    pub fn decode(self, inst: Word) -> PReg {
+        let idx = self as u32;
         PReg::from_u16((inst & (IU::MASK << (idx * IU::WIDTH))) >> (idx * IU::WIDTH)).unwrap()
     }
 }
@@ -279,7 +281,7 @@ pub enum Bus {
 }
 
 impl Bus {
-    pub fn get_pulled_value(&self) -> Word {
+    pub fn get_pulled_value(self) -> Word {
         match self {
             Bus::A => 0,
             Bus::B => 0,

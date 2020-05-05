@@ -76,17 +76,19 @@ impl<'a> CommandChar<'a> {
     }
 }
 
+type CommandCharHandler = (CommandChar<'static>, fn(&str) -> Result<Token, Error>);
+
 impl Token {
-    // RUSTFIX Don't split up strings with spaces!
+    // RUSTFIX Don't split up string literals with spaces!
     fn str_to_raw_tokens<'a>(line: &'a str) -> impl Iterator<Item = &str> + 'a {
-        line.split(" ").filter(|s| !s.is_empty())
+        line.split_ascii_whitespace().filter(|s| !s.is_empty())
     }
 
     pub fn parse_line<'a>(line: &'a str) -> impl Iterator<Item = Result<Token, Error>> + 'a {
         Token::str_to_raw_tokens(line).map(Token::parse)
     }
 
-    const COMMAND_CHARS: [(CommandChar<'static>, fn(&str) -> Result<Self, Error>); 9] = [
+    const COMMAND_CHARS: [CommandCharHandler; 9] = [
         (CommandChar::Containing(" "), Token::parse_error),
         (CommandChar::Containing("#"), Token::parse_error),
         (CommandChar::Ending(":"), Token::parse_label_def),
@@ -105,7 +107,7 @@ impl Token {
     ];
 
     fn parse(raw: &str) -> Result<Self, Error> {
-        assert!(raw.len() > 0);
+        assert!(!raw.is_empty());
 
         for (c, parser) in Token::COMMAND_CHARS.iter() {
             if let Some(raw) = c.matches(raw) {
@@ -125,7 +127,7 @@ impl Token {
     }
 
     fn parse_label_string(label: &str) -> Result<String, Error> {
-        if label.len() == 0 {
+        if label.is_empty() {
             return Err(Error::MalformedToken(
                 label.to_owned(),
                 "Label names must have nonzero length",
@@ -231,14 +233,14 @@ impl Token {
         Ok(raw.to_owned())
     }
 
-    pub fn to_string(self) -> Result<String, Error> {
+    pub fn into_string(self) -> Result<String, Error> {
         match self {
             Token::String(s) => Ok(s),
             tk => Err(Error::UnexpectedToken(tk, "string literal")),
         }
     }
 
-    pub fn to_arg(self) -> Result<Arg<String>, Error> {
+    pub fn into_arg(self) -> Result<Arg<String>, Error> {
         match self {
             Token::RegRef(r) => Ok(Arg::Reg(r)),
             Token::Const(c) => Ok(Arg::Const(ConstBinding::Resolved(c))),

@@ -12,8 +12,8 @@ pub fn get_default_testsuite_dir() -> PathBuf {
 // RUSTFIX remove duplication once `const fn`s become more powerful.
 static DEFAULT_BIOS_SRC: &str = include_str!("assets/default.bios.ks");
 static DEFAULT_PROG_SRC: &str = include_str!("assets/default.prog.ks");
-static DEFAULT_BIOS_BIN: Lazy<Vec<u8>> = Lazy::new(|| assemble_default_bios());
-static DEFAULT_PROG_BIN: Lazy<Vec<u8>> = Lazy::new(|| assemble_default_prog());
+static DEFAULT_BIOS_BIN: Lazy<Vec<u8>> = Lazy::new(assemble_default_bios);
+static DEFAULT_PROG_BIN: Lazy<Vec<u8>> = Lazy::new(assemble_default_prog);
 
 fn assemble_default_bios() -> Vec<u8> {
     assemble::assemble(DEFAULT_BIOS_SRC)

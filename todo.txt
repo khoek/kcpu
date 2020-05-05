@@ -1,6 +1,10 @@
 
 
 
+// THERE IS A BUG IN n_overflow calculation in all three simulators. Need to re-check real hardware, probably
+// it is designed wrong. No wonder I couldn't get greater than to work! (right?)
+
+
 
 // RUST Idea Graveyard
 

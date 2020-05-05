@@ -67,7 +67,7 @@ impl Statement {
                 Statement::Inst(
                     name,
                     tokens
-                        .map(|tk| tk?.to_arg())
+                        .map(|tk| tk?.into_arg())
                         .collect::<Result<Vec<_>, Error>>()?,
                 ),
                 Disposition::ExpectExhausted,
@@ -97,7 +97,7 @@ impl Statement {
                 tokens
                     .next()
                     .unwrap_or(Err(Error::UnexpectedEndOfStream("string literal")))?
-                    .to_string()?,
+                    .into_string()?,
             )),
             _ => Err(Error::MalformedToken(
                 name.to_owned(),

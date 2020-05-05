@@ -20,7 +20,7 @@ pub fn run_test(bios_src: Option<&str>, prog_src: &str) -> Result<(), assembler:
 
             print_marginals: true,
         },
-        bios.as_ref(),
+        bios.as_deref(),
         Some(&prog),
     );
 

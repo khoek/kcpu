@@ -1,7 +1,7 @@
 use super::types::*;
 use crate::spec::{
     defs::usig,
-    types::hw::{self, Bus, UInst, Word},
+    types::hw::{self, Bus, UInst, Word, BYTE_WIDTH},
 };
 use enum_map::{Enum, EnumMap};
 
@@ -13,7 +13,7 @@ pub enum BankType {
 
 impl BankType {
     // RUSTFIX make this const when const matches drop
-    pub fn is_rom(&self) -> bool {
+    pub fn is_rom(self) -> bool {
         match self {
             BankType::Bios => true,
             BankType::Prog => false,
@@ -22,7 +22,7 @@ impl BankType {
 
     // RUSTFIX make this const when const matches drop
     // Remember, this is in words!
-    pub fn get_size(&self) -> usize {
+    pub fn get_size(self) -> usize {
         match self {
             BankType::Bios => 1 << 13,
             BankType::Prog => 1 << 21, // FIXME what is the actual value?
@@ -64,7 +64,7 @@ impl Bank {
             panic!("out of bounds memory load");
         }
 
-        return self.data[(addr >> 1) as usize];
+        self.data[(addr >> 1) as usize]
     }
 
     fn store(&mut self, addr: Word, val: Word) {
@@ -236,7 +236,7 @@ impl<'a> Mem<'a> {
                     res |= val_m & 0x00FF;
                     if connect_b_lo {
                         // B_LO_TO_HI
-                        res |= (val_b & 0x00FF) << 8;
+                        res |= (val_b & 0x00FF) << BYTE_WIDTH;
                     } else {
                         // B_HI_TO_HI
                         res |= (val_b & 0xFF00) << 0;
@@ -249,7 +249,7 @@ impl<'a> Mem<'a> {
                         res |= (val_b & 0x00FF) >> 0;
                     } else {
                         // B_HI_TO_LO
-                        res |= (val_b & 0xFF00) >> 8;
+                        res |= (val_b & 0xFF00) >> BYTE_WIDTH;
                     }
                 }
                 s.assign(Bus::F, res);

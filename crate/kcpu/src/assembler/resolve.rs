@@ -31,7 +31,7 @@ impl BinaryElement {
     }
 }
 
-fn build_label_map(elems: &Vec<BinaryElement>) -> Result<HashMap<String, Word>, Error> {
+fn build_label_map(elems: &[BinaryElement]) -> Result<HashMap<String, Word>, Error> {
     let mut label_map = HashMap::new();
 
     let mut bs = 0;
@@ -54,7 +54,7 @@ fn build_label_map(elems: &Vec<BinaryElement>) -> Result<HashMap<String, Word>, 
 pub(super) fn resolve(elems: Vec<BinaryElement>) -> Result<Vec<Word>, Error> {
     let label_map = build_label_map(&elems)?;
     let label_resolver = |tag| {
-        Ok(label_map.get(&tag).map(|v| *v))
+        Ok(label_map.get(&tag).copied())
             .transpose()
             .unwrap_or(Err(Error::UnknownLabel(tag)))
     };
