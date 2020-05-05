@@ -117,7 +117,7 @@ fn find_cases(test_dir: &PathBuf) -> Vec<CaseSrc> {
         // fn_cook_fake_test("int_disable_2"), VM
         // fn_cook_fake_test("int_multiple"), ASM
         // fn_cook_fake_test("int_recursive"), ASM
-        fn_cook_fake_test("io_probe"), // FAILS BECAUSE io::dev::slow_regs is unimplemented
+        fn_cook_fake_test("io_probe"),
         fn_cook_fake_test("ldwo_fam"),
         fn_cook_fake_test("mov_self"),
         fn_cook_fake_test("primes"),
