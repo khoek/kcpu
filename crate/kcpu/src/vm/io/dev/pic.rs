@@ -71,11 +71,11 @@ impl Pic {
     }
 
     fn get_lowest_bit(bitmask: Word) -> Word {
-        return if bitmask != 0 {
+        if bitmask != 0 {
             1 << bitmask.tzcnt()
         } else {
             0
-        };
+        }
     }
 
     // HARDWARE NOTE: NMI enable jumper?

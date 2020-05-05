@@ -1,7 +1,7 @@
 use super::{
     assemble, assets,
     execute::{AbortAction, BreakMode, Config, Summary, Verbosity},
-    run_suite,
+    suite,
 };
 use std::ffi::OsString;
 use std::path::PathBuf;
@@ -13,7 +13,7 @@ pub enum CommandRoot {
     Vm(SubcommandVm),
     Asm(SubcommandAsm),
     Run(SubcommandRun),
-    RunSuite(SubcommandRunSuite),
+    Suite(SubcommandSuite),
 }
 
 #[derive(StructOpt, Debug)]
@@ -79,7 +79,7 @@ pub struct SuiteOpts {
 }
 
 #[derive(StructOpt, Debug)]
-pub enum SubcommandRunSuite {
+pub enum SubcommandSuite {
     Test(SuiteOpts),
     Bench(SuiteOpts),
 }
@@ -90,7 +90,7 @@ pub fn root(cmd: CommandRoot) -> ! {
         CommandRoot::Asm(scmd) => asm(scmd),
         CommandRoot::Vm(scmd) => vm(scmd),
         CommandRoot::Run(scmd) => run(scmd),
-        CommandRoot::RunSuite(scmd) => run_suite(scmd),
+        CommandRoot::Suite(scmd) => suite(scmd),
     };
 }
 
@@ -138,18 +138,18 @@ pub fn run(cmd: SubcommandRun) -> ! {
     std::process::exit(summary_to_exit_code(&summary));
 }
 
-pub fn run_suite(cmd: SubcommandRunSuite) -> ! {
+pub fn suite(cmd: SubcommandSuite) -> ! {
     let (kind, opts) = match cmd {
-        SubcommandRunSuite::Test(opts) => (run_suite::SuiteKind::Test, opts),
-        SubcommandRunSuite::Bench(opts) => (run_suite::SuiteKind::Bench, opts),
+        SubcommandSuite::Test(opts) => (suite::SuiteKind::Test, opts),
+        SubcommandSuite::Bench(opts) => (suite::SuiteKind::Bench, opts),
     };
 
     // RUSTFIX proper error handling, instead of just calling `unwrap()`.
-    let success = run_suite::run_suite(
+    let success = suite::suite(
         kind,
         &opts
             .suite_dir
-            .unwrap_or(assets::get_default_testsuite_dir()),
+            .unwrap_or_else(assets::get_default_testsuite_dir),
         &opts.only,
         opts.max_clocks,
     )

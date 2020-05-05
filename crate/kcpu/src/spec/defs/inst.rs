@@ -87,7 +87,7 @@ fn mk_distanced_instruction(
 }
 
 fn ucode_memb_sh_step1(is_write: bool, lo_or_hi: bool, zero: bool) -> UInst {
-    return MCTRL_MODE_FI_MO
+    MCTRL_MODE_FI_MO
         | MCTRL_BUSMODE_CONH
         | (if lo_or_hi { ACTION_MCTRL_BUSMODE_X } else { 0 })
         | (if is_write { MCTRL_BUSMODE_WRITE } else { 0 })
@@ -96,18 +96,18 @@ fn ucode_memb_sh_step1(is_write: bool, lo_or_hi: bool, zero: bool) -> UInst {
             0 /* The bus is pulled low. */
         } else {
             RCTRL_IU2_BUSB_O
-        });
+        })
 }
 
 fn ucode_memb_ld_step2(lo_or_hi: bool, _zero: bool) -> UInst {
-    return MCTRL_MODE_FO
+    MCTRL_MODE_FO
         | MCTRL_BUSMODE_CONW_BUSB_MAYBEFLIP
         | (if lo_or_hi { ACTION_MCTRL_BUSMODE_X } else { 0 })
-        | RCTRL_IU2_BUSB_I;
+        | RCTRL_IU2_BUSB_I
 }
 
 fn ucode_memb_st_step2(_lo_or_hi: bool, _zero: bool) -> UInst {
-    return MCTRL_MODE_FO_MI | MCTRL_BUSMODE_CONW_BUSM;
+    MCTRL_MODE_FO_MI | MCTRL_BUSMODE_CONW_BUSM
 }
 
 fn mk_mem_byte_instruction(
@@ -120,7 +120,7 @@ fn mk_mem_byte_instruction(
     lo_or_hi: bool,
     zero: bool,
 ) -> InstDef {
-    return mk_distanced_instruction(
+    mk_distanced_instruction(
         far,
         farbit,
         name,
@@ -134,7 +134,7 @@ fn mk_mem_byte_instruction(
                 ucode_memb_ld_step2(lo_or_hi, zero)
             }) | GCTRL_FT_ENTER,
         ],
-    );
+    )
 }
 
 fn gen_mem_variants(builder: &mut Builder, far: bool) {

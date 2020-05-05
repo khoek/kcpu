@@ -45,6 +45,15 @@ use static_assertions::const_assert;
 //
 
 
+const fn mk_val(base: u32, off: u32, val: u16) -> UInst {
+    (val as UInst) << (base + off)
+}
+
+const fn dec_val(base: u32, off: u32, mask: UInst, raw: UInst) -> u16 {
+    ((raw & mask) >> (base + off)) as u16
+}
+
+
 
 // BEGIN DECLS
 
@@ -54,18 +63,18 @@ pub const CTRL_BASE : u32 = 0;
 pub const CTRL_END  : u32 = CTRL_BASE + 4;
 
 // Random mutually exclusive "ACTION"s
-pub const ACTION_CTRL_NONE        : UInst = 0b00 << (0 + CTRL_BASE);
-pub const ACTION_GCTRL_USE_ALT    : UInst = 0b01 << (0 + CTRL_BASE);
-pub const ACTION_GCTRL_RIP_BUSA_O : UInst = 0b10 << (0 + CTRL_BASE);
-pub const ACTION_MCTRL_BUSMODE_X  : UInst = 0b11 << (0 + CTRL_BASE);
+pub const ACTION_CTRL_NONE        : UInst = mk_val(CTRL_BASE, 0, 0b00);
+pub const ACTION_GCTRL_USE_ALT    : UInst = mk_val(CTRL_BASE, 0, 0b01);
+pub const ACTION_GCTRL_RIP_BUSA_O : UInst = mk_val(CTRL_BASE, 0, 0b10);
+pub const ACTION_MCTRL_BUSMODE_X  : UInst = mk_val(CTRL_BASE, 0, 0b11);
 
-pub const _COMMAND_NONE        : UInst = 0b00 << (2 + CTRL_BASE);
+pub const _COMMAND_NONE        : UInst = mk_val(CTRL_BASE, 2, 0b00);
 /*
     HARDWARE NOTE: `COMMAND_INHIBIT_JMFT` disallows the instmask-setting
     and UC-resetting behaviour of all JMs/FTs, just for that uop. This
     is currently used to implement `_DO_INT`.
 */
-pub const COMMAND_INHIBIT_JMFT: UInst = 0b01 << (2 + CTRL_BASE);
+pub const COMMAND_INHIBIT_JMFT: UInst = mk_val(CTRL_BASE, 2, 0b01);
 /*
     There next two increment/decrement RSP ON THE CLOCK RISING EDGE.
     (RSP is usually decremented on the offclock cycle by an instruction register bit.);
@@ -73,12 +82,12 @@ pub const COMMAND_INHIBIT_JMFT: UInst = 0b01 << (2 + CTRL_BASE);
     HARDWARE NOTE: COMMAND_RCTRL_RSP_EARLY_DEC_IU3RSP implicitly activates the
     IU3_OVERRIDE_O_SELECT_RSP behaviour.
 */
-pub const COMMAND_RCTRL_RSP_EARLY_DEC_IU3RSP: UInst = 0b10 << (2 + CTRL_BASE);
-pub const COMMAND_RCTRL_RSP_EARLY_INC: UInst = 0b11 << (2 + CTRL_BASE);
+pub const COMMAND_RCTRL_RSP_EARLY_DEC_IU3RSP: UInst = mk_val(CTRL_BASE, 2, 0b10);
+pub const COMMAND_RCTRL_RSP_EARLY_INC: UInst = mk_val(CTRL_BASE, 2, 0b11);
 
 // NONBIT: CTRL decoding
-pub const MASK_CTRL_ACTION: UInst = 0b11 << (0 + CTRL_BASE);
-pub const MASK_CTRL_COMMAND: UInst = 0b11 << (2 + CTRL_BASE);
+pub const MASK_CTRL_ACTION: UInst = mk_val(CTRL_BASE, 0, 0b11);
+pub const MASK_CTRL_COMMAND: UInst = mk_val(CTRL_BASE, 2, 0b11);
 
 // GCTRL
 
@@ -87,62 +96,62 @@ pub const GCTRL_END  : u32 = GCTRL_BASE + 7;
 
 // `fetchtransitions` (FTs) and `jumpmodes` (JMs) share the same bits.
 
-pub const GCTRL_FT_NONE     : UInst = 0b0000 << (0 + GCTRL_BASE);
+pub const GCTRL_FT_NONE     : UInst = mk_val(GCTRL_BASE, 0, 0b0000);
 // During an ENTER:
 // 1. The INSTMASK flag is set. (Thus it is safe to set while already set.);
-pub const GCTRL_FT_ENTER    : UInst = 0b0001 << (0 + GCTRL_BASE);
+pub const GCTRL_FT_ENTER    : UInst = mk_val(GCTRL_BASE, 0, 0b0001);
 // During a MAYBEEXIT/EXIT:
 // 1. RIP is INC'd in any case.
 // 2. If (is an EXIT || the high RIR bit is set) the INSTMASK flag is unset.
 // 3. ONLY IF MAYBEEXIT: Store in RIR the value on Bus::B
 //                 ----> is Bus::B access sufficient for jumping for some offset?
-pub const GCTRL_FT_MAYBEEXIT: UInst = 0b0010 << (0 + GCTRL_BASE);
-pub const GCTRL_FT_EXIT     : UInst = 0b0011 << (0 + GCTRL_BASE);
+pub const GCTRL_FT_MAYBEEXIT: UInst = mk_val(GCTRL_BASE, 0, 0b0010);
+pub const GCTRL_FT_EXIT     : UInst = mk_val(GCTRL_BASE, 0, 0b0011);
 // REMEMBER: EVERY JUMPMODE IMPLIES FT_ENTER!
 //
 // Note: A jumpmode is the condition under which a store
 // (input) to RIP from BUSB occurs. A 'P' (if present) stands for
 // "pseudo", where we have fake jumpmode which is mutually-
 // exclusive with any FT or JM.
-pub const GCTRL_JM_YES         : UInst = 0b0100 << (0 + GCTRL_BASE);
+pub const GCTRL_JM_YES         : UInst = mk_val(GCTRL_BASE, 0, 0b0100);
 // HARDWARE NOTE: despite the different names, GCTRL_JM_P_RIP_BUSB_O is the dual output version of GCTRL_JM_YES (input to RIP)!
-pub const GCTRL_JM_P_RIP_BUSB_O: UInst = 0b0101 << (0 + GCTRL_BASE);   //FIXME consider integrating with the CREG output mechanism (can't see a way to make this work off the top of my head);
-pub const GCTRL_JM_HALT        : UInst = 0b0110 << (0 + GCTRL_BASE);
+pub const GCTRL_JM_P_RIP_BUSB_O: UInst = mk_val(GCTRL_BASE, 0, 0b0101);   //FIXME consider integrating with the CREG output mechanism (can't see a way to make this work off the top of my head);
+pub const GCTRL_JM_HALT        : UInst = mk_val(GCTRL_BASE, 0, 0b0110);
 // ABRT halts and sets the abort flag as well.
 // Aborts are useful as a breakpoint in the VM, but along
 // with an LED or two will help with hardware debugging as well.
-pub const GCTRL_JM_ABRT        : UInst = 0b0111 << (0 + GCTRL_BASE);
+pub const GCTRL_JM_ABRT        : UInst = mk_val(GCTRL_BASE, 0, 0b0111);
 
-pub const GCTRL_JCOND_CARRY  : UInst = 0b1000 << (0 + GCTRL_BASE);
-pub const GCTRL_JCOND_N_ZERO : UInst = 0b1001 << (0 + GCTRL_BASE);
-pub const GCTRL_JCOND_SIGN   : UInst = 0b1010 << (0 + GCTRL_BASE);
-pub const GCTRL_JCOND_N_OVFLW: UInst = 0b1011 << (0 + GCTRL_BASE);
+pub const GCTRL_JCOND_CARRY  : UInst = mk_val(GCTRL_BASE, 0, 0b1000);
+pub const GCTRL_JCOND_N_ZERO : UInst = mk_val(GCTRL_BASE, 0, 0b1001);
+pub const GCTRL_JCOND_SIGN   : UInst = mk_val(GCTRL_BASE, 0, 0b1010);
+pub const GCTRL_JCOND_N_OVFLW: UInst = mk_val(GCTRL_BASE, 0, 0b1011);
 
 // NOT A REAL BIT, JUST A HELPER FOR THE 4 FLAG JMs
-pub const GCTRL_JM_INVERTCOND : UInst = 0b0100 << (0 + GCTRL_BASE);
+pub const GCTRL_JM_INVERTCOND : UInst = mk_val(GCTRL_BASE, 0, 0b0100);
 
 // The GCTRL modes
 
 /*
     These "normal" modes are selected by the absence of ACTION_GCTRL_USE_ALT.
 */
-pub const GCTRL_NRM_NONE        : UInst = 0b00 << (4 + GCTRL_BASE);
+pub const GCTRL_NRM_NONE        : UInst = mk_val(GCTRL_BASE, 4, 0b00);
 /*
     GCTRL_CREG_I means do an IO read. GCTRL_CREG_O means do an IO write.
 */
-pub const GCTRL_NRM_IO_READWRITE: UInst = 0b01 << (4 + GCTRL_BASE);
+pub const GCTRL_NRM_IO_READWRITE: UInst = mk_val(GCTRL_BASE, 4, 0b01);
 /*
     GCTRL_CREG_O means to force IU3 to RSP. GCTRL_CREG_I is UNUSED.
 */
-pub const GCTRL_NRM_IU3_OVERRIDE_O_SELECT_RSP_I__UNUSED: UInst = 0b10 << (4 + GCTRL_BASE);
-pub const _GCTRL_NRM__UNUSED     : UInst = 0b11 << (4 + GCTRL_BASE);
+pub const GCTRL_NRM_IU3_OVERRIDE_O_SELECT_RSP_I__UNUSED: UInst = mk_val(GCTRL_BASE, 4, 0b10);
+pub const _GCTRL_NRM__UNUSED     : UInst = mk_val(GCTRL_BASE, 4, 0b11);
 
 /*
     These "alternate" modes occupy the same bits as the "normal" modes,
     and are selected by ACTION_GCTRL_USE_ALT.
 */
-pub const GCTRL_ALT_CREG_FG    : UInst = 0b00 << (4 + GCTRL_BASE);
-pub const GCTRL_ALT_CREG_IHPR  : UInst = 0b01 << (4 + GCTRL_BASE);
+pub const GCTRL_ALT_CREG_FG    : UInst = mk_val(GCTRL_BASE, 4, 0b00);
+pub const GCTRL_ALT_CREG_IHPR  : UInst = mk_val(GCTRL_BASE, 4, 0b01);
 /*
     NOTE next two bits not registers. The first is just a bit (IE);
     which is set with I and cleared with O below (not actually
@@ -150,23 +159,23 @@ pub const GCTRL_ALT_CREG_IHPR  : UInst = 0b01 << (4 + GCTRL_BASE);
     of two mutually exclusive operations.
     P_IE is the "interrupt enable" flag.
 */
-pub const GCTRL_ALT_P_IE  : UInst = 0b10 << (4 + GCTRL_BASE);
+pub const GCTRL_ALT_P_IE  : UInst = mk_val(GCTRL_BASE, 4, 0b10);
 // HARDWARE NOTE
 // GCTRL_CREG_P_O_CHNMI_OR_I_ALUFG on O: clears "handling NMI" flag,
 // on I: loads only the ALU bits of FG
-pub const GCTRL_ALT_P_O_CHNMI_OR_I_ALUFG: UInst = 0b11 << (4 + GCTRL_BASE);
+pub const GCTRL_ALT_P_O_CHNMI_OR_I_ALUFG: UInst = mk_val(GCTRL_BASE, 4, 0b11);
 
 // HARDWARE NOTE
 // These two bits, when a normal CREG (FG or IHPR) are selected,
 // indicate whether there will be output or input from the reg
 // to Bus::B.
-pub const GCTRL_CREG_O : UInst = 0 << (6 + GCTRL_BASE);
-pub const GCTRL_CREG_I : UInst = 1 << (6 + GCTRL_BASE);
+pub const GCTRL_CREG_O : UInst = mk_val(GCTRL_BASE, 6, 0);
+pub const GCTRL_CREG_I : UInst = mk_val(GCTRL_BASE, 6, 1);
 
 // NONBIT: GCTRL decoding
-pub const MASK_GCTRL_FTJM: UInst = 0b1111 << (0 + GCTRL_BASE);
-pub const MASK_GCTRL_MODE: UInst = 0b11 << (4 + GCTRL_BASE);
-pub const MASK_GCTRL_DIR:  UInst = 0b1 << (6 + GCTRL_BASE);
+pub const MASK_GCTRL_FTJM: UInst = mk_val(GCTRL_BASE, 0, 0b1111);
+pub const MASK_GCTRL_MODE: UInst = mk_val(GCTRL_BASE, 4, 0b11);
+pub const MASK_GCTRL_DIR:  UInst = mk_val(GCTRL_BASE, 6, 0b1);
 
 pub const fn gctrl_creg_is_input(ui: UInst) -> bool {
     (ui & MASK_GCTRL_DIR) == GCTRL_CREG_I
@@ -178,7 +187,7 @@ pub const fn gctrl_creg_is_output(ui: UInst) -> bool {
 
 // HARDWARE NOTE: These are helper macros, but they should be actual signal lines on the board.
 pub fn is_gctrl_nrm_io_readwrite(ui: UInst) -> bool {
-    return ((ui & MASK_CTRL_ACTION) != ACTION_GCTRL_USE_ALT) && ((ui & MASK_GCTRL_MODE) == GCTRL_NRM_IO_READWRITE);
+    ((ui & MASK_CTRL_ACTION) != ACTION_GCTRL_USE_ALT) && ((ui & MASK_GCTRL_MODE) == GCTRL_NRM_IO_READWRITE)
 }
 
 pub fn does_override_iu3_via_command(ui: UInst) -> bool {
@@ -195,18 +204,18 @@ pub fn does_override_iu3_via_gctrl_alt(ui: UInst) -> bool {
 pub const RCTRL_BASE : u32 = GCTRL_END;
 pub const RCTRL_END : u32 = RCTRL_BASE + 9;
 
-pub const RCTRL_IU1_BUSA_I: UInst = 0b100 << (0 + RCTRL_BASE);
-pub const RCTRL_IU1_BUSA_O: UInst = 0b101 << (0 + RCTRL_BASE);
-pub const RCTRL_IU1_BUSB_I: UInst = 0b110 << (0 + RCTRL_BASE);
-pub const RCTRL_IU1_BUSB_O: UInst = 0b111 << (0 + RCTRL_BASE);
-pub const RCTRL_IU2_BUSA_I: UInst = 0b100 << (3 + RCTRL_BASE);
-pub const RCTRL_IU2_BUSA_O: UInst = 0b101 << (3 + RCTRL_BASE);
-pub const RCTRL_IU2_BUSB_I: UInst = 0b110 << (3 + RCTRL_BASE);
-pub const RCTRL_IU2_BUSB_O: UInst = 0b111 << (3 + RCTRL_BASE);
-pub const RCTRL_IU3_BUSA_I: UInst = 0b100 << (6 + RCTRL_BASE);
-pub const RCTRL_IU3_BUSA_O: UInst = 0b101 << (6 + RCTRL_BASE);
-pub const RCTRL_IU3_BUSB_I: UInst = 0b110 << (6 + RCTRL_BASE);
-pub const RCTRL_IU3_BUSB_O: UInst = 0b111 << (6 + RCTRL_BASE);
+pub const RCTRL_IU1_BUSA_I: UInst = mk_val(RCTRL_BASE, 0, 0b100);
+pub const RCTRL_IU1_BUSA_O: UInst = mk_val(RCTRL_BASE, 0, 0b101);
+pub const RCTRL_IU1_BUSB_I: UInst = mk_val(RCTRL_BASE, 0, 0b110);
+pub const RCTRL_IU1_BUSB_O: UInst = mk_val(RCTRL_BASE, 0, 0b111);
+pub const RCTRL_IU2_BUSA_I: UInst = mk_val(RCTRL_BASE, 3, 0b100);
+pub const RCTRL_IU2_BUSA_O: UInst = mk_val(RCTRL_BASE, 3, 0b101);
+pub const RCTRL_IU2_BUSB_I: UInst = mk_val(RCTRL_BASE, 3, 0b110);
+pub const RCTRL_IU2_BUSB_O: UInst = mk_val(RCTRL_BASE, 3, 0b111);
+pub const RCTRL_IU3_BUSA_I: UInst = mk_val(RCTRL_BASE, 6, 0b100);
+pub const RCTRL_IU3_BUSA_O: UInst = mk_val(RCTRL_BASE, 6, 0b101);
+pub const RCTRL_IU3_BUSB_I: UInst = mk_val(RCTRL_BASE, 6, 0b110);
+pub const RCTRL_IU3_BUSB_O: UInst = mk_val(RCTRL_BASE, 6, 0b111);
 
 // HARDWARE NOTE: In hardware we prohibit inputing a
 // register referenced by an IU at the same time it is
@@ -215,19 +224,23 @@ pub const RCTRL_IU3_BUSB_O: UInst = 0b111 << (6 + RCTRL_BASE);
 // when the output pin is active.
 
 // NONBIT: RCTRL decoding
-pub const MASK_RCTRL_IU : UInst = 0b111;
+pub const MASK_RCTRL_IU : u16 = 0b111;
 
-//RUSTFIX use the `IU` enum to parse a particular parameter set
-pub const fn rctrl_decode_iu1(iu : UInst) -> u16 {
-    ((iu & (MASK_RCTRL_IU << (0 + RCTRL_BASE))) >> (0 + RCTRL_BASE)) as u16
+pub const fn rctrl_decode_iu(iu: IU, val : UInst) -> u16 {
+    let off = IU::WIDTH * (iu as u32);
+    dec_val(RCTRL_BASE, off, mk_val(RCTRL_BASE, off, MASK_RCTRL_IU), val) as u16
 }
 
-pub const fn rctrl_decode_iu2(iu : UInst) -> u16 {
-    ((iu & (MASK_RCTRL_IU << (3 + RCTRL_BASE))) >> (3 + RCTRL_BASE)) as u16
+pub const fn rctrl_decode_iu1(val : UInst) -> u16 {
+    rctrl_decode_iu(IU::ONE, val)
 }
 
-pub const fn rctrl_decode_iu3(iu : UInst) -> u16 {
-    ((iu & (MASK_RCTRL_IU << (6 + RCTRL_BASE))) >> (6 + RCTRL_BASE)) as u16
+pub const fn rctrl_decode_iu2(val : UInst) -> u16 {
+    rctrl_decode_iu(IU::TWO, val)
+}
+
+pub const fn rctrl_decode_iu3(val : UInst) -> u16 {
+    rctrl_decode_iu(IU::THREE, val)
 }
 
 pub const fn rctrl_iu_is_en(dec: u16) -> bool {
@@ -250,62 +263,62 @@ pub const fn rctrl_iu_is_output(dec: u16) -> bool {
 pub const MCTRL_BASE : u32 = RCTRL_END;
 pub const MCTRL_END : u32 = MCTRL_BASE + 6;
 
-pub const MCTRL_MODE_STPFX    : UInst = 0b000 << (0 + MCTRL_BASE);
-pub const MCTRL_MODE_STPFX_FAR: UInst = 0b010 << (0 + MCTRL_BASE);
-pub const MCTRL_MODE_FO       : UInst = 0b100 << (0 + MCTRL_BASE);
-pub const MCTRL_MODE_FO_MI    : UInst = 0b101 << (0 + MCTRL_BASE);
-pub const MCTRL_MODE_FO_MI_FAR: UInst = 0b001 << (0 + MCTRL_BASE);
-pub const MCTRL_MODE_FI       : UInst = 0b110 << (0 + MCTRL_BASE);
-pub const MCTRL_MODE_FI_MO    : UInst = 0b111 << (0 + MCTRL_BASE);
-pub const MCTRL_MODE_FI_MO_FAR: UInst = 0b011 << (0 + MCTRL_BASE);
+pub const MCTRL_MODE_STPFX    : UInst = mk_val(MCTRL_BASE, 0, 0b000);
+pub const MCTRL_MODE_STPFX_FAR: UInst = mk_val(MCTRL_BASE, 0, 0b010);
+pub const MCTRL_MODE_FO       : UInst = mk_val(MCTRL_BASE, 0, 0b100);
+pub const MCTRL_MODE_FO_MI    : UInst = mk_val(MCTRL_BASE, 0, 0b101);
+pub const MCTRL_MODE_FO_MI_FAR: UInst = mk_val(MCTRL_BASE, 0, 0b001);
+pub const MCTRL_MODE_FI       : UInst = mk_val(MCTRL_BASE, 0, 0b110);
+pub const MCTRL_MODE_FI_MO    : UInst = mk_val(MCTRL_BASE, 0, 0b111);
+pub const MCTRL_MODE_FI_MO_FAR: UInst = mk_val(MCTRL_BASE, 0, 0b011);
 
 // HARDWARE NOTE: the same it is used for FO and FI, but NOTE
 // STPFX is weird and uses different flags to indicate we are
 // using far or not!
-pub const MCTRL_FLAG_MODE_N_FAR: UInst = 0b100 << (0 + MCTRL_BASE);
+pub const MCTRL_FLAG_MODE_N_FAR: UInst = mk_val(MCTRL_BASE, 0, 0b100);
 
 // HARDWARE NOTE JUMPER ---- MCTRL_BIOS_WRITE
 
 // HARDWARE NOTE: MCTRL_BUSMODE_DISABLE inhibits the mode setting as well!!!
 // HARDWARE NOTE: if the mode is MODE_STPFX or MODE_STPFX_FAR, then ignore MCTRL_BUSMODE_CONW_BUSB.
-pub const MCTRL_BUSMODE_DISABLE            : UInst = 0b000 << (3 + MCTRL_BASE);
-pub const MCTRL_BUSMODE_CONW_BUSM          : UInst = 0b001 << (3 + MCTRL_BASE);
-pub const MCTRL_BUSMODE_CONW_BUSB          : UInst = 0b011 << (3 + MCTRL_BASE);
-pub const MCTRL_BUSMODE_CONW_BUSB_MAYBEFLIP: UInst = 0b010 << (3 + MCTRL_BASE);
-pub const MCTRL_BUSMODE_CONH               : UInst = 0b100 << (3 + MCTRL_BASE);
-pub const _MCTRL_BUSMODE__CONH_NO_X         : UInst = 0b100 << (3 + MCTRL_BASE);
-pub const _MCTRL_BUSMODE__CONH_X            : UInst = 0b101 << (3 + MCTRL_BASE);
+pub const MCTRL_BUSMODE_DISABLE            : UInst = mk_val(MCTRL_BASE, 3, 0b000);
+pub const MCTRL_BUSMODE_CONW_BUSM          : UInst = mk_val(MCTRL_BASE, 3, 0b001);
+pub const MCTRL_BUSMODE_CONW_BUSB          : UInst = mk_val(MCTRL_BASE, 3, 0b011);
+pub const MCTRL_BUSMODE_CONW_BUSB_MAYBEFLIP: UInst = mk_val(MCTRL_BASE, 3, 0b010);
+pub const MCTRL_BUSMODE_CONH               : UInst = mk_val(MCTRL_BASE, 3, 0b100);
+pub const _MCTRL_BUSMODE__CONH_NO_X         : UInst = mk_val(MCTRL_BASE, 3, 0b100);
+pub const _MCTRL_BUSMODE__CONH_X            : UInst = mk_val(MCTRL_BASE, 3, 0b101);
 
-pub const _MCTRL_BUSMODE__UNUSED_1          : UInst = 0b110 << (3 + MCTRL_BASE);
-pub const _MCTRL_BUSMODE__UNUSED_2          : UInst = 0b111 << (3 + MCTRL_BASE);
+pub const _MCTRL_BUSMODE__UNUSED_1          : UInst = mk_val(MCTRL_BASE, 3, 0b110);
+pub const _MCTRL_BUSMODE__UNUSED_2          : UInst = mk_val(MCTRL_BASE, 3, 0b111);
 
 // NOTE: this bit position must be chosen with the actual values of the BUSMODE_xxx values
-pub const MCTRL_BUSMODE_WRITE : UInst = 0b001 << (3 + MCTRL_BASE);
+pub const MCTRL_BUSMODE_WRITE : UInst = mk_val(MCTRL_BASE, 3, 0b001);
 
 // NOBIT:
 // FLAGS for the CONH busmode
-pub const MASK_MCTRL_MODE     : UInst = 0b111 << (0 + MCTRL_BASE);
-pub const MASK_MCTRL_BUSMODE  : UInst = 0b111 << (3 + MCTRL_BASE);
+pub const MASK_MCTRL_MODE     : UInst = mk_val(MCTRL_BASE, 0, 0b111);
+pub const MASK_MCTRL_BUSMODE  : UInst = mk_val(MCTRL_BASE, 3, 0b111);
 
 // ACTRL
 pub const ACTRL_BASE : u32 = MCTRL_END;
 pub const ACTRL_END : u32 = ACTRL_BASE + 6;
 
-pub const ACTRL_INPUT_EN: UInst = 1 << (0 + ACTRL_BASE);
-pub const ACTRL_DATA_OUT: UInst =  1 << (1 + ACTRL_BASE);
-pub const ACTRL_FLAGS_OUT: UInst = 1 << (2 + ACTRL_BASE);
+pub const ACTRL_INPUT_EN: UInst = mk_val(ACTRL_BASE, 0, 1);
+pub const ACTRL_DATA_OUT: UInst =  mk_val(ACTRL_BASE, 1, 1);
+pub const ACTRL_FLAGS_OUT: UInst = mk_val(ACTRL_BASE, 2, 1);
 
-pub const ACTRL_MODE_ADD: UInst =  0 << (3 + ACTRL_BASE);
-pub const ACTRL_MODE_SUB: UInst =  1 << (3 + ACTRL_BASE);
-pub const ACTRL_MODE_AND: UInst =  2 << (3 + ACTRL_BASE);
-pub const ACTRL_MODE_OR: UInst =   3 << (3 + ACTRL_BASE);
-pub const ACTRL_MODE_XOR: UInst =  4 << (3 + ACTRL_BASE);
-pub const ACTRL_MODE_LSFT: UInst = 5 << (3 + ACTRL_BASE);
-pub const ACTRL_MODE_RSFT: UInst = 6 << (3 + ACTRL_BASE);
-pub const ACTRL_MODE_TST: UInst =  7 << (3 + ACTRL_BASE);
+pub const ACTRL_MODE_ADD: UInst =  mk_val(ACTRL_BASE, 3, 0);
+pub const ACTRL_MODE_SUB: UInst =  mk_val(ACTRL_BASE, 3, 1);
+pub const ACTRL_MODE_AND: UInst =  mk_val(ACTRL_BASE, 3, 2);
+pub const ACTRL_MODE_OR: UInst =   mk_val(ACTRL_BASE, 3, 3);
+pub const ACTRL_MODE_XOR: UInst =  mk_val(ACTRL_BASE, 3, 4);
+pub const ACTRL_MODE_LSFT: UInst = mk_val(ACTRL_BASE, 3, 5);
+pub const ACTRL_MODE_RSFT: UInst = mk_val(ACTRL_BASE, 3, 6);
+pub const ACTRL_MODE_TST: UInst =  mk_val(ACTRL_BASE, 3, 7);
 
 // NONBIT: ACTRL decoding
-pub const MASK_ACTRL_MODE: UInst = 0b111 << (3 + ACTRL_BASE);
+pub const MASK_ACTRL_MODE: UInst = mk_val(ACTRL_BASE, 3, 0b111);
 
 pub const fn decode_actrl_mode(ui: UInst) -> u8 {
     ((ui & MASK_ACTRL_MODE) >> (3 + ACTRL_BASE)) as u8 

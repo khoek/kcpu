@@ -144,8 +144,7 @@ impl<'a> Ctl<'a> {
     const FG_CBIT_IE: Word = 1 << 0;
 
     fn get_reg_fg(&self) -> Word {
-        return (self.regs[SReg::RawFG] & 0x00FF)
-            | (self.cbits[CBit::Ie] as Word * Ctl::FG_CBIT_IE);
+        (self.regs[SReg::RawFG] & 0x00FF) | (self.cbits[CBit::Ie] as Word * Ctl::FG_CBIT_IE)
     }
 
     fn set_reg_fg_alu(&mut self, val: Word) {
@@ -196,7 +195,7 @@ impl<'a> Ctl<'a> {
     }
 
     pub fn get_uinst(&self) -> UInst {
-        return self.uinst_latch_val;
+        self.uinst_latch_val
     }
 
     pub fn clock_outputs(&self, ui: UInst, s: &mut BusState) {
@@ -224,7 +223,6 @@ impl<'a> Ctl<'a> {
                 usig::GCTRL_NRM_IU3_OVERRIDE_O_SELECT_RSP_I__UNUSED | usig::GCTRL_NRM_NONE => (),
                 usig::GCTRL_NRM_IO_READWRITE => {
                     // The condition `is_gctrl_nrm_io_readwrite()` above actually exactly handles this case.
-                    ()
                 }
                 _ => panic!("unknown GCTRL NRM mode"),
             }
@@ -234,7 +232,6 @@ impl<'a> Ctl<'a> {
             usig::ACTION_CTRL_NONE | usig::ACTION_MCTRL_BUSMODE_X => (),
             usig::ACTION_GCTRL_USE_ALT => {
                 // This is handled in the `if` above.
-                ()
             }
             usig::ACTION_GCTRL_RIP_BUSA_O => {
                 if !self.cbits[CBit::IoWait] {
@@ -368,7 +365,6 @@ impl<'a> Ctl<'a> {
                 usig::GCTRL_NRM_IU3_OVERRIDE_O_SELECT_RSP_I__UNUSED | usig::GCTRL_NRM_NONE => (),
                 usig::GCTRL_NRM_IO_READWRITE => {
                     // The condition `is_gctrl_nrm_io_readwrite()` above actually exactly handles this case.
-                    ()
                 }
                 _ => panic!("unknown GCTRL NRM mode"),
             }
@@ -457,7 +453,8 @@ impl<'a> interface::Ctl for Ctl<'a> {
         (So, at least right now, it can be safely commented.)
     */
     fn is_aint_active(&self) -> bool {
-        return /* self.cbits[CBit::Instmask] && */ self.cbits[CBit::IntEnter];
+        /* self.cbits[CBit::Instmask] && */
+        self.cbits[CBit::IntEnter]
     }
 
     /*
@@ -469,7 +466,7 @@ impl<'a> interface::Ctl for Ctl<'a> {
         the clock is going LOW.
     */
     fn is_tui_active(&self) -> bool {
-        return !self.cbits[CBit::Hnmi] && !self.cbits[CBit::Instmask];
+        !self.cbits[CBit::Hnmi] && !self.cbits[CBit::Instmask]
     }
 
     fn get_inst(&self) -> Word {

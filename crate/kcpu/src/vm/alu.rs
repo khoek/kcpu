@@ -97,7 +97,7 @@ impl OpFunc {
         let n_overflow = is_flag_n_overflow(val as i16, a as i16, b as i16);
 
         OpResult {
-            val: val,
+            val,
             flags: encode_flags(carry, n_zero, sign, n_overflow),
         }
     }

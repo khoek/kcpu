@@ -274,9 +274,9 @@ impl InstDef {
         Self::new(
             name,
             opclass,
-            arg_vec.get(0).map(|x| *x),
-            arg_vec.get(1).map(|x| *x),
-            arg_vec.get(2).map(|x| *x),
+            arg_vec.get(0).copied(),
+            arg_vec.get(1).copied(),
+            arg_vec.get(2).copied(),
             uis,
         )
     }

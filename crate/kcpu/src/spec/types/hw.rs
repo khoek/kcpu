@@ -13,7 +13,7 @@ pub type Byte = u8;
 pub type Word = u16;
 
 pub const fn byte_flip(v: Word) -> Word {
-    return ((v & 0x00FF) << 8) | ((v & 0xFF00) >> 8);
+    ((v & 0x00FF) << 8) | ((v & 0xFF00) >> 8)
 }
 
 // RUSTFIX make this const when possible
@@ -77,7 +77,7 @@ pub enum PReg {
 
 impl Default for PReg {
     fn default() -> PReg {
-        return PReg::ID;
+        PReg::ID
     }
 }
 

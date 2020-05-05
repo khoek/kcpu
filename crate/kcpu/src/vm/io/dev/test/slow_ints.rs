@@ -47,7 +47,7 @@ impl SinglePortDevice for SlowInts {
             self.count[1] = (val & !SlowInts::MASK_NMI_FLAG) + 1;
         }
 
-        return 0;
+        0
     }
 
     fn read(&mut self) -> (HalfcycleCount, Word) {

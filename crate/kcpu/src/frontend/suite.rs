@@ -1,6 +1,6 @@
 use super::{
     assemble,
-    execute::{self, AbortAction, BreakMode, Config, Verbosity},
+    execute::{self, AbortAction, BreakMode, Config, Summary, Verbosity},
 };
 use crate::assembler;
 use crate::vm::State;
@@ -23,39 +23,30 @@ struct CaseSrc {
 
 #[derive(Constructor)]
 struct CaseBin {
-    name: OsString,
     bios_bin: Option<Vec<u8>>,
     prog_bin: Option<Vec<u8>>,
 }
 
 impl CaseSrc {
-    fn assemble(self) -> Result<CaseBin, assembler::Error> {
+    fn assemble(&self) -> Result<CaseBin, assembler::Error> {
         let bios_bin = self
             .bios_src
-            .as_ref()
-            .map(|path| assemble::assemble_path(&path))
+            .as_deref()
+            .map(assemble::assemble_path)
             .transpose()?;
         let prog_bin = self
             .prog_src
-            .as_ref()
-            .map(|path| assemble::assemble_path(&path))
+            .as_deref()
+            .map(assemble::assemble_path)
             .transpose()?;
 
-        Ok(CaseBin::new(self.name, bios_bin, prog_bin))
+        Ok(CaseBin::new(bios_bin, prog_bin))
     }
 }
 
 impl CaseBin {
-    fn execute(&self, max_clocks: Option<u64>, num: usize, name_pad: usize) -> bool {
-        print!(
-            "Test {:2 }: {} ",
-            num,
-            self.name
-                .to_str()
-                .unwrap_or(&format!("<invalid UTF-8>: {:?}", self.name))
-        );
-
-        let summary = execute::execute(
+    fn execute(&self, max_clocks: Option<u64>) -> Summary {
+        execute::execute(
             Config {
                 headless: true,
                 max_clocks,
@@ -66,29 +57,12 @@ impl CaseBin {
             },
             self.bios_bin.as_ref(),
             self.prog_bin.as_ref(),
-        );
-
-        print!("{}", " ".repeat(name_pad - self.name.len()));
-
-        match summary.state {
-            State::Halted => println!(
-                "{} {:7 }μops {: >4}ms  ({: >5.2}MHz)",
-                "PASS".green(),
-                summary.total_clocks,
-                summary.real_ns_elapsed / 1000 / 1000,
-                summary.to_effective_freq_megahertz(),
-            ),
-            State::Aborted => println!("{}", "FAIL: ABORTED".red()),
-            State::Timeout => println!("{}", "FAIL: DETERMINISTIC TIMEOUT".red()),
-            _ => panic!("internal testrunner error: VM still running!"),
-        }
-
-        summary.state == State::Halted
+        )
     }
 }
 
 // RUSTFIX proper error handling
-pub fn run_suite(
+pub fn suite(
     kind: SuiteKind,
     suite_dir: &PathBuf,
     only_this: &Option<OsString>,
@@ -106,11 +80,6 @@ pub fn run_suite(
                 .unwrap()]
         }
     };
-
-    let selected_tests = selected_tests
-        .into_iter()
-        .map(CaseSrc::assemble)
-        .collect::<Result<_, _>>()?;
 
     match kind {
         SuiteKind::Test => Ok(run_tests(max_clocks, &selected_tests)),
@@ -175,7 +144,7 @@ fn find_cases(test_dir: &PathBuf) -> Vec<CaseSrc> {
         fn_cook_fake_test("int_stackcheck"),
         // fn_cook_fake_test("io_video"), VM(unimplemented)
         fn_cook_fake_test2("ljmp"),
-        // fn_cook_fake_test("old_test"), ASM(another integral parsing bug)
+        fn_cook_fake_test("old_test"),
         fn_cook_fake_test("pushpop_a"),
         fn_cook_fake_test("simple"),
         fn_cook_fake_test("alu_noflags"),
@@ -191,7 +160,7 @@ fn find_cases(test_dir: &PathBuf) -> Vec<CaseSrc> {
     ]
 }
 
-fn run_tests(max_clocks: Option<u64>, tests: &Vec<CaseBin>) -> bool {
+fn run_tests(max_clocks: Option<u64>, tests: &Vec<CaseSrc>) -> bool {
     let name_pad = tests.iter().map(|test| test.name.len()).max().unwrap_or(0);
 
     println!("--------------------------------------------------------------");
@@ -199,7 +168,7 @@ fn run_tests(max_clocks: Option<u64>, tests: &Vec<CaseBin>) -> bool {
     let passes: usize = tests
         .iter()
         .enumerate()
-        .map(|(num, test)| test.execute(max_clocks, num + 1, name_pad) as usize)
+        .map(|(num, test)| run_test(test, num + 1, name_pad, max_clocks) as usize)
         .sum();
     let success = passes == tests.len();
 
@@ -216,4 +185,42 @@ fn run_tests(max_clocks: Option<u64>, tests: &Vec<CaseBin>) -> bool {
     );
 
     success
+}
+
+fn run_test(src: &CaseSrc, num: usize, name_pad: usize, max_clocks: Option<u64>) -> bool {
+    print!(
+        "Test {:2 }: {} {}",
+        num,
+        src.name
+            .to_str()
+            .unwrap_or(&format!("<invalid UTF-8>: {:?}", src.name)),
+        " ".repeat(name_pad - src.name.len())
+    );
+
+    let summary = src.assemble().map(|bin| bin.execute(max_clocks));
+
+    match summary {
+        Err(err) => {
+            // RUSTFIX don't use debug print here
+            println!("{} ({:?})", "FAIL: ASSEMBLY ERROR".red(), err);
+
+            false
+        }
+        Ok(summary) => {
+            match summary.state {
+                State::Halted => println!(
+                    "{} {:7 }μops {: >4}ms  ({: >5.2}MHz)",
+                    "PASS".green(),
+                    summary.total_clocks,
+                    summary.real_ns_elapsed / 1000 / 1000,
+                    summary.to_effective_freq_megahertz(),
+                ),
+                State::Aborted => println!("{}", "FAIL: ABORTED".red()),
+                State::Timeout => println!("{}", "FAIL: DETERMINISTIC TIMEOUT".red()),
+                _ => panic!("internal testrunner error: VM still running!"),
+            }
+
+            summary.state == State::Halted
+        }
+    }
 }

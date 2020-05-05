@@ -96,7 +96,7 @@ impl<'a> BusState<'a> {
         if self.logger.dump_bus {
             println!("  {} -> {}", b, ret);
         }
-        return ret;
+        ret
     }
 
     pub fn read(&self, b: Bus) -> Word {

@@ -56,17 +56,15 @@ impl<'a> Ioc<'a> {
     pub fn clock_outputs(&mut self, ui: UInst, s: &mut BusState, ctl: &dyn interface::Ctl) {
         let cmd = if !usig::is_gctrl_nrm_io_readwrite(ui) {
             None
+        } else if ui & usig::MASK_GCTRL_DIR == usig::GCTRL_CREG_I {
+            Some(Command::Read {
+                port: s.early_read(Bus::A),
+            })
         } else {
-            if ui & usig::MASK_GCTRL_DIR == usig::GCTRL_CREG_I {
-                Some(Command::Read {
-                    port: s.early_read(Bus::A),
-                })
-            } else {
-                Some(Command::Write {
-                    port: s.early_read(Bus::A),
-                    value: s.early_read(Bus::B),
-                })
-            }
+            Some(Command::Write {
+                port: s.early_read(Bus::A),
+                value: s.early_read(Bus::B),
+            })
         };
 
         self.manager.before_clock_outputs(cmd);

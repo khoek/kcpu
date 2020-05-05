@@ -76,7 +76,7 @@ impl<'a> Instance<'a> {
             };
         }
 
-        return State::Running;
+        State::Running
     }
 
     pub fn dump_registers(&self) {
@@ -86,7 +86,7 @@ impl<'a> Instance<'a> {
         self.reg.dump_registers();
         self.alu.dump_registers();
         self.ioc.dump_registers();
-        println!("");
+        println!();
     }
 
     pub fn disassemble_current(&self) {
