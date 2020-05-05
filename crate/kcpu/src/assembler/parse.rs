@@ -1,24 +1,30 @@
-use super::{conductor::Statement, token::Token};
+use super::conductor::Located;
+use super::{conductor::Statement, tokenize::Token};
+use crate::asm::model::{Arg, ConstBinding};
 use crate::common;
-use std::num::{ParseIntError, TryFromIntError};
 
 #[derive(Debug)]
 pub(super) enum Error {
-    MalformedToken(String, &'static str),
+    UnknownSpecialCommandName(String),
     UnexpectedToken(Token, &'static str),
     UnexpectedEndOfStream(&'static str),
 }
 
-impl From<ParseIntError> for Error {
-    fn from(err: ParseIntError) -> Self {
-        Error::MalformedToken(err.to_string(), "could not parse numeric")
+impl Token {
+    pub fn into_string(self) -> Result<String, Error> {
+        match self {
+            Token::String(s) => Ok(s),
+            tk => Err(Error::UnexpectedToken(tk, "string literal")),
+        }
     }
-}
 
-impl From<TryFromIntError> for Error {
-    fn from(err: TryFromIntError) -> Self {
-        // FIXME? right now this is blanket, but correct
-        Error::MalformedToken(err.to_string(), "integral value out of bounds")
+    pub fn into_arg(self) -> Result<Arg<String>, Error> {
+        match self {
+            Token::RegRef(r) => Ok(Arg::Reg(r)),
+            Token::Const(c) => Ok(Arg::Const(ConstBinding::Resolved(c))),
+            Token::Name(n) => Ok(Arg::Const(ConstBinding::Unresolved(n))),
+            tk => Err(Error::UnexpectedToken(tk, "argument")),
+        }
     }
 }
 
@@ -29,21 +35,20 @@ enum Disposition {
 
 impl Statement {
     pub fn parse_iter(
-        mut tokens: impl Iterator<Item = Result<Token, Error>>,
-    ) -> Result<Vec<Statement>, Error> {
+        mut tokens: impl Iterator<Item = Located<Token>>,
+    ) -> Result<Vec<Located<Statement>>, Located<Error>> {
         let mut elems = Vec::new();
         let mut disp = Disposition::Continue;
         loop {
-            match (disp, tokens.next().transpose()?) {
-                (_, None) => {
-                    return Ok(elems);
-                }
+            match (disp, tokens.next()) {
+                (_, None) => return Ok(elems),
+
                 (Disposition::ExpectExhausted, Some(tk)) => {
-                    return Err(Error::UnexpectedToken(
-                        tk,
-                        "Too many tokens! Expected end of line",
-                    ))
+                    return Err(tk.map(|tk| {
+                        Error::UnexpectedToken(tk, "Too many tokens! Expected end of line")
+                    }))
                 }
+
                 (Disposition::Continue, Some(tk)) => {
                     let (e, d) = Statement::parse_once(tk, &mut tokens)?;
                     elems.push(e);
@@ -54,35 +59,37 @@ impl Statement {
     }
 
     fn parse_once(
-        first: Token,
-        tokens: &mut impl Iterator<Item = Result<Token, Error>>,
-    ) -> Result<(Statement, Disposition), Error> {
-        match first {
-            Token::LabelDef(label) => Ok((Statement::LabelDef(label), Disposition::Continue)),
-            Token::SpecialName(name) => Ok((
-                Statement::parse_special(name, tokens)?,
-                Disposition::ExpectExhausted,
-            )),
-            Token::Name(name) => Ok((
-                Statement::Inst(
-                    name,
-                    tokens
-                        .map(|tk| tk?.into_arg())
-                        .collect::<Result<Vec<_>, Error>>()?,
-                ),
-                Disposition::ExpectExhausted,
-            )),
-            tk => Err(Error::UnexpectedToken(
-                tk,
-                "Expected a label definition, macro call, or instruction",
-            )),
-        }
+        first: Located<Token>,
+        tokens: &mut impl Iterator<Item = Located<Token>>,
+    ) -> Result<(Located<Statement>, Disposition), Located<Error>> {
+        first
+            .split_result(|first| match first {
+                Token::LabelDef(label) => Ok((Statement::LabelDef(label), Disposition::Continue)),
+                Token::SpecialName(name) => Ok((
+                    Statement::parse_special(name, tokens)?,
+                    Disposition::ExpectExhausted,
+                )),
+                Token::Name(name) => Ok((
+                    Statement::Inst(
+                        name,
+                        tokens
+                            .map(|tk| tk.map_result(Token::into_arg))
+                            .collect::<Result<Vec<_>, Located<Error>>>()?,
+                    ),
+                    Disposition::ExpectExhausted,
+                )),
+                tk => Err(Located::from(Error::UnexpectedToken(
+                    tk,
+                    "Expected a label definition, macro call, or instruction",
+                ))),
+            })
+            .map_err(Located::flatten)
     }
 
     fn parse_special(
         name: String,
-        tokens: &mut impl Iterator<Item = Result<Token, Error>>,
-    ) -> Result<Statement, Error> {
+        tokens: &mut impl Iterator<Item = Located<Token>>,
+    ) -> Result<Statement, Located<Error>> {
         match name.as_str() {
             "warray" => {
                 // RUSTFIX implement, consume numeric tokens which we expect to be word-size
@@ -96,22 +103,23 @@ impl Statement {
             "string" => Ok(Statement::RawString(
                 tokens
                     .next()
+                    .map(Result::Ok)
                     .unwrap_or(Err(Error::UnexpectedEndOfStream("string literal")))?
-                    .into_string()?,
+                    .map_result_value(|tk| tk.into_string())?,
             )),
-            _ => Err(Error::MalformedToken(
+            _ => Err(Located::from(Error::UnknownSpecialCommandName(
                 name.to_owned(),
-                "unknown special command name",
-            )),
+            ))),
         }
     }
 }
 
-pub(super) fn parse(preproc_source: &str) -> Result<Vec<Statement>, Error> {
-    common::accumulate(
-        preproc_source
-            .lines()
-            .map(Token::parse_line)
-            .map(Statement::parse_iter),
+pub(super) fn parse(
+    tokens: Vec<Vec<Located<Token>>>,
+) -> Result<Vec<Located<Statement>>, Located<Error>> {
+    common::accumulate_vecs(
+        tokens
+            .into_iter()
+            .map(|line| Statement::parse_iter(line.into_iter())),
     )
 }

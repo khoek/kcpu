@@ -1,4 +1,4 @@
-use super::{generate, parse, preprocess, resolve};
+use super::{generate, parse, resolve, tokenize};
 use crate::asm::model::Arg;
 use crate::asm::model::Blob;
 use crate::spec::types::hw::*;
@@ -88,7 +88,7 @@ pub(super) enum Statement {
     RawWords(Vec<Word>),
     RawBytes(Vec<Byte>),
     RawString(String),
-    Inst(String, Vec<Arg<LabelName>>),
+    Inst(String, Vec<Located<Arg<LabelName>>>),
 }
 
 pub(super) enum BinaryElement {
@@ -97,24 +97,112 @@ pub(super) enum BinaryElement {
     Data(Vec<Word>),
 }
 
-#[derive(Debug, Constructor)]
+#[derive(Debug, PartialEq, Eq, Constructor)]
 pub struct Loc {
     line: usize,
     col: usize,
 }
 
-#[derive(Debug, Constructor)]
-pub struct Located<T> {
-    loc: Loc,
+#[derive(Debug, PartialEq, Eq)]
+pub struct Located<T: Sized> {
+    loc: Option<Loc>,
     val: T,
 }
 
 impl<T> Located<T> {
-    pub fn map<S>(self, f: fn(T) -> S) -> Located<S> {
-        Located {
-            loc: self.loc,
-            val: f(self.val),
+    fn new(loc: Option<Loc>, val: T) -> Self {
+        Located { loc, val }
+    }
+
+    pub fn with_loc(loc: Loc, val: T) -> Self {
+        Located::new(Some(loc), val)
+    }
+
+    pub fn value(self) -> T {
+        self.val
+    }
+
+    pub fn proximate_to_option_loc(self, loc: Option<Loc>) -> Self {
+        match self.loc {
+            None => Self { loc, ..self },
+            Some(_) => self,
         }
+    }
+
+    pub fn proximate_to_loc(self, loc: Loc) -> Self {
+        self.proximate_to_option_loc(Some(loc))
+    }
+
+    pub fn proximate_to<S>(self, other: Located<S>) -> Self {
+        self.proximate_to_option_loc(other.loc)
+    }
+
+    pub fn split<S, R, F>(self, f: F) -> (Located<S>, R)
+    where
+        F: FnOnce(T) -> (S, R),
+    {
+        let (s, r) = f(self.val);
+        (Located::new(self.loc, s), r)
+    }
+
+    pub fn split_result<S, E, R, F>(self, f: F) -> Result<(Located<S>, R), Located<E>>
+    where
+        F: FnOnce(T) -> Result<(S, R), E>,
+    {
+        match f(self.val) {
+            Err(err) => Err(Located::new(self.loc, err)),
+            Ok((s, r)) => Ok((Located::new(self.loc, s), r)),
+        }
+    }
+
+    pub fn map<S, F>(self, f: F) -> Located<S>
+    where
+        F: FnOnce(T) -> S,
+    {
+        Located::new(self.loc, f(self.val))
+    }
+
+    pub fn map_result<S, E, F>(self, f: F) -> Result<Located<S>, Located<E>>
+    where
+        F: FnOnce(T) -> Result<S, E>,
+    {
+        match f(self.val) {
+            Ok(s) => Ok(Located::new(self.loc, s)),
+            Err(err) => Err(Located::new(self.loc, err)),
+        }
+    }
+
+    pub fn map_result_value<S, E, F>(self, f: F) -> Result<S, Located<E>>
+    where
+        F: FnOnce(T) -> Result<S, E>,
+    {
+        match f(self.val) {
+            Ok(s) => Ok(s),
+            Err(err) => Err(Located::new(self.loc, err)),
+        }
+    }
+
+    pub fn transfer<S>(self, s: S) -> Located<S> {
+        Located::new(self.loc, s)
+    }
+}
+
+impl<T> From<T> for Located<T> {
+    fn from(val: T) -> Self {
+        Located { loc: None, val }
+    }
+}
+
+impl<T> Located<Option<T>> {
+    pub fn transpose_option(self) -> Option<Located<T>> {
+        let loc = self.loc;
+        self.val.map(|val| Located::new(loc, val))
+    }
+}
+
+impl<T> Located<Located<T>> {
+    pub fn flatten(self) -> Located<T> {
+        self.val.proximate_to_option_loc(self.loc)
     }
 }
 
@@ -126,15 +214,15 @@ impl std::fmt::Display for Loc {
 
 #[derive(Debug)]
 pub enum Error {
-    Preprocess(Located<String>),
+    Tokenize(Located<String>),
     Parse(Located<String>),
     Expand(Located<String>),
     Resolve(String), // Does a `Loc` make sense for this?
 }
 
-impl From<Located<preprocess::Error>> for Error {
-    fn from(err: Located<preprocess::Error>) -> Self {
-        Error::Preprocess(err.map(|err| format!("{:?}", err)))
+impl From<Located<tokenize::Error>> for Error {
+    fn from(err: Located<tokenize::Error>) -> Self {
+        Error::Tokenize(err.map(|err| format!("{:?}", err)))
     }
 }
 
@@ -156,31 +244,15 @@ impl From<resolve::Error> for Error {
     }
 }
 
-// RUSTFIX have the token-generating stream convert `Error`s into `Located<Error>`s.
-// RUSTFIX remove
-fn dummy_wrap<T>(t: T) -> Located<T> {
-    Located::new(Loc::new(0, 0), t)
-}
-
-// RUSTFIX ERROR OVERHAUL: 1. Make the `Located<xxx>`s actually get injected in the  right places, and
-//                         2. Exception overhaul, just use `format!()` in-place to generate the messages,
+// RUSTFIX ERROR OVERHAUL:    Exception overhaul, just use `format!()` in-place to generate the messages,
 //                            since we are just doing `to_owned` spam everywhere now and the slices were
 //                            limiting in some places when I was originally writing the messages.
 
 pub fn assemble(source: &str) -> Result<Vec<Word>, Error> {
-    let preproc_source = preprocess::preprocess(source)
-        .map_err(dummy_wrap)
-        .map_err(Error::from)?;
-
-    let statements = parse::parse(&preproc_source)
-        .map_err(dummy_wrap)
-        .map_err(Error::from)?;
-
-    let elems = generate::generate(statements)
-        .map_err(dummy_wrap)
-        .map_err(Error::from)?;
-
-    let bins = resolve::resolve(elems).map_err(Error::from)?;
+    let tokens = tokenize::tokenize(source)?;
+    let statements = parse::parse(tokens)?;
+    let elems = generate::generate(statements)?;
+    let bins = resolve::resolve(elems)?;
 
     Ok(bins)
 }

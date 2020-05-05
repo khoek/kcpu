@@ -1,4 +1,4 @@
-use super::conductor::{BinaryElement, LabelName, Statement};
+use super::conductor::{BinaryElement, LabelName, Located, Statement};
 use crate::asm::lang::Lang;
 use crate::asm::model::Arg;
 use crate::common;
@@ -53,7 +53,15 @@ impl Statement {
         )
     }
 
-    fn generate_inst(inst: String, args: Vec<Arg<LabelName>>) -> Result<Vec<BinaryElement>, Error> {
+    fn generate_inst(
+        inst: String,
+        args: Vec<Located<Arg<LabelName>>>,
+    ) -> Result<Vec<BinaryElement>, Error> {
+        // RUSTFIX at the moment, we drop argument location information, since we don't have anything to do with it
+        // (and, even if we could think of something(?), we'd have to peer into `Alias::instantiate` to assign it).
+        // This latter thing could be find, but we don't want to do it yet.
+        let args: Vec<Arg<LabelName>> = args.into_iter().map(Located::value).collect();
+
         // RUSTFIX Actually, don't make this a function in `Lang`, since it is meant to generate multiple kinds of errors
         //         and `Lang` shouldn't have to know about that.
 
@@ -70,12 +78,14 @@ impl Statement {
         let blobs = matches.next();
         assert!(matches.next().is_none());
 
-        Ok(blobs
+        // RUSTFIX list candiates when there is no match.
+        let blobs = blobs
             .map(Result::Ok)
-            .unwrap_or_else(|| Err(Error::InstInvalidArgs(inst, args)))?
-            .into_iter()
-            .map(BinaryElement::Inst)
-            .collect())
+            .unwrap_or_else(|| Err(Error::InstInvalidArgs(inst, args)))?;
+
+        Ok(blobs.into_iter().map(BinaryElement::Inst).collect())
+
+        // RUSTFIX remove these comments
 
         // NOTE NOTE NOTE I just went through a whole thing with "do we need any of this matching stuff at all,
         // we can just try to perform the resolution aren't we checking everything twice??"
@@ -102,6 +112,12 @@ impl Statement {
     }
 }
 
-pub(super) fn generate(stmts: Vec<Statement>) -> Result<Vec<BinaryElement>, Error> {
-    common::accumulate(stmts.into_iter().map(Statement::generate))
+pub(super) fn generate(
+    stmts: Vec<Located<Statement>>,
+) -> Result<Vec<BinaryElement>, Located<Error>> {
+    common::accumulate_vecs(
+        stmts
+            .into_iter()
+            .map(|stmt| Ok(stmt.map_result_value(Statement::generate)?)),
+    )
 }

@@ -1,6 +1,6 @@
 use itertools::iproduct;
 
-pub fn accumulate<T, E>(it: impl Iterator<Item = Result<Vec<T>, E>>) -> Result<Vec<T>, E> {
+pub fn accumulate_vecs<T, E>(it: impl Iterator<Item = Result<Vec<T>, E>>) -> Result<Vec<T>, E> {
     let mut result = Vec::new();
     for ts in it {
         result.append(&mut ts?)

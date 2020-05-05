@@ -59,5 +59,5 @@ pub(super) fn resolve(elems: Vec<BinaryElement>) -> Result<Vec<Word>, Error> {
             .unwrap_or(Err(Error::UnknownLabel(tag)))
     };
 
-    common::accumulate(elems.into_iter().map(|be| be.resolve(label_resolver)))
+    common::accumulate_vecs(elems.into_iter().map(|be| be.resolve(label_resolver)))
 }
