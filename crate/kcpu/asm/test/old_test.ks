@@ -26,7 +26,7 @@ SUB %rb %ra
 
 JZ was_zero
 
-MOV $0xFFFF, %ra
+MOV $0xFFFF %ra
 ADD %ra %ra
 JO was_ovflw
 
