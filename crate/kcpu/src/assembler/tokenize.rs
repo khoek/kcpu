@@ -252,9 +252,33 @@ enum RawToken<'a> {
     EndOfStream,
 }
 
+enum Terminator {
+    Hard,
+    Whitespace,
+}
+
+impl Terminator {
+    /// Note that we don't have to check whether invalid characters
+    /// are present at this stage, this occurs when the raw tokens
+    /// are converted into `Token`s.
+    fn from_char(c: Option<char>) -> Option<Self> {
+        match c {
+            None | Some(RawToken::COMMENT_CHAR) | Some(RawToken::NEWLINE_CHAR) => Some(Terminator::Hard),
+            Some(c) => {
+                if c.is_whitespace() {
+                    Some(Terminator::Whitespace)
+                } else {
+                    None
+                }
+            }
+        }
+    }
+}
+
 #[derive(Debug)]
 enum SeekMode {
     Comment,
+    Whitespace,
     StringLiteral,
     Name,
 }
@@ -264,42 +288,14 @@ impl From<char> for SeekMode {
         match c {
             RawToken::COMMENT_CHAR => SeekMode::Comment,
             RawToken::STRING_LITERAL_CHAR => SeekMode::StringLiteral,
-            _ => SeekMode::Name,
+            c => if c.is_whitespace() { SeekMode::Whitespace } else {SeekMode::Name},
         }
     }
 }
 
 impl SeekMode {
-    /// Returns `None` if the character is not terminal, otherwise
-    /// the boolean value gives whether the character is "hard
-    /// terminal" (true) or "soft terminal" (false).
-    ///
-    /// Note that we don't have to check whether invalid characters
-    /// are present at this stage, this occurs when the raw tokens
-    /// are converted into `Token`s.
-    fn to_termination_kind(c: Option<char>) -> Option<bool> {
-        match c {
-            None | Some(RawToken::COMMENT_CHAR) | Some(RawToken::NEWLINE_CHAR) => Some(true),
-            Some(c) => {
-                if c.is_whitespace() {
-                    Some(false)
-                } else {
-                    None
-                }
-            }
-        }
-    }
-
-    // RUSTFIX this is way way too complicated. There are just two competing behaviours which
-    // we have to deal with: 1. for names, where we stop parsing at a soft terminator,
-    // EXCLUDING the terminator, or 2. for strings, where we stop parsing at a '"', error on
-    // a hard terminator, and INCLUDE the terminator.
-    //
-    // The complexity here just comes from special handling of the current character the very
-    // first time we are called. We really need to just remove that. The only thing is, we need
-    // to skip the first '"' we encounter so we don't stop.
-
-    fn should_stop(
+    // RUSTFIX This is much better than it was: can it be simplified any further?
+    fn should_terminate(
         &self,
         first: bool,
         cur: Option<char>,
@@ -309,11 +305,13 @@ impl SeekMode {
             .map(|(i, c)| (Some(i), Some(c)))
             .unwrap_or((None, None));
 
-        match (self, SeekMode::to_termination_kind(peek_c)) {
+        match (self, Terminator::from_char(peek_c)) {
             (SeekMode::Comment, _) => Ok(Some(SeekPoint::SkipEverything)),
+            (SeekMode::Whitespace, Some(Terminator::Whitespace)) => Ok(None),
+            (SeekMode::Whitespace, _) => Ok(Some(SeekPoint::Skip)),
             (SeekMode::StringLiteral, term_kind) => match (cur, first, term_kind) {
                 (Some(RawToken::STRING_LITERAL_CHAR), false, _) => Ok(Some(SeekPoint::Pos(idx))),
-                (_, _,  Some(true)) => Err(Error::UnterminatedStringLiteral),
+                (_, _,  Some(Terminator::Hard)) => Err(Error::UnterminatedStringLiteral),
                 _ => Ok(None),
             }
             (SeekMode::Name, Some(_)) => Ok(Some(SeekPoint::Pos(idx))),
@@ -326,6 +324,7 @@ enum SeekPoint {
     /// We use `None` if we reached the end.
     Pos(Option<usize>),
     SkipEverything,
+    Skip,
 }
 
 impl<'a> RawToken<'a> {
@@ -350,8 +349,8 @@ impl<'a> RawToken<'a> {
         loop {
             let cur = chars.next().map(|(_, cur)| cur);
             let peek = chars.peek().copied();
-            if let Some(result) = sm.should_stop(first, cur, peek)? {
-                return Ok(result);
+            if let Some(pos) = sm.should_terminate(first, cur, peek)? {
+                return Ok(pos);
             }
             first = false;
         }
@@ -365,14 +364,11 @@ impl<'a> RawToken<'a> {
         match chars.peek().copied() {
             None => return Ok(RawToken::EndOfStream),
             Some((col_start, c)) => {
-                if c.is_whitespace() {
-                    drop(chars.next());
-                    return Ok(RawToken::Nothing);
-                }
-
                 match Self::seek_to_terminator(c, chars)? {
                     SeekPoint::SkipEverything => {
-                        drop(chars.last());
+                        Ok(RawToken::EndOfStream)
+                    }
+                    SeekPoint::Skip => {
                         Ok(RawToken::Nothing)
                     }
                     SeekPoint::Pos(col_end) => {
@@ -444,7 +440,7 @@ mod test {
         let mut line_it = &mut line.char_indices().peekable();
         assert_eq!(
             RawToken::consume_one(0, line, &mut line_it).unwrap(),
-            RawToken::Value(Located::with_loc(Loc::new(0, 0), "MOV"))
+            RawToken::Value(Located::with_loc(Loc::new(0, 1), "MOV"))
         );
         assert_eq!(
             RawToken::consume_one(0, line, &mut line_it).unwrap(),
@@ -452,7 +448,7 @@ mod test {
         );
         assert_eq!(
             RawToken::consume_one(0, line, &mut line_it).unwrap(),
-            RawToken::Value(Located::with_loc(Loc::new(0, 4), "%ra"))
+            RawToken::Value(Located::with_loc(Loc::new(0, 5), "%ra"))
         );
         assert_eq!(
             RawToken::consume_one(0, line, &mut line_it).unwrap(),
@@ -466,7 +462,7 @@ mod test {
         let mut line_it = &mut line.char_indices().peekable();
         assert_eq!(
             RawToken::consume_one(0, line, &mut line_it).unwrap(),
-            RawToken::Value(Located::with_loc(Loc::new(0, 0), "MOV"))
+            RawToken::Value(Located::with_loc(Loc::new(0, 1), "MOV"))
         );
         assert_eq!(
             RawToken::consume_one(0, line, &mut line_it).unwrap(),
@@ -474,11 +470,7 @@ mod test {
         );
         assert_eq!(
             RawToken::consume_one(0, line, &mut line_it).unwrap(),
-            RawToken::Value(Located::with_loc(Loc::new(0, 4), "%ra"))
-        );
-        assert_eq!(
-            RawToken::consume_one(0, line, &mut line_it).unwrap(),
-            RawToken::Nothing
+            RawToken::Value(Located::with_loc(Loc::new(0, 5), "%ra"))
         );
         assert_eq!(
             RawToken::consume_one(0, line, &mut line_it).unwrap(),
@@ -496,7 +488,7 @@ mod test {
         let mut line_it = &mut line.char_indices().peekable();
         assert_eq!(
             RawToken::consume_one(0, line, &mut line_it).unwrap(),
-            RawToken::Value(Located::with_loc(Loc::new(0, 0), "MOV"))
+            RawToken::Value(Located::with_loc(Loc::new(0, 1), "MOV"))
         );
         assert_eq!(
             RawToken::consume_one(0, line, &mut line_it).unwrap(),
@@ -504,11 +496,7 @@ mod test {
         );
         assert_eq!(
             RawToken::consume_one(0, line, &mut line_it).unwrap(),
-            RawToken::Value(Located::with_loc(Loc::new(0, 4), "%ra"))
-        );
-        assert_eq!(
-            RawToken::consume_one(0, line, &mut line_it).unwrap(),
-            RawToken::Nothing
+            RawToken::Value(Located::with_loc(Loc::new(0, 5), "%ra"))
         );
         assert_eq!(
             RawToken::consume_one(0, line, &mut line_it).unwrap(),
@@ -522,7 +510,7 @@ mod test {
         let mut line_it = &mut line.char_indices().peekable();
         assert_eq!(
             RawToken::consume_one(0, line, &mut line_it).unwrap(),
-            RawToken::Value(Located::with_loc(Loc::new(0, 0), "MOV"))
+            RawToken::Value(Located::with_loc(Loc::new(0, 1), "MOV"))
         );
         assert_eq!(
             RawToken::consume_one(0, line, &mut line_it).unwrap(),
@@ -530,11 +518,7 @@ mod test {
         );
         assert_eq!(
             RawToken::consume_one(0, line, &mut line_it).unwrap(),
-            RawToken::Value(Located::with_loc(Loc::new(0, 4), "%ra"))
-        );
-        assert_eq!(
-            RawToken::consume_one(0, line, &mut line_it).unwrap(),
-            RawToken::Nothing
+            RawToken::Value(Located::with_loc(Loc::new(0, 5), "%ra"))
         );
         assert_eq!(
             RawToken::consume_one(0, line, &mut line_it).unwrap(),
@@ -548,7 +532,7 @@ mod test {
         let mut line_it = &mut line.char_indices().peekable();
         assert_eq!(
             RawToken::consume_one(0, line, &mut line_it).unwrap(),
-            RawToken::Value(Located::with_loc(Loc::new(0, 0), "MOV"))
+            RawToken::Value(Located::with_loc(Loc::new(0, 1), "MOV"))
         );
         assert_eq!(
             RawToken::consume_one(0, line, &mut line_it).unwrap(),
@@ -556,11 +540,7 @@ mod test {
         );
         assert_eq!(
             RawToken::consume_one(0, line, &mut line_it).unwrap(),
-            RawToken::Value(Located::with_loc(Loc::new(0, 4), "%ra"))
-        );
-        assert_eq!(
-            RawToken::consume_one(0, line, &mut line_it).unwrap(),
-            RawToken::Nothing
+            RawToken::Value(Located::with_loc(Loc::new(0, 5), "%ra"))
         );
         assert_eq!(
             RawToken::consume_one(0, line, &mut line_it).unwrap(),
@@ -574,10 +554,6 @@ mod test {
         let mut line_it = &mut line.char_indices().peekable();
         assert_eq!(
             RawToken::consume_one(0, line, &mut line_it).unwrap(),
-            RawToken::Nothing
-        );
-        assert_eq!(
-            RawToken::consume_one(0, line, &mut line_it).unwrap(),
             RawToken::EndOfStream
         );
     }
@@ -588,7 +564,7 @@ mod test {
         let mut line_it = &mut line.char_indices().peekable();
         assert_eq!(
             RawToken::consume_one(0, line, &mut line_it).unwrap(),
-            RawToken::Value(Located::with_loc(Loc::new(0, 0), "M"))
+            RawToken::Value(Located::with_loc(Loc::new(0, 1), "M"))
         );
         assert_eq!(
             RawToken::consume_one(0, line, &mut line_it).unwrap(),
@@ -602,7 +578,7 @@ mod test {
         let mut line_it = &mut line.char_indices().peekable();
         assert_eq!(
             RawToken::consume_one(0, line, &mut line_it).unwrap(),
-            RawToken::Value(Located::with_loc(Loc::new(0, 0), "M"))
+            RawToken::Value(Located::with_loc(Loc::new(0, 1), "M"))
         );
         assert_eq!(
             RawToken::consume_one(0, line, &mut line_it).unwrap(),
@@ -644,7 +620,7 @@ mod test {
         let mut line_it = &mut line.char_indices().peekable();
         assert_eq!(
             RawToken::consume_one(0, line, &mut line_it).unwrap(),
-            RawToken::Value(Located::with_loc(Loc::new(0, 0), "\"test\""))
+            RawToken::Value(Located::with_loc(Loc::new(0, 1), "\"test\""))
         );
         assert_eq!(
             RawToken::consume_one(0, line, &mut line_it).unwrap(),
@@ -658,7 +634,7 @@ mod test {
         let mut line_it = &mut line.char_indices().peekable();
         assert_eq!(
             RawToken::consume_one(0, line, &mut line_it).unwrap(),
-            RawToken::Value(Located::with_loc(Loc::new(0, 0), "\"test\""))
+            RawToken::Value(Located::with_loc(Loc::new(0, 1), "\"test\""))
         );
         assert_eq!(
             RawToken::consume_one(0, line, &mut line_it).unwrap(),
@@ -676,7 +652,7 @@ mod test {
         let mut line_it = &mut line.char_indices().peekable();
         assert_eq!(
             RawToken::consume_one(0, line, &mut line_it).unwrap(),
-            RawToken::Value(Located::with_loc(Loc::new(0, 0), "\"test\""))
+            RawToken::Value(Located::with_loc(Loc::new(0, 1), "\"test\""))
         );
         assert_eq!(
             RawToken::consume_one(0, line, &mut line_it).unwrap(),
@@ -684,11 +660,7 @@ mod test {
         );
         assert_eq!(
             RawToken::consume_one(0, line, &mut line_it).unwrap(),
-            RawToken::Value(Located::with_loc(Loc::new(0, 7), "MOV"))
-        );
-        assert_eq!(
-            RawToken::consume_one(0, line, &mut line_it).unwrap(),
-            RawToken::Nothing
+            RawToken::Value(Located::with_loc(Loc::new(0, 8), "MOV"))
         );
         assert_eq!(
             RawToken::consume_one(0, line, &mut line_it).unwrap(),
@@ -706,11 +678,7 @@ mod test {
         let mut line_it = &mut line.char_indices().peekable();
         assert_eq!(
             RawToken::consume_one(0, line, &mut line_it).unwrap(),
-            RawToken::Value(Located::with_loc(Loc::new(0, 0), "\"test\""))
-        );
-        assert_eq!(
-            RawToken::consume_one(0, line, &mut line_it).unwrap(),
-            RawToken::Nothing
+            RawToken::Value(Located::with_loc(Loc::new(0, 1), "\"test\""))
         );
         assert_eq!(
             RawToken::consume_one(0, line, &mut line_it).unwrap(),
@@ -728,7 +696,7 @@ mod test {
         let mut line_it = &mut line.char_indices().peekable();
         assert_eq!(
             RawToken::consume_one(0, line, &mut line_it).unwrap(),
-            RawToken::Value(Located::with_loc(Loc::new(0, 0), "\"\""))
+            RawToken::Value(Located::with_loc(Loc::new(0, 1), "\"\""))
         );
         assert_eq!(
             RawToken::consume_one(0, line, &mut line_it).unwrap(),
@@ -742,7 +710,7 @@ mod test {
         let mut line_it = &mut line.char_indices().peekable();
         assert_eq!(
             RawToken::consume_one(0, line, &mut line_it).unwrap(),
-            RawToken::Value(Located::with_loc(Loc::new(0, 0), "\"hello there friends\""))
+            RawToken::Value(Located::with_loc(Loc::new(0, 1), "\"hello there friends\""))
         );
         assert_eq!(
             RawToken::consume_one(0, line, &mut line_it).unwrap(),
@@ -750,7 +718,7 @@ mod test {
         );
         assert_eq!(
             RawToken::consume_one(0, line, &mut line_it).unwrap(),
-            RawToken::Value(Located::with_loc(Loc::new(0, 22), "\"hi there\""))
+            RawToken::Value(Located::with_loc(Loc::new(0, 23), "\"hi there\""))
         );
         assert_eq!(
             RawToken::consume_one(0, line, &mut line_it).unwrap(),
@@ -768,11 +736,11 @@ mod test {
         let mut line_it = &mut line.char_indices().peekable();
         assert_eq!(
             RawToken::consume_one(0, line, &mut line_it).unwrap(),
-            RawToken::Value(Located::with_loc(Loc::new(0, 0), "\"hello there friends\""))
+            RawToken::Value(Located::with_loc(Loc::new(0, 1), "\"hello there friends\""))
         );
         assert_eq!(
             RawToken::consume_one(0, line, &mut line_it).unwrap(),
-            RawToken::Value(Located::with_loc(Loc::new(0, 21), "\"hi there\""))
+            RawToken::Value(Located::with_loc(Loc::new(0, 22), "\"hi there\""))
         );
         assert_eq!(
             RawToken::consume_one(0, line, &mut line_it).unwrap(),
