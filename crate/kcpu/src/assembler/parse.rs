@@ -1,5 +1,5 @@
-use super::conductor::Located;
-use super::{conductor::Statement, tokenize::Token};
+use super::types::Located;
+use super::{types::Statement, tokenize::Token};
 use crate::asm::model::{Arg, ConstBinding};
 use crate::common;
 

@@ -1,4 +1,4 @@
-use super::conductor::BinaryElement;
+use super::types::BinaryElement;
 use crate::common;
 use crate::spec::types::hw::*;
 use std::collections::HashMap;

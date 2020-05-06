@@ -1,4 +1,4 @@
-use super::conductor::{BinaryElement, LabelName, Located, Statement};
+use super::types::{BinaryElement, LabelName, Located, Statement};
 use crate::asm::lang::Lang;
 use crate::asm::model::Arg;
 use crate::common;

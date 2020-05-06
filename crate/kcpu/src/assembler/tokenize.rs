@@ -1,4 +1,4 @@
-use super::conductor::{Loc, Located};
+use super::types::{Loc, Located};
 use crate::asm::model::{Const, RegRef};
 use crate::common;
 use crate::spec::types::{
@@ -430,7 +430,7 @@ pub(super) fn tokenize(source: &str) -> Result<Vec<Vec<Located<Token>>>, Located
 
 #[cfg(test)]
 mod tests {
-    use super::super::conductor::{Loc, Located};
+    use super::super::types::{Loc, Located};
     use super::RawToken;
 
     #[test]
