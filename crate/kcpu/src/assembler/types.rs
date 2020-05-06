@@ -216,7 +216,7 @@ impl std::fmt::Display for Loc {
 pub enum Error {
     Tokenize(Located<String>),
     Parse(Located<String>),
-    Expand(Located<String>),
+    Generate(Located<String>),
     Resolve(String), // Does a `Loc` make sense for this?
 }
 
@@ -234,7 +234,7 @@ impl From<Located<parse::Error>> for Error {
 
 impl From<Located<generate::Error>> for Error {
     fn from(err: Located<generate::Error>) -> Self {
-        Error::Expand(err.map(|err| format!("{:?}", err)))
+        Error::Generate(err.map(|err| format!("{:?}", err)))
     }
 }
 
