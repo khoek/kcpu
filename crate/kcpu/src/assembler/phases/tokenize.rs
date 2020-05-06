@@ -1,5 +1,5 @@
 use super::types::{Loc, Located};
-use crate::asm::model::{Const, RegRef};
+use crate::assembler::model::{Const, RegRef};
 use crate::common;
 use crate::spec::types::{
     hw::{word_from_i64_wrapping, Byte, PReg},
@@ -13,7 +13,7 @@ use std::{
 use strum::IntoEnumIterator;
 
 #[derive(Debug)]
-pub(super) enum Error {
+pub enum Error {
     MalformedToken(String, &'static str),
     UnterminatedStringLiteral,
 }
@@ -47,7 +47,7 @@ impl Display for Error {
 // e.g. there is a distinction between an instruction name and a reference to a label
 // (which for us is inferred from context).
 #[derive(Debug)]
-pub(super) enum Token {
+pub enum Token {
     LabelDef(String),
     SpecialName(String),
 
@@ -453,7 +453,7 @@ pub(super) fn tokenize_to_iters(
     RawToken::source_to_iters(source).map(|line| line.map(|raw| raw?.map_result(Token::parse)))
 }
 
-pub(super) fn tokenize(source: &str) -> Result<Vec<Vec<Located<Token>>>, Located<Error>> {
+pub fn tokenize(source: &str) -> Result<Vec<Vec<Located<Token>>>, Located<Error>> {
     tokenize_to_iters(source).map(Iterator::collect).collect()
 }
 

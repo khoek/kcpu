@@ -1,4 +1,4 @@
-use crate::asm::{lang::Builder, model::Family};
+use crate::assembler::{lang::Builder, model::Family};
 
 // RUSTFIX the comment below is old, but it gives a reason for not switching
 // `ArgKind` to just `Src` and `Dst` values; const only might have optimization benefits?

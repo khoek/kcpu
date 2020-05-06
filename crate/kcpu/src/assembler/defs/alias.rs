@@ -1,4 +1,4 @@
-use crate::asm::{
+use crate::assembler::{
     lang::Builder,
     model::{Alias, Slot, Virtual},
 };

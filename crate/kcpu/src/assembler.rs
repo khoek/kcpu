@@ -1,11 +1,10 @@
-pub(super) mod types;
+mod phases;
 
-pub(super) mod generate;
-pub(super) mod parse;
-pub(super) mod resolve;
-pub(super) mod tokenize;
+mod model;
+mod lang;
+mod defs;
 
-pub use types::Error;
+pub use phases::types::Error;
 
 use crate::spec::types::hw::Word;
 
@@ -14,10 +13,10 @@ use crate::spec::types::hw::Word;
 //                            limiting in some places when I was originally writing the messages.
 
 pub fn assemble(source: &str) -> Result<Vec<Word>, Error> {
-    let tokens = tokenize::tokenize(source)?;
-    let statements = parse::parse(tokens)?;
-    let elems = generate::generate(statements)?;
-    let bins = resolve::resolve(elems)?;
+    let tokens = phases::tokenize(source)?;
+    let statements = phases::parse(tokens)?;
+    let elems = phases::generate(statements)?;
+    let bins = phases::resolve(elems)?;
 
     Ok(bins)
 }

@@ -1,11 +1,11 @@
 use super::types::Located;
 use super::{tokenize::Token, types::Statement};
-use crate::asm::model::{Arg, ConstBinding};
+use crate::assembler::model::{Arg, ConstBinding};
 use crate::common;
 use std::fmt::Display;
 
 #[derive(Debug)]
-pub(super) enum Error {
+pub enum Error {
     UnknownSpecialCommandName(String),
     UnexpectedToken(Token, &'static str),
     UnexpectedEndOfStream(&'static str),
@@ -129,7 +129,7 @@ impl Statement {
     }
 }
 
-pub(super) fn parse(
+pub fn parse(
     tokens: Vec<Vec<Located<Token>>>,
 ) -> Result<Vec<Located<Statement>>, Located<Error>> {
     common::accumulate_vecs(

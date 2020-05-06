@@ -1,6 +1,5 @@
 use super::{generate, parse, resolve, tokenize};
-use crate::asm::model::Arg;
-use crate::asm::model::Blob;
+use crate::assembler::model::{Arg, Blob};
 use crate::spec::types::hw::*;
 use derive_more::Constructor;
 use std::fmt::Display;
@@ -82,9 +81,9 @@ use std::fmt::Display;
 
 // RUSTFIX no zero length label names!
 
-pub(super) type LabelName = String;
+pub type LabelName = String;
 
-pub(super) enum Statement {
+pub enum Statement {
     LabelDef(LabelName),
     RawWords(Vec<Word>),
     RawBytes(Vec<Byte>),
@@ -92,7 +91,7 @@ pub(super) enum Statement {
     Inst(String, Vec<Located<Arg<LabelName>>>),
 }
 
-pub(super) enum BinaryElement {
+pub enum BinaryElement {
     LabelDef(LabelName),
     Inst(Blob<LabelName>),
     Data(Vec<Word>),

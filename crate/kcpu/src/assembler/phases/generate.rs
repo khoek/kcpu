@@ -1,6 +1,5 @@
 use super::types::{BinaryElement, LabelName, Located, Statement};
-use crate::asm::lang::Lang;
-use crate::asm::model::Arg;
+use crate::assembler::{lang::Lang, model::Arg};
 use crate::common;
 use crate::spec::types::{
     hw::{self, Byte, Word},
@@ -11,7 +10,7 @@ use itertools::{EitherOrBoth, Itertools};
 use std::{fmt::Display, iter};
 
 #[derive(Debug)]
-pub(super) enum Error {
+pub enum Error {
     BadDataParity,
     LabelNameCollidesWithInst(LabelName),
     InstUnknown(String),
@@ -165,7 +164,7 @@ impl Statement {
     }
 }
 
-pub(super) fn generate(
+pub fn generate(
     stmts: Vec<Located<Statement>>,
 ) -> Result<Vec<BinaryElement>, Located<Error>> {
     common::accumulate_vecs(
