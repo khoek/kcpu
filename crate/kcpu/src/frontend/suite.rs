@@ -7,8 +7,8 @@ use crate::vm::State;
 use colored::Colorize;
 use derive_more::Constructor;
 use std::ffi::OsString;
-use std::path::{Path, PathBuf};
 use std::io::{self, Write};
+use std::path::{Path, PathBuf};
 
 #[derive(Constructor)]
 struct UnitSrc {
@@ -136,57 +136,6 @@ fn find_units(suite_dir: &PathBuf) -> Vec<UnitSrc> {
             }
         })
         .collect()
-
-    // // FIXMEFIXMEFIXME
-    // vec![
-    //     fn_cook_fake_unit("add3_fam"),
-    //     // fn_cook_fake_unit("auto"), ASM
-    //     fn_cook_fake_unit("call_ret_2"),
-    //     fn_cook_fake_unit("fibb"),
-    //     // fn_cook_fake_unit("int_disable_2"), VM
-    //     // fn_cook_fake_unit("int_multiple"), ASM
-    //     // fn_cook_fake_unit("int_recursive"), ASM
-    //     fn_cook_fake_unit("io_probe"),
-    //     fn_cook_fake_unit("ldwo_fam"),
-    //     fn_cook_fake_unit("mov_self"),
-    //     fn_cook_fake_unit("primes"),
-    //     fn_cook_fake_unit("pushpop"),
-    //     fn_cook_fake_unit("stwo"),
-    //     fn_cook_fake_unit("add3"),
-    //     fn_cook_fake_unit("byte_ld"),
-    //     fn_cook_fake_unit("enter_fr"),
-    //     // fn_cook_fake_unit("flag_tui2nmi"), ASM
-    //     // fn_cook_fake_unit("int_during_io"), ASM
-    //     fn_cook_fake_unit("int_nmi"),
-    //     fn_cook_fake_unit("int_simple"),
-    //     fn_cook_fake_unit("io_uid"),
-    //     fn_cook_fake_unit("ldwo"),
-    //     fn_cook_fake_unit("nop"),
-    //     // fn_cook_fake_unit("primes_nmispam"), ASM
-    //     fn_cook_fake_unit("pushpop_rsp"),
-    //     fn_cook_fake_unit("alu"),
-    //     fn_cook_fake_unit("byte_st"),
-    //     fn_cook_fake_unit("enter_leave"),
-    //     // fn_cook_fake_unit("int_async"), ASM
-    //     fn_cook_fake_unit("int_fastdeliv"),
-    //     // fn_cook_fake_unit("int_nmi_no_eoi"), ASM
-    //     fn_cook_fake_unit("int_stackcheck"),
-    //     // fn_cook_fake_unit("io_video"), VM(unimplemented)
-    //     fn_cook_fake_unit2("ljmp"),
-    //     fn_cook_fake_unit("old_test"),
-    //     fn_cook_fake_unit("pushpop_a"),
-    //     fn_cook_fake_unit("simple"),
-    //     fn_cook_fake_unit("alu_noflags"),
-    //     fn_cook_fake_unit("call_ret_1"),
-    //     // fn_cook_fake_unit("family"), ASM
-    //     fn_cook_fake_unit("int_disable_1"),
-    //     // fn_cook_fake_unit("int_ie_pushpop"), ASM
-    //     fn_cook_fake_unit("int_nmi_no_rec"),
-    //     fn_cook_fake_unit("io_latency"),
-    //     fn_cook_fake_unit("jmp"),
-    //     fn_cook_fake_unit("pushpop_fg"),
-    //     fn_cook_fake_unit("stwo_fam"),
-    // ]
 }
 
 fn run_units(max_clocks: Option<u64>, units: &[UnitSrc]) -> bool {
@@ -231,7 +180,6 @@ fn run_unit(src: &UnitSrc, num: usize, name_pad: usize, max_clocks: Option<u64>)
 
     match summary {
         Err(err) => {
-            // RUSTFIX don't use debug print here
             println!(
                 "{}:\n\t{}",
                 "FAIL: ASSEMBLY ERROR".red(),
@@ -250,8 +198,13 @@ fn run_unit(src: &UnitSrc, num: usize, name_pad: usize, max_clocks: Option<u64>)
                     summary.to_effective_freq_megahertz(),
                 ),
                 State::Aborted => println!("{}", "FAIL: ABORTED".red()),
-                State::Timeout => println!("{}", "FAIL: DETERMINISTIC TIMEOUT".red()),
-                _ => panic!("internal unitrunner error: VM still running!"),
+                State::Timeout => println!(
+                    "{} after {}μops ({}ms)",
+                    "FAIL: DETERMINISTIC TIMEOUT".red(),
+                    max_clocks.unwrap(),
+                    summary.real_ns_elapsed / 1000 / 1000
+                ),
+                _ => panic!("internal unit runner error: VM still running!"),
             }
 
             summary.state == State::Halted

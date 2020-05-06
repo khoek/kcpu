@@ -6,7 +6,10 @@ use crate::spec::types::{
     schema::{Half, Width},
 };
 use std::convert::TryFrom;
-use std::{fmt::Display, num::{ParseIntError, TryFromIntError}};
+use std::{
+    fmt::Display,
+    num::{ParseIntError, TryFromIntError},
+};
 use strum::IntoEnumIterator;
 
 #[derive(Debug)]
@@ -32,7 +35,9 @@ impl Display for Error {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Error::MalformedToken(raw, msg) => write!(f, "Malformed token '{}': {}", raw, msg),
-            Error::UnterminatedStringLiteral => write!(f, "Encountered unterminated string literal"),
+            Error::UnterminatedStringLiteral => {
+                write!(f, "Encountered unterminated string literal")
+            }
         }
     }
 }
@@ -58,10 +63,10 @@ impl Display for Token {
         match self {
             Token::LabelDef(label) => write!(f, "LabelDef({})", label),
             Token::SpecialName(name) => write!(f, "SpecialName({})", name),
-        
+
             Token::RegRef(r) => write!(f, "RegRef({})", r),
             Token::Const(c) => write!(f, "Const({})", c),
-        
+
             Token::String(s) => write!(f, "String({})", s),
             Token::Name(s) => write!(f, "Name({})", s),
         }

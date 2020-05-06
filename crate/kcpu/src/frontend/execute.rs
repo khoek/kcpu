@@ -97,12 +97,39 @@ pub fn execute(cfg: Config, raw_bios: Option<&[u8]>, raw_prog: Option<&[u8]>) ->
         println!("CPU Start");
     }
 
-    loop {
+    let end_state = loop {
         let s = match cfg.mode {
             BreakMode::Noninteractive => vm.run(cfg.max_clocks),
             BreakMode::OnInst | BreakMode::OnUCReset => vm.step(),
             BreakMode::OnUInst => vm.ustep(),
         };
+
+        match s {
+            State::Running => (),
+            State::Aborted => {
+                match cfg.abort_action {
+                    AbortAction::Stop => break None,
+                    AbortAction::Resume => (),
+                    AbortAction::Prompt => {
+                        print!("CPU Aborted, continue(y)? ");
+                        io::stdout().flush().unwrap();
+
+                        let c = std::io::stdin().lock().lines().next().unwrap().unwrap();
+                        if c == "n" || c == "N" {
+                            println!("Stopping...");
+
+                            vm.dump_registers();
+                            break None;
+                        }
+
+                        println!("Continuing...");
+                    }
+                }
+
+                vm.resume();
+            }
+            s => break Some(s),
+        }
 
         if cfg.mode.should_pause(vm.get_debug_exec_info()) {
             let prompt_msg = "[ENTER to step]";
@@ -115,41 +142,19 @@ pub fn execute(cfg: Config, raw_bios: Option<&[u8]>, raw_prog: Option<&[u8]>) ->
             io::stdout().flush().unwrap();
         }
 
-        if s == State::Aborted {
-            match cfg.abort_action {
-                AbortAction::Stop => break,
-                AbortAction::Resume => (),
-                AbortAction::Prompt => {
-                    print!("CPU Aborted, continue(y)? ");
-                    io::stdout().flush().unwrap();
-
-                    let s = std::io::stdin().lock().lines().next().unwrap().unwrap();
-                    if s == "n" || s == "N" {
-                        println!("Stopping...");
-
-                        vm.dump_registers();
-                        break;
-                    }
-
-                    println!("Continuing...");
-                }
-            }
-
-            vm.resume();
-        }
-
-        if vm.get_state() != State::Running
-            || cfg
-                .max_clocks
-                .map(|mc| vm.get_total_clocks() >= mc)
-                .unwrap_or(false)
+        // FIXME manual timeout check (for step mode), bit of a hack returning
+        // a VM code like this...
+        if cfg
+            .max_clocks
+            .map(|mc| vm.get_total_clocks() >= mc)
+            .unwrap_or(false)
         {
-            break;
+            break Some(State::Timeout);
         }
-    }
+    };
 
     let summary = Summary::new(
-        vm.get_state(),
+        end_state.unwrap_or_else(|| vm.get_state()),
         vm.get_total_clocks(),
         vm.get_real_ns_elapsed(),
     );

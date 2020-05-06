@@ -74,8 +74,10 @@ pub struct SuiteOpts {
     #[structopt(short = "only", long, parse(from_os_str))]
     only: Option<OsString>,
 
-    #[structopt(short = "mc", long)]
-    max_clocks: Option<u64>,
+    // RUSTFIX at the moment there is no way to specify "unlimited"
+    // for suite runs.
+    #[structopt(short = "mc", long, default_value = "50000000")]
+    max_clocks: u64,
 }
 
 #[derive(StructOpt, Debug)]
@@ -146,7 +148,7 @@ pub fn suite(cmd: SubcommandSuite) -> ! {
             .suite_root_dir
             .unwrap_or_else(assets::get_default_suite_dir),
         &cmd.opts.only,
-        cmd.opts.max_clocks,
+        Some(cmd.opts.max_clocks),
     )
     .unwrap();
 

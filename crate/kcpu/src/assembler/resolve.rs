@@ -2,7 +2,7 @@ use super::types::BinaryElement;
 use crate::common;
 use crate::spec::types::hw::*;
 use std::collections::HashMap;
-use std::{fmt::Display, convert::TryFrom};
+use std::{convert::TryFrom, fmt::Display};
 
 #[derive(Debug)]
 pub enum Error {

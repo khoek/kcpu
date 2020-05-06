@@ -14,9 +14,13 @@ pub(super) enum Error {
 impl Display for Error {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Error::UnknownSpecialCommandName(cmd) => write!(f, "Unknown special command: '{}'", cmd),
+            Error::UnknownSpecialCommandName(cmd) => {
+                write!(f, "Unknown special command: '{}'", cmd)
+            }
             Error::UnexpectedToken(tk, msg) => write!(f, "Unexpected token: '{}': {}", tk, msg),
-            Error::UnexpectedEndOfStream(msg) => write!(f, "Unexpectedly encountered end of stream: {}", msg),
+            Error::UnexpectedEndOfStream(msg) => {
+                write!(f, "Unexpectedly encountered end of stream: {}", msg)
+            }
         }
     }
 }
