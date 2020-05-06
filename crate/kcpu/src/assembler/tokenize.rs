@@ -252,21 +252,23 @@ enum RawToken<'a> {
     EndOfStream,
 }
 
-enum Terminator {
+enum TerminatorKind {
     Hard,
     Whitespace,
 }
 
-impl Terminator {
+impl TerminatorKind {
     /// Note that we don't have to check whether invalid characters
     /// are present at this stage, this occurs when the raw tokens
     /// are converted into `Token`s.
     fn from_char(c: Option<char>) -> Option<Self> {
         match c {
-            None | Some(RawToken::COMMENT_CHAR) | Some(RawToken::NEWLINE_CHAR) => Some(Terminator::Hard),
+            None | Some(RawToken::COMMENT_CHAR) | Some(RawToken::NEWLINE_CHAR) => {
+                Some(TerminatorKind::Hard)
+            }
             Some(c) => {
                 if c.is_whitespace() {
-                    Some(Terminator::Whitespace)
+                    Some(TerminatorKind::Whitespace)
                 } else {
                     None
                 }
@@ -288,43 +290,71 @@ impl From<char> for SeekMode {
         match c {
             RawToken::COMMENT_CHAR => SeekMode::Comment,
             RawToken::STRING_LITERAL_CHAR => SeekMode::StringLiteral,
-            c => if c.is_whitespace() { SeekMode::Whitespace } else {SeekMode::Name},
+            c => {
+                if c.is_whitespace() {
+                    SeekMode::Whitespace
+                } else {
+                    SeekMode::Name
+                }
+            }
         }
     }
 }
 
 impl SeekMode {
     // RUSTFIX This is much better than it was: can it be simplified any further?
-    fn should_terminate(
-        &self,
-        first: bool,
-        cur: Option<char>,
-        peek: Option<(usize, char)>,
-    ) -> Result<Option<SeekPoint>, Error> {
-        let (idx, peek_c) = peek
-            .map(|(i, c)| (Some(i), Some(c)))
-            .unwrap_or((None, None));
-
-        match (self, Terminator::from_char(peek_c)) {
-            (SeekMode::Comment, _) => Ok(Some(SeekPoint::SkipEverything)),
-            (SeekMode::Whitespace, Some(Terminator::Whitespace)) => Ok(None),
-            (SeekMode::Whitespace, _) => Ok(Some(SeekPoint::Skip)),
-            (SeekMode::StringLiteral, term_kind) => match (cur, first, term_kind) {
-                (Some(RawToken::STRING_LITERAL_CHAR), false, _) => Ok(Some(SeekPoint::Pos(idx))),
-                (_, _,  Some(Terminator::Hard)) => Err(Error::UnterminatedStringLiteral),
+    fn should_terminate(&self, cur: Option<char>) -> Result<Option<SeekEnd>, Error> {
+        match (self, TerminatorKind::from_char(cur)) {
+            (SeekMode::Comment, _) => Ok(Some(SeekEnd::SkipEverything)),
+            (SeekMode::Whitespace, Some(TerminatorKind::Whitespace)) => Ok(None),
+            (SeekMode::Whitespace, _) => Ok(Some(SeekEnd::Skip)),
+            (SeekMode::StringLiteral, term_kind) => match (cur, term_kind) {
+                (Some(RawToken::STRING_LITERAL_CHAR), _) => Ok(Some(SeekEnd::AdvanceOne)),
+                (_, Some(TerminatorKind::Hard)) => Err(Error::UnterminatedStringLiteral),
                 _ => Ok(None),
-            }
-            (SeekMode::Name, Some(_)) => Ok(Some(SeekPoint::Pos(idx))),
+            },
+            (SeekMode::Name, Some(_)) => Ok(Some(SeekEnd::Current)),
             (SeekMode::Name, None) => Ok(None),
         }
     }
 }
 
-enum SeekPoint {
-    /// We use `None` if we reached the end.
-    Pos(Option<usize>),
+enum SeekEnd {
+    Current,
+    AdvanceOne,
     SkipEverything,
     Skip,
+}
+
+impl SeekEnd {
+    fn build_raw_token<F>(
+        self,
+        line_no: usize,
+        line: &'_ str,
+        start_idx: usize,
+        cur_idx: Option<usize>,
+        advance: F,
+    ) -> RawToken<'_>
+    where
+        F: FnOnce() -> Option<usize>,
+    {
+        let end_idx = match self {
+            SeekEnd::SkipEverything => return RawToken::EndOfStream,
+            SeekEnd::Skip => return RawToken::Nothing,
+            SeekEnd::Current => cur_idx,
+            SeekEnd::AdvanceOne => advance(),
+        }
+        .unwrap_or_else(|| line.len());
+
+        if end_idx == start_idx {
+            return RawToken::Nothing;
+        }
+
+        RawToken::Value(Located::with_loc(
+            Loc::new(line_no, start_idx + 1),
+            &line[start_idx..end_idx],
+        ))
+    }
 }
 
 impl<'a> RawToken<'a> {
@@ -332,70 +362,42 @@ impl<'a> RawToken<'a> {
     const NEWLINE_CHAR: char = '\n';
     const STRING_LITERAL_CHAR: char = '"';
 
-    /// Given the first character `c`, consumes chracters from `chars` until it finds
-    /// the end of the current single token as designated by `c` (e.g., until a closing
-    /// '"' if `c == '"'`, or whitespace if `c == 'a'`). Yields an `Error` if the stream
-    /// is not well formed e.g. a string literal is not terminated. Yields `None` if
-    /// the part of the stream corresponding to `c` as read, but does not represent any
-    /// content whatever (e.g. `c == '#'` is a comment which was consumed, but represents
-    /// no content.)
-    fn seek_to_terminator(
-        c: char,
-        chars: &mut std::iter::Peekable<impl Iterator<Item = (usize, char)>>,
-    ) -> Result<SeekPoint, Error> {
-        let sm = SeekMode::from(c);
-
-        let mut first = true;
-        loop {
-            let cur = chars.next().map(|(_, cur)| cur);
-            let peek = chars.peek().copied();
-            if let Some(pos) = sm.should_terminate(first, cur, peek)? {
-                return Ok(pos);
-            }
-            first = false;
-        }
-    }
-
     fn consume_one<'b>(
         line_no: usize,
         line: &'b str,
         chars: &mut std::iter::Peekable<impl Iterator<Item = (usize, char)> + 'b>,
     ) -> Result<RawToken<'b>, Located<Error>> {
-        match chars.peek().copied() {
-            None => return Ok(RawToken::EndOfStream),
+        match chars.next() {
+            None => Ok(RawToken::EndOfStream),
             Some((col_start, c)) => {
-                match Self::seek_to_terminator(c, chars)? {
-                    SeekPoint::SkipEverything => {
-                        Ok(RawToken::EndOfStream)
-                    }
-                    SeekPoint::Skip => {
-                        Ok(RawToken::Nothing)
-                    }
-                    SeekPoint::Pos(col_end) => {
-                        let col_end = col_end.unwrap_or_else(|| line.len());
+                let sm = SeekMode::from(c);
+                loop {
+                    let (idx, c) = match chars.peek().copied() {
+                        Some((idx, c)) => (Some(idx), Some(c)),
+                        None => (None, None),
+                    };
 
-                        if col_end == col_start {
-                            return Ok(RawToken::Nothing);
-                        }
-
-                        Ok(RawToken::Value(Located::with_loc(
-                            Loc::new(line_no, col_start + 1),
-                            &line[col_start..col_end],
-                        )))
+                    if let Some(seek) = sm.should_terminate(c)? {
+                        return Ok(seek.build_raw_token(line_no, line, col_start, idx, || {
+                            chars.next();
+                            chars.peek().copied().map(|(idx, _)| idx)
+                        }));
                     }
+
+                    chars.next();
                 }
             }
         }
     }
 
-    fn line_to_raw_token_iter(
+    fn line_to_iter(
         line_no: usize,
         line: &str,
     ) -> impl Iterator<Item = Result<Located<&str>, Located<Error>>> {
         let mut chars = line.char_indices().peekable();
         std::iter::from_fn(move || -> Option<Result<Located<&str>, Located<Error>>> {
             loop {
-                match Self::consume_one(line_no, line, &mut chars) {
+                match RawToken::consume_one(line_no, line, &mut chars) {
                     Ok(RawToken::Nothing) => (),
                     Ok(RawToken::EndOfStream) => return None,
                     Ok(RawToken::Value(slice)) => return Some(Ok(slice)),
@@ -405,32 +407,29 @@ impl<'a> RawToken<'a> {
         })
     }
 
-    fn source_to_raw_token_iters(
+    fn source_to_iters(
         source: &str,
     ) -> impl Iterator<Item = impl Iterator<Item = Result<Located<&str>, Located<Error>>>> {
+        // NOTE If we want to support multi-line string literals, we can't just use `lines()` here.
         source
             .lines()
             .enumerate()
-            .map(|(line_no, line)| Self::line_to_raw_token_iter(line_no + 1, line))
+            .map(|(line_no, line)| Self::line_to_iter(line_no + 1, line))
     }
 }
 
-pub(super) fn tokenize_to_iters<'a>(
-    source: &'a str,
-) -> impl Iterator<Item = impl Iterator<Item = Result<Located<Token>, Located<Error>>> + 'a> {
-    RawToken::source_to_raw_token_iters(source).map(|line| {
-        line.map(|raw| raw?.map_result(Token::parse))
-    })
+pub(super) fn tokenize_to_iters(
+    source: &'_ str,
+) -> impl Iterator<Item = impl Iterator<Item = Result<Located<Token>, Located<Error>>> + '_> {
+    RawToken::source_to_iters(source).map(|line| line.map(|raw| raw?.map_result(Token::parse)))
 }
 
-pub(super) fn tokenize<'a>(source: &'a str) -> Result<Vec<Vec<Located<Token>>>, Located<Error>> {
+pub(super) fn tokenize(source: &str) -> Result<Vec<Vec<Located<Token>>>, Located<Error>> {
     tokenize_to_iters(source).map(Iterator::collect).collect()
 }
 
-// RUSTFIX move these tests to a new file
-
 #[cfg(test)]
-mod test {
+mod tests {
     use super::super::conductor::{Loc, Located};
     use super::RawToken;
 
@@ -759,7 +758,6 @@ mod test {
         let mut line_it = &mut line.char_indices().peekable();
         drop(RawToken::consume_one(0, line, &mut line_it).unwrap());
     }
-
 
     #[test]
     #[should_panic]
