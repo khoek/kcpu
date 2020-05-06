@@ -88,7 +88,7 @@ impl Statement {
                     Statement::Inst(
                         name,
                         tokens
-                            .map(|tk| tk.map_result(Token::into_arg))
+                            .map(|tk| tk.try_map(Token::into_arg))
                             .collect::<Result<Vec<_>, Located<Error>>>()?,
                     ),
                     Disposition::ExpectExhausted,
@@ -120,7 +120,7 @@ impl Statement {
                     .next()
                     .map(Result::Ok)
                     .unwrap_or(Err(Error::UnexpectedEndOfStream("string literal")))?
-                    .map_result_value(|tk| tk.into_string())?,
+                    .try_map_err(|tk| tk.into_string())?,
             )),
             _ => Err(Located::from(Error::UnknownSpecialCommandName(
                 name.to_owned(),
@@ -129,9 +129,7 @@ impl Statement {
     }
 }
 
-pub fn parse(
-    tokens: Vec<Vec<Located<Token>>>,
-) -> Result<Vec<Located<Statement>>, Located<Error>> {
+pub fn parse(tokens: Vec<Vec<Located<Token>>>) -> Result<Vec<Located<Statement>>, Located<Error>> {
     common::accumulate_vecs(
         tokens
             .into_iter()

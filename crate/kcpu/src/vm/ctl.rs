@@ -425,7 +425,7 @@ impl<'a> Ctl<'a> {
             }
 
             self.uinst_latch_val = ucode::UCode::get().read(PUAddr::new(
-                Inst::decode(interface::Ctl::get_inst(self)).opcode,
+                Inst::decode_opcode(interface::Ctl::get_inst(self)),
                 self.regs[SReg::UC] as UCVal,
             ));
 

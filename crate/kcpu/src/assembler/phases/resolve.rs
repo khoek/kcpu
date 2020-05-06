@@ -62,11 +62,7 @@ fn build_label_map(elems: &[BinaryElement]) -> Result<HashMap<String, Word>, Err
 
 pub fn resolve(elems: Vec<BinaryElement>) -> Result<Vec<Word>, Error> {
     let label_map = build_label_map(&elems)?;
-    let label_resolver = |tag| {
-        Ok(label_map.get(&tag).copied())
-            .transpose()
-            .unwrap_or(Err(Error::UnknownLabel(tag)))
-    };
+    let label_resolver = |tag| label_map.get(&tag).copied().ok_or(Error::UnknownLabel(tag));
 
     common::accumulate_vecs(elems.into_iter().map(|be| be.resolve(label_resolver)))
 }

@@ -15,6 +15,12 @@ pub struct DebugExecInfo {
     pub mask_active: bool,
 }
 
+impl DebugExecInfo {
+    pub fn is_true_inst_beginning(self) -> bool {
+        self.uc_reset && !self.mask_active
+    }
+}
+
 #[derive(Debug, Display, PartialEq, Eq)]
 pub enum State {
     Running,
@@ -216,5 +222,9 @@ impl<'a> Instance<'a> {
 
     pub fn is_aborted(&self) -> bool {
         self.ctl.cbits[CBit::Aborted]
+    }
+
+    pub fn iter_at_ip(&self) -> impl Iterator<Item = Word> + '_ {
+        self.mem.iter_at(false, self.ctl.regs[SReg::IP])
     }
 }

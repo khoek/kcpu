@@ -177,7 +177,7 @@ impl<T> Located<T> {
         Located::new(self.loc, f(self.val))
     }
 
-    pub fn map_result<S, E, F>(self, f: F) -> Result<Located<S>, Located<E>>
+    pub fn try_map<S, E, F>(self, f: F) -> Result<Located<S>, Located<E>>
     where
         F: FnOnce(T) -> Result<S, E>,
     {
@@ -187,7 +187,7 @@ impl<T> Located<T> {
         }
     }
 
-    pub fn map_result_value<S, E, F>(self, f: F) -> Result<S, Located<E>>
+    pub fn try_map_err<S, E, F>(self, f: F) -> Result<S, Located<E>>
     where
         F: FnOnce(T) -> Result<S, E>,
     {

@@ -1,7 +1,8 @@
-mod phases;
+pub mod disasm;
+pub mod lang;
+pub mod model;
+pub mod phases;
 
-mod model;
-mod lang;
 mod defs;
 
 pub use phases::types::Error;

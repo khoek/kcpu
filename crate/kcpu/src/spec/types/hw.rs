@@ -18,17 +18,18 @@ pub const fn byte_flip(v: Word) -> Word {
     ((v & 0x00FF) << BYTE_WIDTH) | ((v & 0xFF00) >> BYTE_WIDTH)
 }
 
+pub fn bytes_to_words_into_buff(buff: &mut Vec<Word>, bytes: Vec<Byte>) -> Option<()> {
+    for (idx, ch) in bytes.chunks(2).enumerate() {
+        buff[idx] = std::primitive::u16::from_le_bytes(ch.try_into().map_or(None, Some)?)
+    }
+    Some(())
+}
+
 // RUSTFIX make this const when possible
 // Returns none if the data has bad parity.
 pub fn bytes_to_words(bytes: Vec<Byte>) -> Option<Vec<Word>> {
-    bytes
-        .chunks(2)
-        .map(|ch| {
-            Some(std::primitive::u16::from_le_bytes(
-                ch.try_into().map_or(None, Some)?,
-            ))
-        })
-        .collect::<Option<Vec<_>>>()
+    let mut buff = vec![0; bytes.len() / 2];
+    bytes_to_words_into_buff(&mut buff, bytes).map(|_| buff)
 }
 
 pub fn words_to_bytes(v: Vec<Word>) -> Vec<Byte> {
@@ -181,7 +182,7 @@ impl IU {
 // RUSTFIX use fixed (currently 9) number of bits
 pub type OpCode = Word;
 
-#[derive(Debug)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Inst {
     pub load_data: bool,
     pub opcode: OpCode,
@@ -228,15 +229,14 @@ impl Inst {
         }
     }
 
-    pub fn decode(inst: Word) -> Inst {
-        let (iu1, iu2, iu3) = IU::decode_all(inst);
-        Inst::new(
-            Inst::decode_load_data(inst),
-            Inst::decode_opcode(inst),
-            Some(iu1),
-            Some(iu2),
-            Some(iu3),
-        )
+    // RUSTFIX remove this once we can make `new` const while using
+    // `EnumMap` (or roll a better one ourself).
+    pub fn iu(&self, iu: IU) -> Option<PReg> {
+        match iu {
+            IU::ONE => self.iu1,
+            IU::TWO => self.iu2,
+            IU::THREE => self.iu3,
+        }
     }
 
     // RUSTFIX make this const once possible

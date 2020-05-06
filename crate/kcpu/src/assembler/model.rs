@@ -76,31 +76,31 @@ use strum::IntoEnumIterator;
         be performed subsequently.
 */
 
-#[derive(Debug, Clone, Copy, Constructor)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Constructor)]
 pub struct RegRef {
     preg: PReg,
     width: Width,
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Const {
     Byte(Byte, Half),
     Word(Word),
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ConstBinding<Tag> {
     Resolved(Const),
     Unresolved(Tag),
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Arg<Tag> {
     Const(ConstBinding<Tag>),
     Reg(RegRef),
 }
 
-#[derive(Debug, Constructor)]
+#[derive(Debug)]
 pub struct Family {
     pub name: String,
     pub variants: Vec<String>,
@@ -109,11 +109,11 @@ pub struct Family {
 #[derive(Debug)]
 pub struct Alias {
     pub name: String,
-    arg_count: usize,
-    vinsts: Vec<Virtual>,
+    pub arg_count: usize,
+    pub vinsts: Vec<Virtual>,
 }
 
-pub type ArgIdx = u8;
+pub type ArgIdx = usize;
 
 #[derive(Debug, Clone, Copy)]
 pub enum Slot {
@@ -124,14 +124,27 @@ pub enum Slot {
 
 #[derive(Debug)]
 pub struct Virtual {
-    opclass: OpClass,
-    slots: EnumMap<IU, Option<Slot>>,
+    pub opclass: OpClass,
+    pub slots: EnumMap<IU, Option<Slot>>,
 }
 
-#[derive(Debug, Constructor)]
+#[derive(Debug, Clone, PartialEq, Eq, Constructor)]
 pub struct Blob<Tag> {
-    inst: Inst,
-    binding: Option<ConstBinding<Tag>>,
+    pub inst: Inst,
+    pub binding: Option<ConstBinding<Tag>>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum NoTag {}
+
+pub type ResolvedArg = Arg<NoTag>;
+
+pub type ResolvedBlob = Blob<NoTag>;
+
+impl Display for NoTag {
+    fn fmt(&self, _: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        unreachable!()
+    }
 }
 
 impl Display for Half {
@@ -156,7 +169,7 @@ impl Display for RegRef {
 impl Display for Const {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Const::Word(w) => write!(f, "$0x{:04X}", w),
+            Const::Word(w) => write!(f, "${:#04X}", w),
             Const::Byte(b, half) => write!(f, "{}$0x{}", half, b),
         }
     }
@@ -233,11 +246,20 @@ impl Const {
     }
 }
 
-impl<T> ConstBinding<T> {
+impl<Tag> ConstBinding<Tag> {
     pub fn to_width(&self) -> Width {
         match self {
             ConstBinding::Resolved(c) => c.to_width(),
             ConstBinding::Unresolved(_) => Width::Word,
+        }
+    }
+}
+
+impl ConstBinding<NoTag> {
+    pub fn coerce<T>(self) -> ConstBinding<T> {
+        match self {
+            ConstBinding::Resolved(r) => ConstBinding::Resolved(r),
+            ConstBinding::Unresolved(_) => unreachable!(),
         }
     }
 }
@@ -270,25 +292,44 @@ impl<Tag> Arg<Tag> {
             Arg::Const(_) => PReg::ID,
         }
     }
+
+    pub fn disassemble(blob: &Blob<Tag>, iu: IU, kind: ArgKind) -> Self
+    where
+        Tag: Clone,
+    {
+        match (blob.inst.iu(iu).unwrap(), &blob.binding) {
+            (PReg::ID, Some(cb)) => Arg::Const(cb.clone()),
+            (reg, _) => Arg::Reg(RegRef::new(reg, kind.width)),
+        }
+    }
+}
+
+impl ResolvedArg {
+    pub fn coerce<Tag>(self) -> Arg<Tag> {
+        match self {
+            Arg::Reg(r) => Arg::Reg(r),
+            Arg::Const(c) => Arg::Const(c.coerce()),
+        }
+    }
+}
+
+pub fn sanitize_name(name: &str) -> String {
+    name.to_lowercase()
 }
 
 impl Family {
+    pub fn new(name: String, variants: Vec<String>) -> Self {
+        Self {
+            name: sanitize_name(&name),
+            variants: variants.iter().map(|s| sanitize_name(s)).collect(),
+        }
+    }
+
     pub fn with(name: &str, variants: Vec<&str>) -> Self {
         Self::new(
             name.to_owned(),
             variants.into_iter().map(ToOwned::to_owned).collect(),
         )
-    }
-}
-
-impl From<InstDef> for Alias {
-    fn from(idef: InstDef) -> Self {
-        let mut slots = EnumMap::new();
-        for iu in IU::iter() {
-            slots[iu] = idef.args[iu].map(|_| Slot::Arg(iu as ArgIdx));
-        }
-
-        Alias::new(idef.name, vec![Virtual::new(idef.opclass, slots)])
     }
 }
 
@@ -302,7 +343,7 @@ impl Alias {
         let typ = Self::infer_type_from_virtuals(&vinsts);
 
         Self {
-            name,
+            name: sanitize_name(&name),
             arg_count: typ.len(),
             vinsts,
         }
@@ -322,7 +363,7 @@ impl Alias {
         for vi in vinsts {
             // RUSTFIX EVIL? encapsulation breaking
             let idef = UCode::get()
-                .get_inst_defs()
+                .inst_def_iter()
                 .find(|idef| idef.opclass == vi.opclass)
                 .unwrap();
             for iu in IU::iter() {
@@ -378,12 +419,23 @@ impl Alias {
     }
 }
 
+impl From<InstDef> for Alias {
+    fn from(idef: InstDef) -> Self {
+        let mut slots = EnumMap::new();
+        for iu in IU::iter() {
+            slots[iu] = idef.args[iu].map(|_| Slot::Arg(iu as ArgIdx));
+        }
+
+        Alias::new(idef.name, vec![Virtual::new(idef.opclass, slots)])
+    }
+}
+
 impl Virtual {
     /// If the passed `Slot` has an unbound `ArgIdx`, check if it actually matches the
     /// corresponding argument of the instruction which they claim to.
     fn kind_compatible_with_slot(k: Option<ArgKind>, a: Option<Slot>) -> bool {
         // RUSTFIX Is there any way to avoid this silly generic unit call?
-        match (k, a.map(|s| s.to_arg::<()>())) {
+        match (k, a.map(|s| s.to_arg())) {
             // If `Slot::to_arg` gives `None` then this just means we can't decide
             // wether the argument typechecks at startup-time; the argument is unbound.
             // On the other hand, if there is no argument at all then we can still
@@ -422,7 +474,7 @@ impl Virtual {
         // all.
         for (iu, slot) in slots {
             if let Some(reg) = slot
-                .map(|slot| slot.to_arg::<()>().map(|arg| arg.to_preg()))
+                .map(|slot| slot.to_arg().map(|arg| arg.to_preg()))
                 .flatten()
             {
                 if !idef.opclass.is_compatible(iu, Some(reg)) {
@@ -437,7 +489,7 @@ impl Virtual {
     pub fn new(opclass: OpClass, args: EnumMap<IU, Option<Slot>>) -> Self {
         assert!(Self::bound_slots_match(
             UCode::get()
-                .get_inst_defs()
+                .inst_def_iter()
                 .find(|inst| inst.opclass == opclass)
                 .unwrap(),
             args
@@ -491,7 +543,7 @@ impl Virtual {
 
         let idef = common::unwrap_singleton(
             &mut UCode::get()
-                .get_inst_defs()
+                .inst_def_iter()
                 .filter(|inst| inst.opclass == self.opclass),
         );
 
@@ -561,7 +613,7 @@ impl Slot {
     /// Weaker version of `resolve` which returns `Some(arg)`
     /// exactly when `self` is not an unbound argument already---i.e. a
     /// `Reg` or `Const`.
-    pub fn to_arg<Tag>(self) -> Option<Arg<Tag>> {
+    pub fn to_arg(self) -> Option<ResolvedArg> {
         match self {
             Slot::Reg(r) => Some(Arg::Reg(r)),
             Slot::Const(c) => Some(Arg::Const(ConstBinding::Resolved(c))),
@@ -574,8 +626,8 @@ impl Slot {
     /// list was not long enough.
     pub fn resolve<Tag: Clone>(self, args: &[Arg<Tag>]) -> Arg<Tag> {
         match self {
-            Slot::Arg(idx) => (*args.get(idx as usize).unwrap()).clone(),
-            _ => self.to_arg().unwrap(),
+            Slot::Arg(idx) => (*args.get(idx).unwrap()).clone(),
+            _ => self.to_arg().unwrap().coerce(),
         }
     }
 }
@@ -588,10 +640,7 @@ impl<Tag> Blob<Tag> {
         }
     }
 
-    pub fn resolve<Err, F: Fn(Tag) -> Result<Word, Err>>(
-        self,
-        resolver: F,
-    ) -> Result<Vec<Word>, Err> {
+    pub fn resolve<E, F: Fn(Tag) -> Result<Word, E>>(self, resolver: F) -> Result<Vec<Word>, E> {
         let inst = self.inst.encode();
         let extra = self
             .binding
@@ -605,6 +654,35 @@ impl<Tag> Blob<Tag> {
             None => vec![inst],
             Some(extra) => vec![inst, extra],
         })
+    }
+
+    pub fn clone_resolve<E, F: Fn(Tag) -> Result<Word, E>>(
+        &self,
+        resolver: F,
+    ) -> Result<Vec<Word>, E>
+    where
+        Tag: Clone,
+    {
+        let inst = self.inst.encode();
+        let extra = self
+            .binding
+            .clone()
+            .map(|bi| match bi {
+                ConstBinding::Resolved(c) => Ok(c.encode()),
+                ConstBinding::Unresolved(tag) => resolver(tag),
+            })
+            .transpose()?;
+
+        Ok(match extra {
+            None => vec![inst],
+            Some(extra) => vec![inst, extra],
+        })
+    }
+}
+
+impl ResolvedBlob {
+    pub fn to_words(&self) -> Vec<Word> {
+        self.clone_resolve::<(), _>(|_| unreachable!()).unwrap()
     }
 }
 

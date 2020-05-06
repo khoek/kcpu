@@ -54,6 +54,7 @@ impl UnitBin {
             self.bios_bin.as_deref(),
             self.prog_bin.as_deref(),
         )
+        .unwrap()
     }
 }
 
@@ -146,8 +147,8 @@ fn run_units(max_clocks: Option<u64>, units: &[UnitSrc]) -> bool {
     let passes: usize = units
         .iter()
         .enumerate()
-        .map(|(num, unit)| run_unit(unit, num + 1, name_pad, max_clocks) as usize)
-        .sum();
+        .filter(|(num, unit)| run_unit(unit, num + 1, name_pad, max_clocks))
+        .count();
     let success = passes == units.len();
 
     println!("--------------------------------------------------------------");

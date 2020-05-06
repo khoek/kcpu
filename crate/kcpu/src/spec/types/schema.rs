@@ -55,7 +55,6 @@ impl OpClass {
         }
     }
 
-    #[allow(dead_code)]
     pub const fn with_iu3(
         itype: Segment,
         pfx: Word, /* RUSTFIX, just generic 1-bit type */
@@ -257,8 +256,8 @@ impl InstDef {
         // Cannot declare multiple only-const arguments for the same instruction.
         assert!(
             args.iter()
-                .map(|(_, kind)| kind.map(|kind| kind.policy.is_only()).unwrap_or(false) as usize)
-                .sum::<usize>()
+                .filter(|(_, kind)| kind.map(|kind| kind.policy.is_only()).unwrap_or(false))
+                .count()
                 <= 1
         );
 

@@ -3,6 +3,7 @@ use super::{
     execute::{AbortAction, BreakMode, Config, Summary, Verbosity},
     suite,
 };
+use crate::assembler::disasm;
 use std::ffi::OsString;
 use std::path::PathBuf;
 use structopt::StructOpt;
@@ -120,7 +121,7 @@ pub fn vm(cmd: SubcommandVm) -> ! {
         .in_bios_bin
         .map(|bios_bin| std::fs::read(bios_bin).unwrap());
     let prog_bin = std::fs::read(cmd.in_prog_bin).unwrap();
-    let summary = execute_prog_with_opts(bios_bin.as_deref(), &prog_bin, cmd.vm_opts);
+    let summary = execute_prog_with_opts(bios_bin.as_deref(), &prog_bin, cmd.vm_opts).unwrap();
 
     std::process::exit(summary_to_exit_code(&summary));
 }
@@ -135,7 +136,14 @@ pub fn run(cmd: SubcommandRun) -> ! {
         .unwrap();
     let prog_bin = assemble::assemble_path(&cmd.in_prog_src).unwrap();
 
-    let summary = execute_prog_with_opts(bios_bin.as_deref(), &prog_bin, cmd.vm_opts);
+    // let summary = execute_prog_with_opts(bios_bin.as_deref(), &prog_bin, cmd.vm_opts).unwrap();
+    let summary = match execute_prog_with_opts(bios_bin.as_deref(), &prog_bin, cmd.vm_opts) {
+        Ok(summary) => summary,
+        Err(disasm::Error::NoSuitableAlias(msg)) => {
+            panic!("NoSuitableAlias: {} {}", msg.len(), msg.join(", "))
+        }
+        Err(err) => panic!("{:#?}", err),
+    };
 
     std::process::exit(summary_to_exit_code(&summary));
 }
@@ -164,7 +172,11 @@ fn summary_to_exit_code(summary: &Summary) -> i32 {
     }
 }
 
-fn execute_prog_with_opts(bios_bin: Option<&[u8]>, prog_bin: &[u8], vm_opts: VmOpts) -> Summary {
+fn execute_prog_with_opts(
+    bios_bin: Option<&[u8]>,
+    prog_bin: &[u8],
+    vm_opts: VmOpts,
+) -> Result<Summary, disasm::Error> {
     super::execute::execute(
         Config {
             headless: vm_opts.headless,

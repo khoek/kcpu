@@ -1,4 +1,5 @@
 use super::assets;
+use crate::assembler::disasm::{self, RelativePos, SteppingDisassembler};
 use crate::vm::{Bank, BankType, DebugExecInfo, Instance, Logger, State};
 use derive_more::Constructor;
 use std::{
@@ -36,7 +37,7 @@ impl BreakMode {
     fn should_pause(&self, dbg: DebugExecInfo) -> bool {
         match self {
             BreakMode::Noninteractive => false,
-            BreakMode::OnInst => dbg.uc_reset && !dbg.mask_active,
+            BreakMode::OnInst => dbg.is_true_inst_beginning(),
             BreakMode::OnUCReset => dbg.uc_reset,
             BreakMode::OnUInst => true,
         }
@@ -73,7 +74,11 @@ impl Summary {
     }
 }
 
-pub fn execute(cfg: Config, raw_bios: Option<&[u8]>, raw_prog: Option<&[u8]>) -> Summary {
+pub fn execute(
+    cfg: Config,
+    raw_bios: Option<&[u8]>,
+    raw_prog: Option<&[u8]>,
+) -> Result<Summary, disasm::Error> {
     // RUSTFIX implement graphics
     // graphics::get_graphics().configure(self.headless);
 
@@ -96,6 +101,11 @@ pub fn execute(cfg: Config, raw_bios: Option<&[u8]>, raw_prog: Option<&[u8]>) ->
     if cfg.print_marginals {
         println!("CPU Start");
     }
+
+    let mut disasm = match cfg.mode {
+        BreakMode::Noninteractive => None,
+        _ => Some(SteppingDisassembler::new()),
+    };
 
     let end_state = loop {
         let s = match cfg.mode {
@@ -131,6 +141,17 @@ pub fn execute(cfg: Config, raw_bios: Option<&[u8]>, raw_prog: Option<&[u8]>) ->
             s => break Some(s),
         }
 
+        // RUSTFIX how much does this hurt performance?
+        if let Some(disasm) = &mut disasm {
+            let (ctx, pos) = disasm.step(vm.iter_at_ip())?;
+            if let RelativePos::AliasBoundary = pos {
+                println!("----------------------------------");
+                println!("\t{}", format!("{}", ctx).replace("\n", "\t"));
+                println!("----------------------------------");
+            }
+        }
+
+        // RUSTFIX how much does this hurt performance?
         if cfg.mode.should_pause(vm.get_debug_exec_info()) {
             let prompt_msg = "[ENTER to step]";
             println!("{}", prompt_msg);
@@ -169,5 +190,5 @@ pub fn execute(cfg: Config, raw_bios: Option<&[u8]>, raw_prog: Option<&[u8]>) ->
         );
     }
 
-    summary
+    Ok(summary)
 }

@@ -1,6 +1,6 @@
 use super::{
     defs,
-    model::{Alias, Family},
+    model::{self, Alias, Family},
 };
 use crate::common;
 use crate::spec::{types::schema::ArgKind, ucode::UCode};
@@ -15,10 +15,6 @@ pub struct Lang {
 }
 
 impl Lang {
-    fn sanitize_name(name: &str) -> String {
-        name.to_lowercase()
-    }
-
     fn new() -> Self {
         let mut builder = Builder::new();
         defs::alias::register(&mut builder);
@@ -31,11 +27,19 @@ impl Lang {
     }
 
     pub fn lookup_alias(&self, name: &str) -> Option<&Alias> {
-        self.aliases.get(&Self::sanitize_name(name))
+        self.aliases.get(&model::sanitize_name(name))
+    }
+
+    pub fn alias_iter(&self) -> impl Iterator<Item = &Alias> {
+        self.aliases.values()
     }
 
     pub fn lookup_family(&self, name: &str) -> Option<&Family> {
-        self.families.get(&Self::sanitize_name(name))
+        self.families.get(&model::sanitize_name(name))
+    }
+
+    pub fn family_iter(&self) -> impl Iterator<Item = &Family> {
+        self.families.values()
     }
 }
 
@@ -53,7 +57,7 @@ impl Builder {
         };
 
         // RUSTFIX EVIL? breaking out of encapsulation
-        for idef in UCode::get().get_inst_defs() {
+        for idef in UCode::get().inst_def_iter() {
             builder.register_alias(Alias::from((*idef).clone()));
         }
 
@@ -65,9 +69,8 @@ impl Builder {
     }
 
     pub(super) fn register_alias(&mut self, a: Alias) {
-        let name = Lang::sanitize_name(&a.name);
-
-        assert!(self.lang.aliases.insert(name.clone(), a).is_none());
+        let name = a.name.clone();
+        assert!(self.lang.aliases.insert(a.name.clone(), a).is_none());
 
         self.register_family(Family::new(name.clone(), vec![name]))
     }
@@ -92,11 +95,7 @@ impl Builder {
             .all(|(a, b)| !Builder::arg_kind_lists_collide(a, b)));
 
         // RUSTFIX use expect_none once it stabilises
-        assert!(self
-            .lang
-            .families
-            .insert(Lang::sanitize_name(&f.name), f)
-            .is_none());
+        assert!(self.lang.families.insert(f.name.clone(), f).is_none());
     }
 }
 

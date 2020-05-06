@@ -1,8 +1,9 @@
 use super::defs;
 use super::types::{
-    hw::{self, PUAddr, UCVal, UInst},
+    hw::{self, Inst, PUAddr, UCVal, UInst, Word, IU},
     schema::InstDef,
 };
+use crate::common;
 use once_cell::sync::Lazy;
 
 static STORAGE: Lazy<UCode> = Lazy::new(UCode::new);
@@ -23,7 +24,7 @@ impl UCode {
         Lazy::force(&STORAGE)
     }
 
-    pub fn get_inst_defs(&self) -> impl Iterator<Item = &InstDef> {
+    pub fn inst_def_iter(&self) -> impl Iterator<Item = &InstDef> {
         self.insts.iter()
     }
 
@@ -63,5 +64,28 @@ impl Builder {
         }
 
         self.ucode.insts.push(i);
+    }
+}
+
+impl Inst {
+    // Since we do not know if `IU3` is in use or not, we cannot reliably decode the `iu`s
+    // without looking up the opcode as an `InstDef`.
+    pub fn decode(inst: Word) -> Inst {
+        let opcode = Inst::decode_opcode(inst);
+        // RUSTFIX EVIL? encapsulation breaking
+        let idef = common::unwrap_singleton(
+            UCode::get()
+                .inst_def_iter()
+                .filter(|idef| idef.opclass.to_opcodes().any(|oc| oc == opcode)),
+        );
+
+        let (iu1, iu2, iu3) = IU::decode_all(inst);
+        Inst::new(
+            Inst::decode_load_data(inst),
+            opcode,
+            idef.args[IU::ONE].map(|_| iu1),
+            idef.args[IU::TWO].map(|_| iu2),
+            idef.args[IU::THREE].map(|_| iu3),
+        )
     }
 }

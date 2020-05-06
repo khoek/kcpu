@@ -450,7 +450,7 @@ impl<'a> RawToken<'a> {
 pub(super) fn tokenize_to_iters(
     source: &'_ str,
 ) -> impl Iterator<Item = impl Iterator<Item = Result<Located<Token>, Located<Error>>> + '_> {
-    RawToken::source_to_iters(source).map(|line| line.map(|raw| raw?.map_result(Token::parse)))
+    RawToken::source_to_iters(source).map(|line| line.map(|raw| raw?.try_map(Token::parse)))
 }
 
 pub fn tokenize(source: &str) -> Result<Vec<Vec<Located<Token>>>, Located<Error>> {

@@ -164,12 +164,10 @@ impl Statement {
     }
 }
 
-pub fn generate(
-    stmts: Vec<Located<Statement>>,
-) -> Result<Vec<BinaryElement>, Located<Error>> {
+pub fn generate(stmts: Vec<Located<Statement>>) -> Result<Vec<BinaryElement>, Located<Error>> {
     common::accumulate_vecs(
         stmts
             .into_iter()
-            .map(|stmt| Ok(stmt.map_result_value(Statement::generate)?)),
+            .map(|stmt| Ok(stmt.try_map_err(Statement::generate)?)),
     )
 }

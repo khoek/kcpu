@@ -22,7 +22,8 @@ pub fn run_test(bios_src: Option<&str>, prog_src: &str) -> Result<(), assembler:
         },
         bios.as_deref(),
         Some(&prog),
-    );
+    )
+    .unwrap();
 
     assert_eq!(summary.state, State::Halted);
     Ok(())

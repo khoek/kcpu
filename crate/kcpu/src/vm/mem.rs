@@ -22,7 +22,7 @@ impl BankType {
 
     // RUSTFIX make this const when const matches drop
     // Remember, this is in words!
-    pub fn get_size(self) -> usize {
+    pub fn size(self) -> usize {
         match self {
             BankType::Bios => 1 << 13,
             BankType::Prog => 1 << 21, // FIXME what is the actual value?
@@ -36,27 +36,15 @@ pub struct Bank {
 }
 
 impl Bank {
-    fn build_raw(size: usize, src: Vec<u8>) -> Vec<Word> {
-        if src.len() > 2 * size {
+    pub fn new(typ: BankType, src: Vec<u8>) -> Self {
+        if src.len() > 2 * typ.size() {
             panic!("overflow");
         }
 
-        if src.len() % 2 == 1 {
-            panic!("parity error");
-        }
+        let mut data = vec![0; typ.size()];
+        hw::bytes_to_words_into_buff(&mut data, src).expect("parity error");
 
-        let mut raw = vec![0; size];
-        for i in 0..src.len() / 2 {
-            raw[i] = ((src[2 * i + 1] as u16) << 8) | ((src[2 * i] as u16) << 0);
-        }
-        raw
-    }
-
-    pub fn new(typ: BankType, src: Vec<u8>) -> Bank {
-        Bank {
-            typ,
-            data: Bank::build_raw(typ.get_size(), src),
-        }
+        Self { typ, data }
     }
 
     fn load(&self, addr: Word) -> Word {
@@ -79,6 +67,14 @@ impl Bank {
         // HARDWARE NOTE: Note the division by 2 here.
         self.data[(addr >> 1) as usize] = val;
     }
+
+    fn iter_at(&self, mut addr: Word) -> impl Iterator<Item = Word> + '_ {
+        std::iter::from_fn(move || {
+            let cur = self.load(addr);
+            addr += 2;
+            Some(cur)
+        })
+    }
 }
 
 pub struct Mem<'a> {
@@ -92,7 +88,7 @@ pub struct Mem<'a> {
 }
 
 impl<'a> Mem<'a> {
-    pub fn new(logger: &Logger, bios: Bank, prog: Bank) -> Mem {
+    pub fn new(logger: &'a Logger, bios: Bank, prog: Bank) -> Self {
         // RUSTFIX make this nicer once we get const generics
         let mut banks = EnumMap::new();
         assert_eq!(bios.typ, BankType::Bios);
@@ -292,5 +288,9 @@ impl<'a> Mem<'a> {
             }
             _ => panic!("unknown memmode"),
         }
+    }
+
+    pub fn iter_at(&'a self, far: bool, addr: Word) -> impl Iterator<Item = Word> + 'a {
+        self.get_selected_bank(far).iter_at(addr)
     }
 }
