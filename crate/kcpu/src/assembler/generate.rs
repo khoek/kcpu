@@ -70,13 +70,12 @@ impl Statement {
             .map(Result::Ok)
             .unwrap_or_else(|| Err(Error::InstUnknown(inst.clone())))?;
 
-        let mut matches = family.variants.iter().filter_map(|alias| {
-            let alias = Lang::get().lookup_alias(alias).unwrap();
-            alias.instantiate(&args)
-        });
+        let matches = family
+            .variants
+            .iter()
+            .filter_map(|alias| Lang::get().lookup_alias(alias).unwrap().instantiate(&args));
 
-        let blobs = matches.next();
-        assert!(matches.next().is_none());
+        let blobs = common::unwrap_at_most_one(matches);
 
         // RUSTFIX list candiates when there is no match.
         let blobs = blobs

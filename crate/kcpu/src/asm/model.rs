@@ -122,10 +122,10 @@ pub enum Slot {
     Arg(ArgIdx),
 }
 
-#[derive(Debug, Constructor)]
+#[derive(Debug)]
 pub struct Virtual {
     opclass: OpClass,
-    args: EnumMap<IU, Option<Slot>>,
+    slots: EnumMap<IU, Option<Slot>>,
 }
 
 #[derive(Debug, Constructor)]
@@ -254,7 +254,7 @@ impl Alias {
                 .unwrap();
             for iu in IU::iter() {
                 // We can safely unwrap here because of the checking performed when the `InstDef` was created.
-                if let Some(Slot::Arg(i)) = vi.args[iu] {
+                if let Some(Slot::Arg(i)) = vi.slots[iu] {
                     max_idx = match max_idx {
                         None => Some(i),
                         Some(max_idx) => Some(cmp::max(max_idx, i)),
@@ -306,6 +306,75 @@ impl Alias {
 }
 
 impl Virtual {
+    /// If the passed `Slot` has an unbound `ArgIdx`, check if it actually matches the
+    /// corresponding argument of the instruction which they claim to.
+    fn kind_compatible_with_slot(k: Option<ArgKind>, a: Option<Slot>) -> bool {
+        match (k, a.map(|s| s.to_arg::<()>())) {
+            // If `Slot::to_arg` gives `None` then this just means we can't decide
+            // wether the argument typechecks at startup-time; the argument is unbound.
+            // On the other hand, if there is no argument at all then we can still
+            // decided whether we should actually have one there, and vice versa if we
+            // are trying to bind too many arguments.
+            (None, None) => true,
+            (Some(_), Some(None)) => true,
+            (Some(a), Some(Some(b))) => a.matches(&b),
+            _ => false,
+        }
+    }
+
+    fn bound_slots_match(idef: &InstDef, slots: EnumMap<IU, Option<Slot>>) -> bool {
+        // Check whether all of the bound slots are compatible with the `ArgKind` which
+        // they claim to bind to.
+        //
+        // In particular, we make sure that the used slots exactly correspond to occupied
+        // `ArgKind`s in the `InstDef`.
+        if !slots
+            .iter()
+            .all(|(iu, slot)| Self::kind_compatible_with_slot(idef.args[iu], *slot))
+        {
+            return false;
+        }
+
+        // Also, we want to check that if this slot tries to bind an IU3 and the opclass
+        // supports only a single IU3 then the `PReg` values match. We do this using the
+        // generic `OpClass::is_compatible` functionality, which probes `IU`s one-by-one,
+        // since we don't know about the IUs corresponding to the unbound `Slot`s right
+        // now (it will depend on how this `InstDef` is instantiated), and need to
+        // distinguish not binding the IU3 at all (which e.g. might be prohibited by the
+        // opclass) compared to just not knowing whether we will bind it right now.
+        //
+        // This all leaves room for extensibility in terms of the IU interface---despite
+        // this comment, the code in this file doesn't actually know IU3 is special at
+        // all.
+        for (iu, slot) in slots {
+            if let Some(reg) = slot
+                .map(|slot| slot.to_arg::<()>().map(|arg| arg.to_preg()))
+                .flatten()
+            {
+                if !idef.opclass.is_compatible(iu, Some(reg)) {
+                    return false;
+                }
+            }
+        }
+
+        true
+    }
+
+    pub fn new(opclass: OpClass, args: EnumMap<IU, Option<Slot>>) -> Self {
+        assert!(Self::bound_slots_match(
+            UCode::get()
+                .get_inst_defs()
+                .find(|inst| inst.opclass == opclass)
+                .unwrap(),
+            args
+        ));
+
+        Virtual {
+            opclass,
+            slots: args,
+        }
+    }
+
     pub fn with_slots(
         opclass: OpClass,
         iu1: Option<Slot>,
@@ -317,13 +386,7 @@ impl Virtual {
         args[IU::TWO] = iu2;
         args[IU::THREE] = iu3;
 
-        assert!(UCode::get()
-            .get_inst_defs()
-            .find(|inst| inst.opclass == opclass)
-            .unwrap()
-            .bound_slots_match(args));
-
-        Virtual { opclass, args }
+        Self::new(opclass, args)
     }
 
     pub fn with_0(opclass: OpClass) -> Self {
@@ -352,6 +415,12 @@ impl Virtual {
         //         oop, actually, if an opcode has a "bind" instruction where it binds an EnumMap of ius,
         //         then we could just see that that failed.
 
+        let idef = common::unwrap_singleton(
+            &mut UCode::get()
+                .get_inst_defs()
+                .filter(|inst| inst.opclass == self.opclass),
+        );
+
         // We also want to check that we aren't trying to bind multiple constants to the same uinst.
         //
         // Because we use type inference, this could arise in practice even with compile-time safeguards if there are just
@@ -359,12 +428,17 @@ impl Virtual {
         // in a single instruction.
         let mut maybe_cb: Option<ConstBinding<Tag>> = None;
         let mut ius: EnumMap<IU, Option<PReg>> = EnumMap::new();
-        for (iu, slot) in self.args {
-            match slot {
-                None => (),
-                Some(slot) => {
-                    let arg = slot.resolve(args);
+        for (iu, slot) in self.slots {
+            // Convert the `Slot`s into `Arg<Tag>`s and then `PReg`s,
+            // typechecking against the `InstDef` as we go.
+            match (idef.args[iu], slot.map(|slot| slot.resolve(args))) {
+                (None, None) => (),
+                (Some(kind), Some(arg)) => {
+                    if !kind.matches(&arg) {
+                        return None;
+                    }
 
+                    assert!(ius[iu].is_none());
                     ius[iu] = Some(arg.to_preg());
 
                     if let Arg::Const(c) = arg {
@@ -372,87 +446,19 @@ impl Virtual {
                         maybe_cb = Some(c);
                     }
                 }
+                _ => return None,
             }
         }
-
-        let idef = common::unwrap_singleton(
-            &mut UCode::get()
-                .get_inst_defs()
-                .filter(|inst| inst.opclass == self.opclass),
-        );
 
         Some(Blob::new(
-            idef.instantiate(maybe_cb.is_some(), ius)?,
+            Inst::new(
+                maybe_cb.is_some(),
+                self.opclass.instantiate(ius)?,
+                ius[IU::ONE],
+                ius[IU::TWO],
+                ius[IU::THREE],
+            ),
             maybe_cb,
-        ))
-    }
-}
-
-impl InstDef {
-    /// If the passed `Slot` has an unbound `ArgIdx`, check if it actually matches the
-    /// corresponding argument of the instruction which they claim to.
-    fn kind_compatible_with_slot(k: Option<ArgKind>, a: Option<Slot>) -> bool {
-        match (k, a.map(|s| s.to_arg::<()>())) {
-            // If `Slot::to_arg` gives `None` then this just means we can't decide
-            // wether the argument typechecks at startup-time; the argument is unbound.
-            // On the other hand, if there is no argument at all then we can still
-            // decided whether we should actually have one there, and vice versa if we
-            // are trying to bind too many arguments.
-            (None, None) => true,
-            (Some(_), Some(None)) => true,
-            (Some(a), Some(Some(b))) => a.matches(&b),
-            _ => false,
-        }
-    }
-
-    // RUSTFIX Is this function for compile time checking?
-    fn bound_slots_match(&self, slots: EnumMap<IU, Option<Slot>>) -> bool {
-        // Check whether all of the bound slots are compatible with the `ArgKind` which
-        // they claim to bind to.
-        //
-        // In particular, we make sure that the used slots exactly correspond to occupied
-        // `ArgKind`s in the `InstDef`.
-        if !slots
-            .iter()
-            .all(|(iu, slot)| InstDef::kind_compatible_with_slot(self.args[iu], *slot))
-        {
-            return false;
-        }
-
-        // Also, we want to check that if this slot tries to bind an IU3 and the opclass
-        // supports only a single IU3 then the `PReg` values match. We do this using the
-        // generic `OpClass::is_compatible` functionality, which probes `IU`s one-by-one,
-        // since we don't know about the IUs corresponding to the unbound `Slot`s right
-        // now (it will depend on how this `InstDef` is instantiated), and need to
-        // distinguish not binding the IU3 at all (which e.g. might be prohibited by the
-        // opclass) compared to just not knowing whether we will bind it right now.
-        //
-        // This all leaves room for extensibility in terms of the IU interface---despite
-        // this comment, the code in this file doesn't actually know IU3 is special at
-        // all.
-        for (iu, slot) in slots {
-            if let Some(reg) = slot
-                .map(|slot| slot.to_arg::<()>().map(|arg| arg.to_preg()))
-                .flatten()
-            {
-                if !self.opclass.is_compatible(iu, Some(reg)) {
-                    return false;
-                }
-            }
-        }
-
-        true
-    }
-
-    fn instantiate(&self, load_data: bool, args: EnumMap<IU, Option<PReg>>) -> Option<Inst> {
-        // RUSTFIX type checking!
-
-        Some(Inst::new(
-            load_data,
-            self.opclass.instantiate(args)?,
-            args[IU::ONE],
-            args[IU::TWO],
-            args[IU::THREE],
         ))
     }
 }

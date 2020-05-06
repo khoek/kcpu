@@ -21,8 +21,12 @@ pub fn vec_pairwise_iter<T>(v: &[T]) -> impl Iterator<Item = (&T, &T)> {
         .map(move |(i, j)| (&v[i], &v[j]))
 }
 
-pub fn unwrap_singleton<T>(it: &mut impl Iterator<Item = T>) -> T {
-    let t = it.next().unwrap();
+pub fn unwrap_at_most_one<T>(mut it: impl Iterator<Item = T>) -> Option<T> {
+    let t = it.next();
     assert!(it.next().is_none());
     t
+}
+
+pub fn unwrap_singleton<T>(it: impl Iterator<Item = T>) -> T {
+    unwrap_at_most_one(it).unwrap()
 }
