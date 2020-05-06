@@ -10,7 +10,7 @@ use derive_more::Constructor;
 use enum_map::EnumMap;
 use std::cmp;
 use std::collections::hash_map::Entry;
-use std::collections::HashMap;
+use std::{collections::HashMap, fmt::Display};
 use strum::IntoEnumIterator;
 
 /*
@@ -134,6 +134,79 @@ pub struct Blob<Tag> {
     binding: Option<ConstBinding<Tag>>,
 }
 
+impl Display for Half {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Half::Lo => write!(f, "l"),
+            Half::Hi => write!(f, "h"),
+        }
+    }
+}
+
+impl Display for RegRef {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let preg = self.preg.to_string().to_lowercase();
+        match self.width {
+            Width::Word => write!(f, "%r{}", preg),
+            Width::Byte(half) => write!(f, "%{}{}", half, preg),
+        }
+    }
+}
+
+impl Display for Const {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Const::Word(w) => write!(f, "$0x{:04X}", w),
+            Const::Byte(b, half) => write!(f, "{}$0x{}", half, b),
+        }
+    }
+}
+
+impl<Tag: Display> Display for ConstBinding<Tag> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            ConstBinding::Resolved(c) => write!(f, "{}", c),
+            ConstBinding::Unresolved(tag) => write!(f, "{}", tag),
+        }
+    }
+}
+
+impl<Tag: Display> Display for Arg<Tag> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Arg::Const(cb) => write!(f, "{}", cb),
+            Arg::Reg(r) => write!(f, "{}", r),
+        }
+    }
+}
+
+impl Display for ConstPolicy {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            ConstPolicy::Never => write!(f, "[reg]"),
+            ConstPolicy::Only => write!(f, "[const]"),
+            ConstPolicy::Allow => write!(f, "[reg|const]"),
+        }
+    }
+}
+
+impl Display for ArgKind {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            ArgKind {
+                policy,
+                width: Width::Word,
+            } => write!(f, "w{}", policy),
+            ArgKind {
+                policy,
+                width: Width::Byte(half),
+            } => write!(f, "b{}{}", half, policy),
+        }
+    }
+}
+
+// RUSTFIX consider removing implementations in this file of the schema structs/enums---make this a method on `Arg`?
+// We'll still want to keep things like the `impl Display` though, right?
 impl ConstPolicy {
     pub fn matches<Tag>(self, arg: &Arg<Tag>) -> bool {
         match (self, arg) {
@@ -178,7 +251,7 @@ impl ArgKind {
         self.policy.partial_cmp(&other.policy).is_some()
     }
 
-    fn matches<Tag>(self, arg: &Arg<Tag>) -> bool {
+    pub fn matches<Tag>(self, arg: &Arg<Tag>) -> bool {
         self.policy.matches(arg) && self.width == arg.to_width()
     }
 }
@@ -309,6 +382,7 @@ impl Virtual {
     /// If the passed `Slot` has an unbound `ArgIdx`, check if it actually matches the
     /// corresponding argument of the instruction which they claim to.
     fn kind_compatible_with_slot(k: Option<ArgKind>, a: Option<Slot>) -> bool {
+        // RUSTFIX Is there any way to avoid this silly generic unit call?
         match (k, a.map(|s| s.to_arg::<()>())) {
             // If `Slot::to_arg` gives `None` then this just means we can't decide
             // wether the argument typechecks at startup-time; the argument is unbound.

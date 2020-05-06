@@ -5,7 +5,7 @@
 MOV $0x1337 %ra
 STW $0 %ra
 MOV $0xBEEF %ra
-STBL $0 %ra
+STBL $0 %la
 LDW $0 %ra
 CMP $0x13EF %ra
 JNE fail
@@ -13,7 +13,7 @@ JNE fail
 MOV $0x1337 %ra
 STW $0 %ra
 MOV $0xBEEF %ra
-STBH $0 %ra
+STBH $0 %ha
 LDW $0 %ra
 CMP $0x13BE %ra
 JNE fail
@@ -23,7 +23,7 @@ JNE fail
 MOV $0x1337 %ra
 STW $1 %ra
 MOV $0xBEEF %ra
-STBL $1 %ra
+STBL $1 %la
 LDW $0 %ra
 CMP $0xEF37 %ra
 JNE fail
@@ -31,7 +31,7 @@ JNE fail
 MOV $0x1337 %ra
 STW $1 %ra
 MOV $0xBEEF %ra
-STBH $1 %ra
+STBH $1 %ha
 LDW $0 %ra
 CMP $0xBE37 %ra
 JNE fail

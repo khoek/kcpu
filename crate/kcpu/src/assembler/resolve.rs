@@ -2,12 +2,21 @@ use super::types::BinaryElement;
 use crate::common;
 use crate::spec::types::hw::*;
 use std::collections::HashMap;
-use std::convert::TryFrom;
+use std::{fmt::Display, convert::TryFrom};
 
 #[derive(Debug)]
 pub enum Error {
     DuplicateLabel(String),
     UnknownLabel(String),
+}
+
+impl Display for Error {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Error::DuplicateLabel(label) => write!(f, "Duplicate definition of label: '{}'", label),
+            Error::UnknownLabel(label) => write!(f, "Use of undefined label: '{}'", label),
+        }
+    }
 }
 
 impl BinaryElement {

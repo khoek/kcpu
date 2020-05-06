@@ -90,23 +90,23 @@ pub(crate) fn gen_alu(builder: &mut Builder) {
 
     builder.register_alias(Alias::with_single(
         "LDJE",
-        Virtual::with_1(I_JZ.add_flag(ITFLAG_JMP_LD), Slot::with_arg(0)),
+        Virtual::with_1(I_JZ.with_flag(ITFLAG_JMP_LD), Slot::with_arg(0)),
     ));
     builder.register_alias(Alias::with_single(
         "LDJNE",
-        Virtual::with_1(I_JNZ.add_flag(ITFLAG_JMP_LD), Slot::with_arg(0)),
+        Virtual::with_1(I_JNZ.with_flag(ITFLAG_JMP_LD), Slot::with_arg(0)),
     ));
     builder.register_alias(Alias::with_single(
         "LDJL",
-        Virtual::with_1(I_JNC.add_flag(ITFLAG_JMP_LD), Slot::with_arg(0)),
+        Virtual::with_1(I_JNC.with_flag(ITFLAG_JMP_LD), Slot::with_arg(0)),
     ));
     builder.register_alias(Alias::with_single(
         "LDJNL",
-        Virtual::with_1(I_JC.add_flag(ITFLAG_JMP_LD), Slot::with_arg(0)),
+        Virtual::with_1(I_JC.with_flag(ITFLAG_JMP_LD), Slot::with_arg(0)),
     ));
     builder.register_alias(Alias::with_single(
         "LDJGE",
-        Virtual::with_1(I_JC.add_flag(ITFLAG_JMP_LD), Slot::with_arg(0)),
+        Virtual::with_1(I_JC.with_flag(ITFLAG_JMP_LD), Slot::with_arg(0)),
     ));
 
     // TODO check these, I think they are just wrong

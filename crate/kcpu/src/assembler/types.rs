@@ -3,6 +3,7 @@ use crate::asm::model::Arg;
 use crate::asm::model::Blob;
 use crate::spec::types::hw::*;
 use derive_more::Constructor;
+use std::fmt::Display;
 
 /*
     UPDATE:  FIX THE TEXT BELOW, THIS IS HOW WE DO IT NOW
@@ -97,7 +98,7 @@ pub(super) enum BinaryElement {
     Data(Vec<Word>),
 }
 
-#[derive(Debug, PartialEq, Eq, Constructor)]
+#[derive(Debug, PartialEq, Clone, Eq, Constructor)]
 pub struct Loc {
     line: usize,
     col: usize,
@@ -107,6 +108,21 @@ pub struct Loc {
 pub struct Located<T: Sized> {
     loc: Option<Loc>,
     val: T,
+}
+
+impl Display for Loc {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "(line: {}, col: {})", self.line, self.col)
+    }
+}
+
+impl<T: Display> Display for Located<T> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match &self.loc {
+            None => write!(f, "@<unknown location>: {}", self.val),
+            Some(loc) => write!(f, "@{}: {}", loc, self.val),
+        }
+    }
 }
 
 impl<T> Located<T> {
@@ -193,22 +209,9 @@ impl<T> From<T> for Located<T> {
     }
 }
 
-impl<T> Located<Option<T>> {
-    pub fn transpose_option(self) -> Option<Located<T>> {
-        let loc = self.loc;
-        self.val.map(|val| Located::new(loc, val))
-    }
-}
-
 impl<T> Located<Located<T>> {
     pub fn flatten(self) -> Located<T> {
         self.val.proximate_to_option_loc(self.loc)
-    }
-}
-
-impl std::fmt::Display for Loc {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "line: {}, col: {}", self.line, self.col)
     }
 }
 
@@ -217,29 +220,48 @@ pub enum Error {
     Tokenize(Located<String>),
     Parse(Located<String>),
     Generate(Located<String>),
-    Resolve(String), // Does a `Loc` make sense for this?
+    Resolve(String), // RUSTFIX Does a `Loc` make sense for this?
 }
 
 impl From<Located<tokenize::Error>> for Error {
     fn from(err: Located<tokenize::Error>) -> Self {
-        Error::Tokenize(err.map(|err| format!("{:?}", err)))
+        Error::Tokenize(err.map(|err| format!("{}", err)))
     }
 }
 
 impl From<Located<parse::Error>> for Error {
     fn from(err: Located<parse::Error>) -> Self {
-        Error::Parse(err.map(|err| format!("{:?}", err)))
+        Error::Parse(err.map(|err| format!("{}", err)))
     }
 }
 
 impl From<Located<generate::Error>> for Error {
     fn from(err: Located<generate::Error>) -> Self {
-        Error::Generate(err.map(|err| format!("{:?}", err)))
+        Error::Generate(err.map(|err| format!("{}", err)))
     }
 }
 
 impl From<resolve::Error> for Error {
     fn from(err: resolve::Error) -> Self {
-        Error::Resolve(format!("{:?}", err))
+        Error::Resolve(format!("{}", err))
+    }
+}
+
+impl Display for Error {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Assembly Error (in ")?;
+        match self {
+            Error::Tokenize(_) => write!(f, "Tokenizer"),
+            Error::Parse(_) => write!(f, "Parser"),
+            Error::Generate(_) => write!(f, "Generator"),
+            Error::Resolve(_) => write!(f, "Resolver"),
+        }?;
+        write!(f, "): ")?;
+        match self {
+            Error::Tokenize(msg) => write!(f, "{}", msg),
+            Error::Parse(msg) => write!(f, "{}", msg),
+            Error::Generate(msg) => write!(f, "{}", msg),
+            Error::Resolve(msg) => write!(f, "{}", msg),
+        }
     }
 }

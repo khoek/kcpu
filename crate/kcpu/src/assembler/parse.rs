@@ -1,13 +1,24 @@
 use super::types::Located;
-use super::{types::Statement, tokenize::Token};
+use super::{tokenize::Token, types::Statement};
 use crate::asm::model::{Arg, ConstBinding};
 use crate::common;
+use std::fmt::Display;
 
 #[derive(Debug)]
 pub(super) enum Error {
     UnknownSpecialCommandName(String),
     UnexpectedToken(Token, &'static str),
     UnexpectedEndOfStream(&'static str),
+}
+
+impl Display for Error {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Error::UnknownSpecialCommandName(cmd) => write!(f, "Unknown special command: '{}'", cmd),
+            Error::UnexpectedToken(tk, msg) => write!(f, "Unexpected token: '{}': {}", tk, msg),
+            Error::UnexpectedEndOfStream(msg) => write!(f, "Unexpectedly encountered end of stream: {}", msg),
+        }
+    }
 }
 
 impl Token {

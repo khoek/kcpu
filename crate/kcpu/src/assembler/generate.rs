@@ -2,15 +2,88 @@ use super::types::{BinaryElement, LabelName, Located, Statement};
 use crate::asm::lang::Lang;
 use crate::asm::model::Arg;
 use crate::common;
-use crate::spec::types::hw::{self, Byte, Word};
-use std::iter;
+use crate::spec::types::{
+    hw::{self, Byte, Word},
+    schema::ArgKind,
+};
+use colored::Colorize;
+use itertools::{EitherOrBoth, Itertools};
+use std::{fmt::Display, iter};
 
 #[derive(Debug)]
 pub(super) enum Error {
-    BadDataParity(),
+    BadDataParity,
     LabelNameCollidesWithInst(LabelName),
     InstUnknown(String),
     InstInvalidArgs(String, Vec<Arg<LabelName>>),
+}
+
+impl Error {
+    fn fmt_arg_kinds_given_args(
+        f: &mut std::fmt::Formatter<'_>,
+        kinds: &[ArgKind],
+        args: &[Arg<LabelName>],
+    ) -> std::fmt::Result {
+        let fmted = kinds
+            .iter()
+            .zip_longest(args.iter())
+            .map(|res| match res {
+                EitherOrBoth::Left(kind) => format!("{}", kind).yellow(),
+                EitherOrBoth::Right(_) => format!("<extra>").yellow(),
+                EitherOrBoth::Both(kind, arg) => {
+                    let kind_fmt = format!("{}", kind);
+                    if kind.matches(arg) {
+                        kind_fmt.green()
+                    } else {
+                        kind_fmt.red()
+                    }
+                }
+            })
+            .map(|ts| ts.to_string())
+            .collect::<Vec<_>>();
+        write!(f, "{}", fmted.join(", "))
+    }
+}
+
+impl Display for Error {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Error::BadDataParity => write!(f, "Bad data parity"),
+            Error::LabelNameCollidesWithInst(ln) => write!(
+                f,
+                "Unacceptable label name '{}', it collides with an instruction name",
+                ln
+            ),
+            Error::InstUnknown(name) => write!(f, "Unknown instruction '{}'", name),
+            Error::InstInvalidArgs(name, args) => {
+                writeln!(
+                    f,
+                    "Invalid arguments passed to instruction '{}', arguments were:",
+                    name
+                )?;
+                writeln!(
+                    f,
+                    "\t{}",
+                    args.iter()
+                        .map(ToString::to_string)
+                        .collect::<Vec<_>>()
+                        .join(", ")
+                )?;
+                writeln!(f, "candidate argument lists were:")?;
+                let family = Lang::get().lookup_family(&name).unwrap();
+                for alias in family
+                    .variants
+                    .iter()
+                    .map(|alias| Lang::get().lookup_alias(alias).unwrap())
+                {
+                    write!(f, "\t{: <3}: ", alias.name)?;
+                    Error::fmt_arg_kinds_given_args(f, &alias.infer_type(), args)?;
+                    writeln!(f)?;
+                }
+                Ok(())
+            }
+        }
+    }
 }
 
 impl Statement {
@@ -40,7 +113,7 @@ impl Statement {
         Statement::generate_raw_words(
             hw::bytes_to_words(bytes)
                 .map(Result::Ok)
-                .unwrap_or(Err(Error::BadDataParity()))?,
+                .unwrap_or(Err(Error::BadDataParity))?,
         )
     }
 
@@ -83,25 +156,6 @@ impl Statement {
             .unwrap_or_else(|| Err(Error::InstInvalidArgs(inst, args)))?;
 
         Ok(blobs.into_iter().map(BinaryElement::Inst).collect())
-
-        // RUSTFIX remove these comments
-
-        // NOTE NOTE NOTE I just went through a whole thing with "do we need any of this matching stuff at all,
-        // we can just try to perform the resolution aren't we checking everything twice??"
-        //
-        // The answer is yes, we don't have to, we can just to try to bind against the aliases directly and
-        // have them return None if they don't work or a Blob if they do.
-        // The only subtly is in the declaration of aliases: we work out the number of arguments an alias has
-        // from the number of unbound arguments to its virtual instructions it has!
-        //
-        // Yay! But this doesn't make the large porition of the matching code which compares `ArgKind`s and
-        // `Arg`s redudant, since we can just use it to perform runtime checking that the particular `Arg` we
-        // are using from the arg list to bind a `Slot` is compatible with what is declared in the `InstDef`
-        // corresponding to the position for that slot.
-
-        // OOOH, but if `Alias`es don't have argkind lists themselves, we can't check for collisions directly when
-        // they are registered in a `Family`. Instead we need to make a function which does `type inference`
-        // and computes the arglist for an alias (but I see no need to store this...?)
 
         // RUSTFIX, (DUPLICATED IN `inst.rs`) Split the `inst.rs` file in half, with all of the basic notions like `RegRef`s,
         // `Half`, `Width`, `Const`, even `ConstBinding`s put somewhere and the stuff only needed to specify

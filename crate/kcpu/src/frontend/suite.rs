@@ -8,6 +8,7 @@ use colored::Colorize;
 use derive_more::Constructor;
 use std::ffi::OsString;
 use std::path::{Path, PathBuf};
+use std::io::{self, Write};
 
 #[derive(Constructor)]
 struct UnitSrc {
@@ -225,12 +226,17 @@ fn run_unit(src: &UnitSrc, num: usize, name_pad: usize, max_clocks: Option<u64>)
         " ".repeat(name_pad - src.name.len())
     );
 
+    io::stdout().flush().ok();
     let summary = src.assemble().map(|bin| bin.execute(max_clocks));
 
     match summary {
         Err(err) => {
             // RUSTFIX don't use debug print here
-            println!("{} ({:?})", "FAIL: ASSEMBLY ERROR".red(), err);
+            println!(
+                "{}:\n\t{}",
+                "FAIL: ASSEMBLY ERROR".red(),
+                format!("{}", err).replace("\n", "\n\t")
+            );
 
             false
         }

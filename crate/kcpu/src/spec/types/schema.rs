@@ -81,7 +81,7 @@ impl OpClass {
 
     // RUSTFIX hackish, make this type safe using custom ITypes/IKinds as described in `defs::opclass`
     // RUSTFIX hack, this does nothing to prevent collisions.
-    pub fn add_flag(&self, flag: Word) -> OpClass {
+    pub fn with_flag(&self, flag: Word) -> OpClass {
         OpClass {
             flags: self.flags | flag,
             ..*self

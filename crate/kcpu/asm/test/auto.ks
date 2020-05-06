@@ -21,21 +21,21 @@ ENTER0
 ENTER1 %ra
 ENTERFR1 %ra
 ENTERFR2 %ra %rb
-FAR.LDBH %ra %rb
-FAR.LDBHZ %ra %rb
-FAR.LDBL %ra %rb
-FAR.LDBLZ %ra %rb
+FAR.LDBH %ra %hb
+FAR.LDBHZ %ra %hb
+FAR.LDBL %ra %lb
+FAR.LDBLZ %ra %lb
 FAR.LDW %ra %rb
 FAR.LDWO %ra %rb %rc
-FAR.STBH %ra %rb
-FAR.STBL %ra %rb
+FAR.STBH %ra %hb
+FAR.STBL %ra %lb
 FAR.STW %ra %rb
 FAR.STWO %ra %rb %rc
 INC %ra
-LDBH %ra %rb
-LDBHZ %ra %rb
-LDBL %ra %rb
-LDBLZ %ra %rb
+LDBH %ra %hb
+LDBHZ %ra %hb
+LDBL %ra %lb
+LDBLZ %ra %lb
 LDW %ra %rb
 LDWO %ra %rb %rc
 LEAVE0
@@ -57,8 +57,8 @@ PUSHA
 PUSHx2 %ra %rb
 RSFT %ra
 RSFTNF %ra
-STBH %ra %rb
-STBL %ra %rb
+STBH %ra %hb
+STBL %ra %lb
 STW %ra %rb
 STWO %ra %rb %rc
 SUB %ra %rb

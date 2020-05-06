@@ -83,7 +83,7 @@ fn mk_distanced_instruction(
     for ui in &mut uis {
         *ui |= if far { 0 } else { MCTRL_FLAG_MODE_N_FAR };
     }
-    InstDef::with_vec(&*n, op.add_flag(if far { farbit } else { 0 }), args, uis)
+    InstDef::with_vec(&*n, op.with_flag(if far { farbit } else { 0 }), args, uis)
 }
 
 fn ucode_memb_sh_step1(is_write: bool, lo_or_hi: bool, zero: bool) -> UInst {
@@ -293,13 +293,13 @@ fn gen_mem(builder: &mut Builder) {
     builder.register(InstDef::with_single_1(
         "STPFX",
         I_STPFX,
-        ArgKind::new_word(ConstPolicy::Never),
+        ArgKind::new_word(ConstPolicy::Allow),
         MCTRL_MODE_STPFX | MCTRL_BUSMODE_CONW_BUSB | RCTRL_IU1_BUSB_O | GCTRL_FT_ENTER,
     ));
     builder.register(InstDef::with_single_1(
         "FAR.STPFX",
-        I_STPFX.add_flag(ITFLAG_MEM_FAR),
-        ArgKind::new_word(ConstPolicy::Never),
+        I_STPFX.with_flag(ITFLAG_MEM_FAR),
+        ArgKind::new_word(ConstPolicy::Allow),
         MCTRL_MODE_STPFX_FAR | MCTRL_BUSMODE_CONW_BUSB | RCTRL_IU1_BUSB_O | GCTRL_FT_ENTER,
     ));
 }
@@ -343,7 +343,7 @@ fn mk_loadable_instruction_with_preamble(
     if second_arg {
         InstDef::with_2(
             &*n,
-            op.add_flag(if ld { ldbit } else { 0 }),
+            op.with_flag(if ld { ldbit } else { 0 }),
             ArgKind::new_word(ConstPolicy::Allow),
             ArgKind::new_word(ConstPolicy::Never),
             preamble,
@@ -351,7 +351,7 @@ fn mk_loadable_instruction_with_preamble(
     } else {
         InstDef::with_1(
             &*n,
-            op.add_flag(if ld { ldbit } else { 0 }),
+            op.with_flag(if ld { ldbit } else { 0 }),
             ArgKind::new_word(ConstPolicy::Allow),
             preamble,
         )
@@ -553,7 +553,7 @@ fn mk_alu_inst(
 
     InstDef::with_vec(
         &*format!("{}{}", name, suffix),
-        op.add_flag(if use_oc_flag { oc_flag } else { 0 }),
+        op.with_flag(if use_oc_flag { oc_flag } else { 0 }),
         args,
         vec![
             ACTRL_INPUT_EN | alu_mode | srcs | RCTRL_IU1_BUSA_O,

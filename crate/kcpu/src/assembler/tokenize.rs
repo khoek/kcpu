@@ -6,7 +6,7 @@ use crate::spec::types::{
     schema::{Half, Width},
 };
 use std::convert::TryFrom;
-use std::num::{ParseIntError, TryFromIntError};
+use std::{fmt::Display, num::{ParseIntError, TryFromIntError}};
 use strum::IntoEnumIterator;
 
 #[derive(Debug)]
@@ -28,6 +28,15 @@ impl From<TryFromIntError> for Error {
     }
 }
 
+impl Display for Error {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Error::MalformedToken(raw, msg) => write!(f, "Malformed token '{}': {}", raw, msg),
+            Error::UnterminatedStringLiteral => write!(f, "Encountered unterminated string literal"),
+        }
+    }
+}
+
 // This enum models the kinds of tokens we can encounter and unambiguously distinguish between
 // as we parse a stream. It *does not* model the semantics of the assemble language, where
 // e.g. there is a distinction between an instruction name and a reference to a label
@@ -44,6 +53,21 @@ pub(super) enum Token {
     Name(String),
 }
 
+impl Display for Token {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Token::LabelDef(label) => write!(f, "LabelDef({})", label),
+            Token::SpecialName(name) => write!(f, "SpecialName({})", name),
+        
+            Token::RegRef(r) => write!(f, "RegRef({})", r),
+            Token::Const(c) => write!(f, "Const({})", c),
+        
+            Token::String(s) => write!(f, "String({})", s),
+            Token::Name(s) => write!(f, "Name({})", s),
+        }
+    }
+}
+
 enum CommandChar<'a> {
     Containing(&'a str),
     Starting(&'a str),
@@ -52,7 +76,7 @@ enum CommandChar<'a> {
 
 impl<'a> CommandChar<'a> {
     fn to_str(&self) -> &str {
-        match *self {
+        match self {
             CommandChar::Containing(c) => c,
             CommandChar::Starting(c) => c,
             CommandChar::Ending(c) => c,
@@ -68,7 +92,7 @@ impl<'a> CommandChar<'a> {
     }
 
     fn matches<'b>(&self, s: &'b str) -> Option<&'b str> {
-        match *self {
+        match self {
             CommandChar::Containing(c) => {
                 if s.contains(c) {
                     Some(s)
