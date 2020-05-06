@@ -4,7 +4,6 @@ use super::{
 };
 use crate::common;
 use crate::spec::{types::schema::ArgKind, ucode::UCode};
-use itertools::iproduct;
 use once_cell::sync::Lazy;
 use std::collections::HashMap;
 
@@ -74,7 +73,7 @@ impl Builder {
     }
 
     fn arg_kind_lists_collide(us: &[ArgKind], vs: &[ArgKind]) -> bool {
-        us.len() == vs.len() && iproduct!(us.iter(), vs.iter()).all(|(u, v)| u.collides(*v))
+        us.len() == vs.len() && us.iter().zip(vs.iter()).all(|(u, v)| u.collides(*v))
     }
 
     pub(super) fn register_family(&mut self, f: Family) {
@@ -98,5 +97,132 @@ impl Builder {
             .families
             .insert(Lang::sanitize_name(&f.name), f)
             .is_none());
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::Builder;
+    use crate::spec::types::schema::{ArgKind, ConstPolicy, Half, Width};
+
+    #[test]
+    fn it_finds_empty_collision() {
+        assert!(Builder::arg_kind_lists_collide(&[], &[]));
+    }
+
+    #[test]
+    fn it_finds_word_collision() {
+        assert!(Builder::arg_kind_lists_collide(
+            &[ArgKind::new(Width::Word, ConstPolicy::Allow),],
+            &[ArgKind::new(Width::Word, ConstPolicy::Allow),],
+        ));
+    }
+
+    #[test]
+    fn it_finds_byte_collision() {
+        assert!(Builder::arg_kind_lists_collide(
+            &[ArgKind::new(Width::Byte(Half::Lo), ConstPolicy::Never),],
+            &[ArgKind::new(Width::Byte(Half::Lo), ConstPolicy::Never),],
+        ));
+    }
+
+    #[test]
+    fn it_finds_interesting_identical_collision_simple() {
+        assert!(Builder::arg_kind_lists_collide(
+            &[
+                ArgKind::new(Width::Word, ConstPolicy::Allow),
+                ArgKind::new(Width::Byte(Half::Lo), ConstPolicy::Never),
+            ],
+            &[
+                ArgKind::new(Width::Word, ConstPolicy::Allow),
+                ArgKind::new(Width::Byte(Half::Lo), ConstPolicy::Never),
+            ],
+        ));
+    }
+
+    #[test]
+    fn it_finds_interesting_identical_collision() {
+        assert!(Builder::arg_kind_lists_collide(
+            &[
+                ArgKind::new(Width::Word, ConstPolicy::Allow),
+                ArgKind::new(Width::Byte(Half::Lo), ConstPolicy::Never),
+                ArgKind::new(Width::Word, ConstPolicy::Only)
+            ],
+            &[
+                ArgKind::new(Width::Word, ConstPolicy::Allow),
+                ArgKind::new(Width::Byte(Half::Lo), ConstPolicy::Never),
+                ArgKind::new(Width::Word, ConstPolicy::Only)
+            ],
+        ));
+    }
+
+    #[test]
+    fn it_finds_different_lengths_no_collision_1() {
+        assert!(!Builder::arg_kind_lists_collide(
+            &[
+                ArgKind::new(Width::Word, ConstPolicy::Allow),
+                ArgKind::new(Width::Byte(Half::Lo), ConstPolicy::Never),
+                ArgKind::new(Width::Word, ConstPolicy::Only)
+            ],
+            &[
+                ArgKind::new(Width::Word, ConstPolicy::Allow),
+                ArgKind::new(Width::Byte(Half::Lo), ConstPolicy::Never),
+            ],
+        ));
+    }
+
+    #[test]
+    fn it_finds_different_lenths_no_collision_2() {
+        assert!(!Builder::arg_kind_lists_collide(
+            &[
+                ArgKind::new(Width::Word, ConstPolicy::Allow),
+                ArgKind::new(Width::Byte(Half::Lo), ConstPolicy::Never),
+            ],
+            &[
+                ArgKind::new(Width::Word, ConstPolicy::Allow),
+                ArgKind::new(Width::Byte(Half::Lo), ConstPolicy::Never),
+                ArgKind::new(Width::Word, ConstPolicy::Only)
+            ],
+        ));
+    }
+
+    #[test]
+    fn it_finds_different_width_no_collision() {
+        assert!(!Builder::arg_kind_lists_collide(
+            &[ArgKind::new(Width::Word, ConstPolicy::Allow),],
+            &[ArgKind::new(Width::Byte(Half::Lo), ConstPolicy::Allow),],
+        ));
+    }
+
+    #[test]
+    fn it_finds_opposite_half_no_collision() {
+        assert!(!Builder::arg_kind_lists_collide(
+            &[ArgKind::new(Width::Byte(Half::Lo), ConstPolicy::Allow),],
+            &[ArgKind::new(Width::Byte(Half::Hi), ConstPolicy::Allow),],
+        ));
+    }
+
+    #[test]
+    fn it_finds_superset_policy_collision_only() {
+        assert!(Builder::arg_kind_lists_collide(
+            &[ArgKind::new(Width::Word, ConstPolicy::Allow),],
+            &[ArgKind::new(Width::Word, ConstPolicy::Only),],
+        ));
+    }
+
+    #[test]
+    fn it_finds_superset_policy_collision_never() {
+        assert!(Builder::arg_kind_lists_collide(
+            &[ArgKind::new(Width::Word, ConstPolicy::Allow),],
+            &[ArgKind::new(Width::Word, ConstPolicy::Never),],
+        ));
+    }
+
+    #[test]
+    fn it_finds_exclusive_policy_no_collision() {
+        assert!(!Builder::arg_kind_lists_collide(
+            &[ArgKind::new(Width::Word, ConstPolicy::Never),],
+            &[ArgKind::new(Width::Word, ConstPolicy::Only),],
+        ));
     }
 }

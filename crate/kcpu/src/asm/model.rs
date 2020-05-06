@@ -290,7 +290,7 @@ impl Alias {
 
     // RUSTFIX this function re-infers the type, do we reall need it?
     // pub fn matches<T>(&self, args: &[Arg<Tag>]) -> bool {
-    //     iproduct!(self.infer_type().iter(), args).all(|(kind, arg)| kind.matches(arg))
+    //     self.infer_type().iter().zip(args.iter()).all(|(kind, arg)| kind.matches(arg))
     // }
 
     pub fn instantiate<Tag: Clone>(&self, args: &[Arg<Tag>]) -> Option<Vec<Blob<Tag>>> {
