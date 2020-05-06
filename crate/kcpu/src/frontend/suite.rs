@@ -7,28 +7,23 @@ use crate::vm::State;
 use colored::Colorize;
 use derive_more::Constructor;
 use std::ffi::OsString;
-use std::path::PathBuf;
-
-pub enum SuiteKind {
-    Test,
-    Bench,
-}
+use std::path::{Path, PathBuf};
 
 #[derive(Constructor)]
-struct CaseSrc {
+struct UnitSrc {
     name: OsString,
     bios_src: Option<PathBuf>,
     prog_src: Option<PathBuf>,
 }
 
 #[derive(Constructor)]
-struct CaseBin {
+struct UnitBin {
     bios_bin: Option<Vec<u8>>,
     prog_bin: Option<Vec<u8>>,
 }
 
-impl CaseSrc {
-    fn assemble(&self) -> Result<CaseBin, assembler::Error> {
+impl UnitSrc {
+    fn assemble(&self) -> Result<UnitBin, assembler::Error> {
         let bios_bin = self
             .bios_src
             .as_deref()
@@ -40,11 +35,11 @@ impl CaseSrc {
             .map(assemble::assemble_path)
             .transpose()?;
 
-        Ok(CaseBin::new(bios_bin, prog_bin))
+        Ok(UnitBin::new(bios_bin, prog_bin))
     }
 }
 
-impl CaseBin {
+impl UnitBin {
     fn execute(&self, max_clocks: Option<u64>) -> Summary {
         execute::execute(
             Config {
@@ -63,133 +58,166 @@ impl CaseBin {
 
 // RUSTFIX proper error handling
 pub fn suite(
-    kind: SuiteKind,
-    suite_dir: &PathBuf,
+    suite_name: &OsString,
+    suite_root_dir: &PathBuf,
     only_this: &Option<OsString>,
     max_clocks: Option<u64>,
 ) -> Result<bool, assembler::Error> {
-    let all_cases = find_cases(suite_dir);
+    let mut suite_dir = suite_root_dir.clone();
+    suite_dir.push(suite_name);
+    let all_units = find_units(&suite_dir);
 
-    let selected_tests = match only_this {
-        None => all_cases,
+    let selected_units = match only_this {
+        None => all_units,
         Some(only_this) => {
             // RUSTFIX report an error!
-            vec![all_cases
+            vec![all_units
                 .into_iter()
-                .find(|test| &test.name == only_this)
+                .find(|unit| &unit.name == only_this)
                 .unwrap()]
         }
     };
 
-    match kind {
-        SuiteKind::Test => Ok(run_tests(max_clocks, &selected_tests)),
-        SuiteKind::Bench => todo!(),
+    Ok(run_units(max_clocks, &selected_units))
+}
+
+fn find_file_unit(path: &Path) -> Option<UnitSrc> {
+    if !path.extension().map_or(false, |ext| ext == "ks") {
+        return None;
+    }
+
+    Some(UnitSrc {
+        name: path.file_stem().unwrap().to_owned(),
+        prog_src: Some(PathBuf::from(path)),
+        bios_src: None,
+    })
+}
+
+fn path_exists_to_option<T: AsRef<Path>>(path: T) -> Option<T> {
+    if path.as_ref().exists() {
+        Some(path)
+    } else {
+        None
     }
 }
 
-fn find_cases(test_dir: &PathBuf) -> Vec<CaseSrc> {
-    // RUSTFIX IMPLEMENT!!
-    // todo!();
+fn find_dir_unit(path: &Path) -> Option<UnitSrc> {
+    let bios_src = path_exists_to_option(path.to_owned().join("bios.ks"));
+    let prog_src = path_exists_to_option(path.to_owned().join("prog.ks"));
 
-    // RUSTFIX TODO look for both "test_name.ks" and ("test_name.prog.ks", "test_name.bios.ks")
-    //              Freak out if all three names are present?
-
-    let fn_cook_fake_test = |name: &str| -> CaseSrc {
-        let mut srcpath = (*test_dir).clone();
-        srcpath.push(format!("{}{}", name, ".ks"));
-        CaseSrc::new(OsString::from(name), None, Some(srcpath))
-    };
-
-    let fn_cook_fake_test2 = |name: &str| -> CaseSrc {
-        let mut srcpath = (*test_dir).clone();
-        srcpath.push(format!("{}{}", name, ".prog.ks"));
-        let mut srcpath2 = (*test_dir).clone();
-        srcpath2.push(format!("{}{}", name, ".bios.ks"));
-        CaseSrc::new(OsString::from(name), Some(srcpath2), Some(srcpath))
-    };
-
-    // FIXMEFIXMEFIXME
-    vec![
-        fn_cook_fake_test("add3_fam"),
-        // fn_cook_fake_test("auto"), ASM
-        fn_cook_fake_test("call_ret_2"),
-        fn_cook_fake_test("fibb"),
-        // fn_cook_fake_test("int_disable_2"), VM
-        // fn_cook_fake_test("int_multiple"), ASM
-        // fn_cook_fake_test("int_recursive"), ASM
-        fn_cook_fake_test("io_probe"),
-        fn_cook_fake_test("ldwo_fam"),
-        fn_cook_fake_test("mov_self"),
-        fn_cook_fake_test("primes"),
-        fn_cook_fake_test("pushpop"),
-        fn_cook_fake_test("stwo"),
-        fn_cook_fake_test("add3"),
-        fn_cook_fake_test("byte_ld"),
-        fn_cook_fake_test("enter_fr"),
-        // fn_cook_fake_test("flag_tui2nmi"), ASM
-        // fn_cook_fake_test("int_during_io"), ASM
-        fn_cook_fake_test("int_nmi"),
-        fn_cook_fake_test("int_simple"),
-        fn_cook_fake_test("io_uid"),
-        fn_cook_fake_test("ldwo"),
-        fn_cook_fake_test("nop"),
-        // fn_cook_fake_test("primes_nmispam"), ASM
-        fn_cook_fake_test("pushpop_rsp"),
-        fn_cook_fake_test("alu"),
-        fn_cook_fake_test("byte_st"),
-        fn_cook_fake_test("enter_leave"),
-        // fn_cook_fake_test("int_async"), ASM
-        fn_cook_fake_test("int_fastdeliv"),
-        // fn_cook_fake_test("int_nmi_no_eoi"), ASM
-        fn_cook_fake_test("int_stackcheck"),
-        // fn_cook_fake_test("io_video"), VM(unimplemented)
-        fn_cook_fake_test2("ljmp"),
-        fn_cook_fake_test("old_test"),
-        fn_cook_fake_test("pushpop_a"),
-        fn_cook_fake_test("simple"),
-        fn_cook_fake_test("alu_noflags"),
-        fn_cook_fake_test("call_ret_1"),
-        // fn_cook_fake_test("family"), ASM
-        fn_cook_fake_test("int_disable_1"),
-        // fn_cook_fake_test("int_ie_pushpop"), ASM
-        fn_cook_fake_test("int_nmi_no_rec"),
-        fn_cook_fake_test("io_latency"),
-        fn_cook_fake_test("jmp"),
-        fn_cook_fake_test("pushpop_fg"),
-        fn_cook_fake_test("stwo_fam"),
-    ]
+    match (bios_src, prog_src) {
+        (None, None) => None,
+        (bios_src, prog_src) => Some(UnitSrc {
+            name: path.file_stem().unwrap().to_owned(),
+            bios_src,
+            prog_src,
+        }),
+    }
 }
 
-fn run_tests(max_clocks: Option<u64>, tests: &[CaseSrc]) -> bool {
-    let name_pad = tests.iter().map(|test| test.name.len()).max().unwrap_or(0);
+fn find_units(suite_dir: &PathBuf) -> Vec<UnitSrc> {
+    // RUSTFIX proper error handling
+    suite_dir
+        .read_dir()
+        .unwrap()
+        .filter_map(|d| {
+            // RUSTFIX proper error handling
+            let f = d.unwrap();
+            let path = f.path();
+
+            let typ = f.file_type().unwrap();
+            if typ.is_file() {
+                find_file_unit(&path)
+            } else if typ.is_dir() {
+                find_dir_unit(&path)
+            } else {
+                None
+            }
+        })
+        .collect()
+
+    // // FIXMEFIXMEFIXME
+    // vec![
+    //     fn_cook_fake_unit("add3_fam"),
+    //     // fn_cook_fake_unit("auto"), ASM
+    //     fn_cook_fake_unit("call_ret_2"),
+    //     fn_cook_fake_unit("fibb"),
+    //     // fn_cook_fake_unit("int_disable_2"), VM
+    //     // fn_cook_fake_unit("int_multiple"), ASM
+    //     // fn_cook_fake_unit("int_recursive"), ASM
+    //     fn_cook_fake_unit("io_probe"),
+    //     fn_cook_fake_unit("ldwo_fam"),
+    //     fn_cook_fake_unit("mov_self"),
+    //     fn_cook_fake_unit("primes"),
+    //     fn_cook_fake_unit("pushpop"),
+    //     fn_cook_fake_unit("stwo"),
+    //     fn_cook_fake_unit("add3"),
+    //     fn_cook_fake_unit("byte_ld"),
+    //     fn_cook_fake_unit("enter_fr"),
+    //     // fn_cook_fake_unit("flag_tui2nmi"), ASM
+    //     // fn_cook_fake_unit("int_during_io"), ASM
+    //     fn_cook_fake_unit("int_nmi"),
+    //     fn_cook_fake_unit("int_simple"),
+    //     fn_cook_fake_unit("io_uid"),
+    //     fn_cook_fake_unit("ldwo"),
+    //     fn_cook_fake_unit("nop"),
+    //     // fn_cook_fake_unit("primes_nmispam"), ASM
+    //     fn_cook_fake_unit("pushpop_rsp"),
+    //     fn_cook_fake_unit("alu"),
+    //     fn_cook_fake_unit("byte_st"),
+    //     fn_cook_fake_unit("enter_leave"),
+    //     // fn_cook_fake_unit("int_async"), ASM
+    //     fn_cook_fake_unit("int_fastdeliv"),
+    //     // fn_cook_fake_unit("int_nmi_no_eoi"), ASM
+    //     fn_cook_fake_unit("int_stackcheck"),
+    //     // fn_cook_fake_unit("io_video"), VM(unimplemented)
+    //     fn_cook_fake_unit2("ljmp"),
+    //     fn_cook_fake_unit("old_test"),
+    //     fn_cook_fake_unit("pushpop_a"),
+    //     fn_cook_fake_unit("simple"),
+    //     fn_cook_fake_unit("alu_noflags"),
+    //     fn_cook_fake_unit("call_ret_1"),
+    //     // fn_cook_fake_unit("family"), ASM
+    //     fn_cook_fake_unit("int_disable_1"),
+    //     // fn_cook_fake_unit("int_ie_pushpop"), ASM
+    //     fn_cook_fake_unit("int_nmi_no_rec"),
+    //     fn_cook_fake_unit("io_latency"),
+    //     fn_cook_fake_unit("jmp"),
+    //     fn_cook_fake_unit("pushpop_fg"),
+    //     fn_cook_fake_unit("stwo_fam"),
+    // ]
+}
+
+fn run_units(max_clocks: Option<u64>, units: &[UnitSrc]) -> bool {
+    let name_pad = units.iter().map(|unit| unit.name.len()).max().unwrap_or(0);
 
     println!("--------------------------------------------------------------");
 
-    let passes: usize = tests
+    let passes: usize = units
         .iter()
         .enumerate()
-        .map(|(num, test)| run_test(test, num + 1, name_pad, max_clocks) as usize)
+        .map(|(num, unit)| run_unit(unit, num + 1, name_pad, max_clocks) as usize)
         .sum();
-    let success = passes == tests.len();
+    let success = passes == units.len();
 
     println!("--------------------------------------------------------------");
     println!(
-        "Test Suite Result: {}, {}/{} passes",
+        "Suite Result: {}, {}/{} passes",
         if success {
             "SUCCESS".green()
         } else {
             "FAILED".red()
         },
         passes,
-        tests.len()
+        units.len()
     );
 
     success
 }
 
-fn run_test(src: &CaseSrc, num: usize, name_pad: usize, max_clocks: Option<u64>) -> bool {
+fn run_unit(src: &UnitSrc, num: usize, name_pad: usize, max_clocks: Option<u64>) -> bool {
     print!(
-        "Test {:2 }: {} {}",
+        "Unit {:2 }: {} {}",
         num,
         src.name
             .to_str()
@@ -217,7 +245,7 @@ fn run_test(src: &CaseSrc, num: usize, name_pad: usize, max_clocks: Option<u64>)
                 ),
                 State::Aborted => println!("{}", "FAIL: ABORTED".red()),
                 State::Timeout => println!("{}", "FAIL: DETERMINISTIC TIMEOUT".red()),
-                _ => panic!("internal testrunner error: VM still running!"),
+                _ => panic!("internal unitrunner error: VM still running!"),
             }
 
             summary.state == State::Halted

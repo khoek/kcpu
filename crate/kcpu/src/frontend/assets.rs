@@ -5,8 +5,8 @@ use std::path::PathBuf;
 pub const DEFAULT_BINARY_EXT: &str = "kb";
 
 // RUSTFIX make this const once `PathBuf` is.
-pub fn get_default_testsuite_dir() -> PathBuf {
-    ["asm", "test"].iter().collect()
+pub fn get_default_suite_dir() -> PathBuf {
+    ["asm"].iter().collect()
 }
 
 // RUSTFIX remove duplication once `const fn`s become more powerful.

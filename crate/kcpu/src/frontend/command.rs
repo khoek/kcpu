@@ -68,8 +68,8 @@ pub struct SubcommandRun {
 
 #[derive(StructOpt, Debug)]
 pub struct SuiteOpts {
-    #[structopt(name = "SUITEDIR", parse(from_os_str))]
-    suite_dir: Option<PathBuf>,
+    #[structopt(name = "SUITEROOTDIR", parse(from_os_str))]
+    suite_root_dir: Option<PathBuf>,
 
     #[structopt(short = "only", long, parse(from_os_str))]
     only: Option<OsString>,
@@ -79,9 +79,12 @@ pub struct SuiteOpts {
 }
 
 #[derive(StructOpt, Debug)]
-pub enum SubcommandSuite {
-    Test(SuiteOpts),
-    Bench(SuiteOpts),
+pub struct SubcommandSuite {
+    #[structopt(name = "SUITENAME", parse(from_os_str))]
+    suite_name: OsString,
+
+    #[structopt(flatten)]
+    opts: SuiteOpts,
 }
 
 pub fn root(cmd: CommandRoot) -> ! {
@@ -100,11 +103,8 @@ pub fn asm(cmd: SubcommandAsm) -> ! {
 
     let out_name = match cmd.out_bin {
         Some(outfile) => outfile,
-        None => {
-            let mut buf = PathBuf::from(cmd.in_src.file_stem().unwrap());
-            buf.set_extension(assets::DEFAULT_BINARY_EXT);
-            buf
-        }
+        None => PathBuf::from(cmd.in_src.file_stem().unwrap())
+            .with_extension(assets::DEFAULT_BINARY_EXT),
     };
 
     std::fs::write(out_name, out_bin).unwrap();
@@ -139,19 +139,14 @@ pub fn run(cmd: SubcommandRun) -> ! {
 }
 
 pub fn suite(cmd: SubcommandSuite) -> ! {
-    let (kind, opts) = match cmd {
-        SubcommandSuite::Test(opts) => (suite::SuiteKind::Test, opts),
-        SubcommandSuite::Bench(opts) => (suite::SuiteKind::Bench, opts),
-    };
-
     // RUSTFIX proper error handling, instead of just calling `unwrap()`.
     let success = suite::suite(
-        kind,
-        &opts
-            .suite_dir
-            .unwrap_or_else(assets::get_default_testsuite_dir),
-        &opts.only,
-        opts.max_clocks,
+        &cmd.suite_name,
+        &cmd.opts
+            .suite_root_dir
+            .unwrap_or_else(assets::get_default_suite_dir),
+        &cmd.opts.only,
+        cmd.opts.max_clocks,
     )
     .unwrap();
 
