@@ -1,7 +1,7 @@
 use crate::spec::types::hw::*;
 use enum_map::EnumMap;
 
-#[derive(Clone, Copy)]
+#[derive(Debug, Clone, Copy)]
 pub struct Logger {
     pub disassemble: bool,
     pub dump_registers: bool,

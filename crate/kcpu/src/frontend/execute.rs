@@ -7,7 +7,7 @@ use std::{
     io::{BufRead, Write},
 };
 
-#[derive(Clone, Copy)]
+#[derive(Debug, Clone, Copy)]
 pub enum Verbosity {
     Silent,
     MachineState,
@@ -26,6 +26,7 @@ impl Verbosity {
     }
 }
 
+#[derive(Debug, Clone, Copy)]
 pub enum BreakMode {
     Noninteractive,
     OnInst,
@@ -44,21 +45,27 @@ impl BreakMode {
     }
 }
 
+#[derive(Debug, Clone, Copy)]
 pub enum AbortAction {
     Stop,
     Resume,
     Prompt,
 }
 
-pub struct Config {
+#[derive(Debug, Clone, Copy)]
+pub struct ExecFlags {
     pub headless: bool,
     pub max_clocks: Option<u64>,
-
-    pub verbosity: Verbosity,
     pub mode: BreakMode,
     pub abort_action: AbortAction,
+}
+
+#[derive(Debug, Clone)]
+pub struct Config {
+    pub flags: ExecFlags,
 
     pub print_marginals: bool,
+    pub verbosity: Verbosity,
 }
 
 #[derive(Debug, Constructor)]
@@ -74,14 +81,55 @@ impl Summary {
     }
 }
 
+// RUSTFIX remove `cfg` from being passed directly, encapsulate better
+fn debug_hook(
+    vm: &Instance,
+    state: &mut (ExecFlags, SteppingDisassembler),
+) -> Result<Option<State>, disasm::Error> {
+    let (flags, disasm) = state;
+
+    let dbg = vm.get_debug_exec_info();
+
+    if dbg.is_true_inst_beginning() {
+        let (ctx, pos) = disasm.step(vm.iter_at_ip())?;
+        if let RelativePos::AliasBoundary = pos {
+            println!("----------------------------------");
+            println!("\t{}", format!("{}", ctx).replace("\n", "\t"));
+            println!("----------------------------------");
+        }
+    }
+
+    // RUSTFIX how much does this hurt performance?
+    if flags.mode.should_pause(dbg) {
+        let prompt_msg = "[ENTER to step]";
+        println!("{}", prompt_msg);
+        io::stdout().flush().unwrap();
+
+        std::io::stdin().lock().lines().next();
+
+        println!("\r{}\r", " ".repeat(prompt_msg.len()));
+        io::stdout().flush().unwrap();
+    }
+
+    // RUSTFIX this doesn't belong here anymore....
+    // FIXME manual timeout check (for step mode), bit of a hack returning
+    // a VM code like this...
+    if flags
+        .max_clocks
+        .map(|mc| vm.get_total_clocks() >= mc)
+        .unwrap_or(false)
+    {
+        return Ok(Some(State::Timeout));
+    }
+
+    Ok(None)
+}
+
 pub fn execute(
     cfg: Config,
     raw_bios: Option<&[u8]>,
     raw_prog: Option<&[u8]>,
 ) -> Result<Summary, disasm::Error> {
-    // RUSTFIX implement graphics
-    // graphics::get_graphics().configure(self.headless);
-
     let bios = Bank::new(
         BankType::Bios,
         raw_bios
@@ -102,14 +150,47 @@ pub fn execute(
         println!("CPU Start");
     }
 
-    let mut disasm = match cfg.mode {
-        BreakMode::Noninteractive => None,
-        _ => Some(SteppingDisassembler::new()),
-    };
+    // RUSTFIX I suppose we shouldn't really be reaching into the flags here... but, is this an optimization? (TEST!)
+    let summary = match cfg.flags.mode {
+        BreakMode::Noninteractive => execute_with_iterhook(&mut vm, cfg.flags, (), None),
+        _ => execute_with_iterhook(
+            &mut vm,
+            cfg.flags,
+            (cfg.flags, SteppingDisassembler::new()),
+            Some(debug_hook),
+        ),
+    }?;
+
+    if cfg.print_marginals {
+        println!(
+            "CPU Stop ({}), {} uinstructions executed taking {}ms, @{}MHz",
+            summary.state,
+            summary.total_clocks,
+            (summary.real_ns_elapsed / 1000 / 1000),
+            summary.to_effective_freq_megahertz()
+        );
+    }
+
+    Ok(summary)
+}
+
+// RUSTFIX remove `cfg` from being passed directly, encapsulate better
+fn execute_with_iterhook<IterState, Error>(
+    vm: &mut Instance,
+    flags: ExecFlags,
+    iter_initial: IterState,
+    iter_hook: Option<fn(&Instance, &mut IterState) -> Result<Option<State>, Error>>,
+) -> Result<Summary, Error> {
+    // RUSTFIX implement graphics
+    // graphics::get_graphics().configure(self.headless);
+
+    let mut iter_state = iter_initial;
 
     let end_state = loop {
-        let s = match cfg.mode {
-            BreakMode::Noninteractive => vm.run(cfg.max_clocks),
+        // RUSTFIX try optimize (remove branches, using closures)
+        // this core loop AFTER we do the C++ comparison.
+        let s = match flags.mode {
+            BreakMode::Noninteractive => vm.run(flags.max_clocks),
             BreakMode::OnInst | BreakMode::OnUCReset => vm.step(),
             BreakMode::OnUInst => vm.ustep(),
         };
@@ -117,14 +198,15 @@ pub fn execute(
         match s {
             State::Running => (),
             State::Aborted => {
-                match cfg.abort_action {
-                    AbortAction::Stop => break None,
+                match flags.abort_action {
                     AbortAction::Resume => (),
+                    AbortAction::Stop => break None,
                     AbortAction::Prompt => {
                         print!("CPU Aborted, continue(y)? ");
                         io::stdout().flush().unwrap();
 
                         let c = std::io::stdin().lock().lines().next().unwrap().unwrap();
+                        // RUSTFIX does this actually work?
                         if c == "n" || c == "N" {
                             println!("Stopping...");
 
@@ -141,36 +223,11 @@ pub fn execute(
             s => break Some(s),
         }
 
-        // RUSTFIX how much does this hurt performance?
-        if let Some(disasm) = &mut disasm {
-            let (ctx, pos) = disasm.step(vm.iter_at_ip())?;
-            if let RelativePos::AliasBoundary = pos {
-                println!("----------------------------------");
-                println!("\t{}", format!("{}", ctx).replace("\n", "\t"));
-                println!("----------------------------------");
+        if let Some(iter_hook) = iter_hook {
+            let res = iter_hook(&vm, &mut iter_state)?;
+            if res.is_some() {
+                break res;
             }
-        }
-
-        // RUSTFIX how much does this hurt performance?
-        if cfg.mode.should_pause(vm.get_debug_exec_info()) {
-            let prompt_msg = "[ENTER to step]";
-            println!("{}", prompt_msg);
-            io::stdout().flush().unwrap();
-
-            std::io::stdin().lock().lines().next();
-
-            println!("\r{}\r", " ".repeat(prompt_msg.len()));
-            io::stdout().flush().unwrap();
-        }
-
-        // FIXME manual timeout check (for step mode), bit of a hack returning
-        // a VM code like this...
-        if cfg
-            .max_clocks
-            .map(|mc| vm.get_total_clocks() >= mc)
-            .unwrap_or(false)
-        {
-            break Some(State::Timeout);
         }
     };
 
@@ -179,16 +236,6 @@ pub fn execute(
         vm.get_total_clocks(),
         vm.get_real_ns_elapsed(),
     );
-
-    if cfg.print_marginals {
-        println!(
-            "CPU Stop ({}), {} uinstructions executed taking {}ms, @{}MHz",
-            summary.state,
-            summary.total_clocks,
-            (summary.real_ns_elapsed / 1000 / 1000),
-            summary.to_effective_freq_megahertz()
-        );
-    }
 
     Ok(summary)
 }

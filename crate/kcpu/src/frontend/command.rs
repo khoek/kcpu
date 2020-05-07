@@ -1,6 +1,6 @@
 use super::{
     assemble, assets,
-    execute::{AbortAction, BreakMode, Config, Summary, Verbosity},
+    execute::{AbortAction, BreakMode, Config, ExecFlags, Summary, Verbosity},
     suite,
 };
 use crate::assembler::disasm;
@@ -179,25 +179,26 @@ fn execute_prog_with_opts(
 ) -> Result<Summary, disasm::Error> {
     super::execute::execute(
         Config {
-            headless: vm_opts.headless,
-            max_clocks: vm_opts.max_clocks,
+            flags: ExecFlags {
+                headless: vm_opts.headless,
+                max_clocks: vm_opts.max_clocks,
+                mode: if vm_opts.step {
+                    BreakMode::OnInst
+                } else {
+                    BreakMode::Noninteractive
+                },
+                abort_action: if vm_opts.step {
+                    AbortAction::Prompt
+                } else {
+                    AbortAction::Stop
+                },
+            },
 
             verbosity: if vm_opts.disassemble || vm_opts.step {
                 Verbosity::Disassemble
             } else {
                 Verbosity::Silent
             },
-            mode: if vm_opts.step {
-                BreakMode::OnInst
-            } else {
-                BreakMode::Noninteractive
-            },
-            abort_action: if vm_opts.step {
-                AbortAction::Prompt
-            } else {
-                AbortAction::Stop
-            },
-
             print_marginals: true,
         },
         bios_bin,

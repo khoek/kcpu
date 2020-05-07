@@ -1,7 +1,7 @@
 use kcpu::assembler;
 use kcpu::frontend::{
     assemble,
-    execute::{self, AbortAction, BreakMode, Config, Verbosity},
+    execute::{self, AbortAction, BreakMode, Config, ExecFlags, Verbosity},
 };
 use kcpu::vm::State;
 
@@ -11,13 +11,14 @@ pub fn run_test(bios_src: Option<&str>, prog_src: &str) -> Result<(), assembler:
 
     let summary = execute::execute(
         Config {
-            headless: true,
-            max_clocks: Some(5_000_000),
+            flags: ExecFlags {
+                headless: true,
+                max_clocks: Some(5_000_000),
+                mode: BreakMode::Noninteractive,
+                abort_action: AbortAction::Stop,
+            },
 
             verbosity: Verbosity::Silent,
-            mode: BreakMode::Noninteractive,
-            abort_action: AbortAction::Stop,
-
             print_marginals: true,
         },
         bios.as_deref(),

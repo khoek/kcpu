@@ -16,7 +16,7 @@ pub struct DebugExecInfo {
 }
 
 impl DebugExecInfo {
-    pub fn is_true_inst_beginning(self) -> bool {
+    pub fn is_true_inst_beginning(&self) -> bool {
         self.uc_reset && !self.mask_active
     }
 }

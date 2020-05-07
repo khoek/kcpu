@@ -1,6 +1,6 @@
 use super::{
     assemble,
-    execute::{self, AbortAction, BreakMode, Config, Summary, Verbosity},
+    execute::{self, AbortAction, BreakMode, Config, ExecFlags, Summary, Verbosity},
 };
 use crate::assembler;
 use crate::vm::State;
@@ -44,11 +44,13 @@ impl UnitBin {
     fn execute(&self, max_clocks: Option<u64>) -> Summary {
         execute::execute(
             Config {
-                headless: true,
-                max_clocks,
+                flags: ExecFlags {
+                    headless: true,
+                    max_clocks,
+                    mode: BreakMode::Noninteractive,
+                    abort_action: AbortAction::Stop,
+                },
                 verbosity: Verbosity::Silent,
-                mode: BreakMode::Noninteractive,
-                abort_action: AbortAction::Stop,
                 print_marginals: false,
             },
             self.bios_bin.as_deref(),

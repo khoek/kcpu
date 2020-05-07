@@ -334,11 +334,7 @@ impl<'a> SteppingDisassembler<'a> {
 
         let alias = disassemble_alias(&mut blobs.peekable())?;
         let family = &family_reverse_lookup(alias.alias).name;
-        let blob_queue: VecDeque<_> = alias
-            .blobs
-            .iter()
-            .cloned()
-            .collect();
+        let blob_queue: VecDeque<_> = alias.blobs.iter().cloned().collect();
 
         self.context = Some(Context {
             family,
@@ -355,7 +351,9 @@ impl<'a> SteppingDisassembler<'a> {
         mut it: impl Iterator<Item = Word>,
     ) -> Result<(&Context<'a>, RelativePos), Error> {
         let mut context = self.context.as_mut();
-        context.as_mut().map(|context| context.blob_queue.pop_front());
+        context
+            .as_mut()
+            .map(|context| context.blob_queue.pop_front());
 
         if context.is_none() || context.as_ref().unwrap().blob_queue.front().is_none() {
             return Ok((
