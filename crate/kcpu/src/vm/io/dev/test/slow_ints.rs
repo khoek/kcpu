@@ -39,11 +39,11 @@ impl SinglePortDevice for SlowInts {
     }
 
     fn write(&mut self, val: Word) -> HalfcycleCount {
-        if val & SlowInts::MASK_NMI_FLAG == 0 {
+        if val & SlowInts::MASK_NMI_FLAG != 0 {
             self.count[0] = (val & !SlowInts::MASK_NMI_FLAG) + 1;
         }
 
-        if val & SlowInts::MASK_NMI_FLAG != 0 {
+        if val & SlowInts::MASK_NMI_FLAG == 0 {
             self.count[1] = (val & !SlowInts::MASK_NMI_FLAG) + 1;
         }
 
