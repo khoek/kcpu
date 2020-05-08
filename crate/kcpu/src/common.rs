@@ -15,12 +15,6 @@ pub fn eq_ignore_case(a: &str, b: &str) -> bool {
         .eq(b.chars().map(std::primitive::char::to_lowercase).flatten())
 }
 
-pub fn slice_pairwise_unordered<T>(v: &[T]) -> impl Iterator<Item = (&T, &T)> {
-    iproduct!(0..v.len(), 0..v.len())
-        .filter(|(i, j)| i != j)
-        .map(move |(i, j)| (&v[i], &v[j]))
-}
-
 pub fn slice_pairwise_ordered<T>(v: &[T]) -> impl Iterator<Item = (&T, &T)> {
     iproduct!(0..v.len(), 0..v.len())
         .filter(|(i, j)| j > i)
@@ -35,22 +29,4 @@ pub fn unwrap_at_most_one<T>(mut it: impl Iterator<Item = T>) -> Option<T> {
 
 pub fn unwrap_singleton<T>(it: impl Iterator<Item = T>) -> T {
     unwrap_at_most_one(it).unwrap()
-}
-
-pub fn find_is_unique<T, F>(it: impl Iterator<Item = T>, mut f: F) -> Option<(T, bool)>
-where
-    F: FnMut(&T) -> bool,
-{
-    let (candidate, found_multiple) = it.fold(
-        (None, false),
-        |(mut candidate, mut found_multiple), next| {
-            if f(&next) {
-                found_multiple = candidate.is_some();
-                candidate = Some(next);
-            }
-            (candidate, found_multiple)
-        },
-    );
-
-    candidate.map(|cand| (cand, !found_multiple))
 }
