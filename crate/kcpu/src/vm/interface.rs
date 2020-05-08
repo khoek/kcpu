@@ -56,10 +56,6 @@ impl PicIrq {
 }
 
 pub trait Pic {
-    // RUSTFIX remove this once everything implements display, and in the case just
-    // implement Display for Handle<Pic>
-    fn dump_registers(&self);
-
     fn is_pint_active(&self) -> bool;
     fn is_pnmi_active(&self) -> bool;
 

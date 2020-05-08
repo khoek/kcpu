@@ -106,7 +106,7 @@ pub struct Family {
     pub variants: Vec<String>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct Alias {
     pub name: String,
     pub arg_count: usize,
@@ -115,14 +115,14 @@ pub struct Alias {
 
 pub type ArgIdx = usize;
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub enum Slot {
     Const(Const),
     Reg(RegRef),
     Arg(ArgIdx),
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct Virtual {
     pub opclass: OpClass,
     pub slots: EnumMap<IU, Option<Slot>>,
@@ -169,7 +169,7 @@ impl Display for RegRef {
 impl Display for Const {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Const::Word(w) => write!(f, "${:#04X}", w),
+            Const::Word(w) => write!(f, "${:#06X}", w),
             Const::Byte(b, half) => write!(f, "{}$0x{}", half, b),
         }
     }
@@ -401,11 +401,6 @@ impl Alias {
     pub fn infer_type(&self) -> Vec<ArgKind> {
         Self::infer_type_from_virtuals(&self.vinsts)
     }
-
-    // RUSTFIX this function re-infers the type, do we reall need it?
-    // pub fn matches<T>(&self, args: &[Arg<Tag>]) -> bool {
-    //     self.infer_type().iter().zip(args.iter()).all(|(kind, arg)| kind.matches(arg))
-    // }
 
     pub fn instantiate<Tag: Clone>(&self, args: &[Arg<Tag>]) -> Option<Vec<Blob<Tag>>> {
         // We need to check the argument list length against our internally stored argument count,

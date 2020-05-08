@@ -10,4 +10,4 @@ mod reg;
 
 pub use instance::{DebugExecInfo, Instance, State};
 pub use mem::{Bank, BankType};
-pub use types::Logger;
+pub use types::LogLevel;

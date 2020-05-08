@@ -2,7 +2,6 @@ use super::lang::Lang;
 use crate::assembler::model::{
     Alias, Arg, Const, ConstBinding, Family, ResolvedArg, ResolvedBlob, Slot, Virtual,
 };
-use crate::common;
 use crate::spec::{
     types::{
         hw::{Inst, Word, IU},
@@ -11,20 +10,21 @@ use crate::spec::{
     ucode::UCode,
 };
 use enum_map::EnumMap;
-use std::{collections::VecDeque, fmt::Display, iter::Peekable};
+use std::{cmp::Ordering, collections::VecDeque, fmt::Display};
 
 #[derive(Debug)]
 pub enum Error {
     InvalidOpcode(Word),
     UnexpectedEndOfStream,
-    NoSuitableAlias(Vec<String>),
-    CouldNotResolveAliasArgs(String, Vec<Option<ResolvedArg>>),
+    NoSuitableAlias(Vec<String>, Vec<String>),
+    CouldNotResolveAliasArgs(String, usize),
+    AmbiguousAliasSpecificity(String, String),
 }
 
 impl<'a> Display for Error {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Error::InvalidOpcode(raw) => write!(f, "Invalid Opcode: {:#04X}", raw),
+            Error::InvalidOpcode(raw) => write!(f, "Invalid Opcode: {:#06X}", raw),
             Error::UnexpectedEndOfStream => write!(f, "Unexpectedly encountered end of stream"),
             // RUSTFIX nice messages for these next two:
             Error::CouldNotResolveAliasArgs(alias, args) => write!(
@@ -32,7 +32,16 @@ impl<'a> Display for Error {
                 "Could not resolve alias '{}' arguments: {:#?}",
                 alias, args
             ),
-            Error::NoSuitableAlias(blobs) => write!(f, "No suitable alias blobs: {:#?}", blobs),
+            Error::NoSuitableAlias(blobs, former_candidates) => write!(
+                f,
+                "No suitable alias for blobs: {:#?}\nformer candidates were: {:#?}",
+                blobs, former_candidates
+            ),
+            Error::AmbiguousAliasSpecificity(a1, a2) => write!(
+                f,
+                "Aliases '{}' and '{}' are incompariable w.r.t. the specificity partial order",
+                a1, a2,
+            ),
         }
     }
 }
@@ -56,7 +65,7 @@ pub fn next_resolved_blob<'a>(
     let blob = ResolvedBlob::new(inst, data);
 
     {
-        // RUSTFIX (Only consider:) make this a debug assertion, or just make a whole bunch of tests which check this?
+        // BUGCHECK Consider making this whole thing a debug assertion.
         assert_eq!(
             blob.to_words(),
             std::iter::once(raw_inst)
@@ -106,6 +115,82 @@ pub fn disassemble_blob<'a>(
     Ok(DisassembledBlob { blob, idef, args })
 }
 
+#[derive(Debug, Clone)]
+struct PartialDisassembledAlias<'a> {
+    alias: &'a Alias,
+    args: Vec<Option<ResolvedArg>>,
+}
+
+impl<'a> Display for PartialDisassembledAlias<'a> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.alias.name)?;
+        for arg in &self.args {
+            match arg {
+                Some(arg) => write!(f, " {}", arg)?,
+                None => write!(f, " <unresolved>")?,
+            }
+        }
+        Ok(())
+    }
+}
+
+impl<'a> PartialDisassembledAlias<'a> {
+    fn new(alias: &'a Alias) -> Self {
+        Self {
+            alias,
+            args: vec![None; alias.arg_count],
+        }
+    }
+
+    fn unwrap(self) -> DisassembledAlias<'a> {
+        DisassembledAlias {
+            alias: self.alias,
+            args: self.args.into_iter().map(|arg| arg.unwrap()).collect(),
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct DisassembledAlias<'a> {
+    alias: &'a Alias,
+    args: Vec<ResolvedArg>,
+}
+
+impl<'a> Display for DisassembledAlias<'a> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.to_partial())
+    }
+}
+
+impl<'a> DisassembledAlias<'a> {
+    fn to_partial(&self) -> PartialDisassembledAlias<'a> {
+        PartialDisassembledAlias {
+            alias: self.alias,
+            args: self.args.iter().cloned().map(Option::Some).collect(),
+        }
+    }
+}
+
+impl<'a> DisassembledAlias<'a> {
+    fn specificity_score(&self) -> (usize, isize) {
+        (self.alias.vinsts.len(), -(self.alias.arg_count as isize))
+    }
+}
+
+/// Partial ordering on `Alias`es using `specificity_score()`, designed to find
+/// aliases which are more specific in their semantics than others. We compare
+/// `specificity_score()`s and return if they are not equal, otherwise we `None`
+/// unless we literally have `self == other`.
+impl<'a> PartialOrd for DisassembledAlias<'a> {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        match self.specificity_score().cmp(&other.specificity_score()) {
+            Ordering::Equal if self == other => Some(Ordering::Equal),
+            Ordering::Equal => None,
+            ord => Some(ord),
+        }
+    }
+}
+
 // Returns `false` if we found a contradiction, so reconstruction is not possible (it doesn't even make sense).
 fn reconstruct_args_using_blob_partials(
     args: &mut Vec<Option<ResolvedArg>>,
@@ -119,41 +204,73 @@ fn reconstruct_args_using_blob_partials(
     // The opclass check we have just performed means that we just need to check
     // the `Slot::Arg`s in `virt`---all others are automatically known to be
     // compatible.
-    for slot in virt.slots {
-        if let (iu, Some(Slot::Arg(idx))) = slot {
-            match &args[idx] {
-                Some(var) => {
-                    if !blob.args[iu]
-                        .as_ref()
-                        .map(|arg| arg == var)
-                        .unwrap_or(false)
-                    {
-                        return false;
-                    }
-                }
+    // RUSTFIX THIS COMMENT IS WRONG.
+    //
+    // FIXME FIXME FIXME
+    //
+    for (iu, slot) in virt.slots {
+        match (&blob.args[iu], slot) {
+            (Some(arg), Some(Slot::Arg(idx))) => match &args[idx] {
+                Some(blob_arg) if arg != blob_arg => return false,
+                Some(_) => (),
                 None => args[idx] = blob.args[iu].clone(),
-            }
+            },
+            // If the slot is not `Slot::Arg` then it is bound, so it is
+            // safe to `unwrap()` after `Slot::to_arg()`.
+            (Some(arg), Some(slot)) if slot.to_arg().unwrap() != *arg => return false,
+            (None, None) => (),
+            _ => panic!(
+                "argument disagree for same opcode: '{:?}' vs '{:?}'",
+                slot, blob.args[iu]
+            ),
         }
     }
 
     true
 }
 
-#[derive(Debug)]
-pub struct DisassembledAlias<'a> {
-    alias: &'a Alias,
-    args: Vec<ResolvedArg>,
-    blobs: Vec<DisassembledBlob<'a>>,
-}
+/// Returns the number of `PartialDisassembledAlias` which have not been ruled out nor matched.
+fn resolve_partials_against_blob<'a>(
+    mut matches: Option<&mut Vec<DisassembledAlias<'a>>>,
+    candidates: &mut Vec<Option<PartialDisassembledAlias<'a>>>,
+    idx: usize,
+    blob: &DisassembledBlob,
+) -> Result<usize, Error> {
+    // RUSTFIX change `candidates` to use a `LinkedList` with `drain_filter` when it arrives.
 
-impl<'a> Display for DisassembledAlias<'a> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.alias.name)?;
-        for arg in &self.args {
-            write!(f, " {}", arg)?;
+    let mut remaining_unresolved = 0;
+    for cand in candidates {
+        if let Some(mut partial) = cand.take() {
+            match partial.alias.vinsts.get(idx) {
+                Some(virt) => {
+                    if reconstruct_args_using_blob_partials(&mut partial.args, virt, blob) {
+                        remaining_unresolved += 1;
+                        // Put the option back
+                        *cand = Some(partial);
+                    }
+                }
+                None => {
+                    {
+                        // BUGCHECK Consider making this whole thing a debug assertion.
+                        for i in 0..partial.args.len() {
+                            if partial.args[i].is_none() {
+                                return Err(Error::CouldNotResolveAliasArgs(
+                                    partial.to_string(),
+                                    i,
+                                ));
+                            }
+                        }
+                    }
+
+                    if let Some(matches) = matches.as_mut() {
+                        matches.push(partial.unwrap());
+                    }
+                }
+            }
         }
-        Ok(())
     }
+
+    Ok(remaining_unresolved)
 }
 
 /// Statically disassemble the given stream of `Word`s from main memory, taking ownership
@@ -163,93 +280,104 @@ impl<'a> Display for DisassembledAlias<'a> {
 /// Returns a `DisassembledAlias`, giving the `Alias` which appears to correspond to the
 /// current set of incoming instructions
 ///
-/// Produces errors for invalid opcodes, etc.
-// Does not consume the iterator so long as it uses the `Peekable`-ness
+/// Produces errors for invalid opcodes, etc. Consumes the iterator (we have no idea how
+/// far we'll need to read the instruction stream before we are confident in our chosen
+/// alias).
 pub fn disassemble_alias<'a>(
-    it: &mut Peekable<impl Iterator<Item = Result<DisassembledBlob<'a>, Error>>>,
-) -> Result<DisassembledAlias<'a>, Error> {
+    mut it: impl Iterator<Item = Result<DisassembledBlob<'a>, Error>>,
+) -> Result<(DisassembledAlias<'a>, Vec<DisassembledBlob<'a>>), Error> {
     let mut blobs = Vec::new();
+    let mut matches = Vec::new();
 
     // RUSTFIX use a `LinkedList` with `drain_filter` when it arrives.
     // FIXME EVIL? encapsulation breaking (pass this data in, and all families and aliases have an attached marker to it?)
     let mut candidates = Lang::get()
         .alias_iter()
-        .map(|alias| Some((alias, vec![None; alias.arg_count])))
+        .map(PartialDisassembledAlias::new)
+        .map(Some)
         .collect::<Vec<_>>();
 
-    let mut idx = 0;
-    let (alias, args) = loop {
+    loop {
         let new_blob = it.next().ok_or(Error::UnexpectedEndOfStream)??;
-        for cand in &mut candidates {
-            if let Some((alias, args)) = cand {
-                let virt = alias.vinsts.get(idx);
-                if virt.is_none()
-                    || !reconstruct_args_using_blob_partials(args, virt.unwrap(), &new_blob)
-                {
-                    *cand = None;
-                }
-            }
-        }
+        let remaining = resolve_partials_against_blob(
+            Some(&mut matches),
+            &mut candidates,
+            blobs.len(),
+            &new_blob,
+        )?;
         blobs.push(new_blob);
-        idx += 1;
 
-        // RUSTFIX remove!
-        // println!("candidates:");
-        // for cand in &candidates {
-        //     if let Some(cand) = cand {
-        //         print!("{}, ", cand.0.name);
-        //     }
-        // }
-        // println!();
-
-        match common::find_is_unique(candidates.iter_mut(), |cand| cand.is_some()) {
-            // RUSTFIX nicer formating for the blobs, print their disassembled instructions!
-            None => Err(Error::NoSuitableAlias(
-                blobs.iter().map(ToString::to_string).collect(),
-            ))?,
-            Some((cand, true)) => break cand.take().unwrap(),
-            Some((_, false)) => (),
+        if remaining == 0 {
+            break;
         }
-    };
-
-    let args_err = args.clone();
-    let args = args
-        .into_iter()
-        .map(|arg| {
-            arg.ok_or_else(|| Error::CouldNotResolveAliasArgs(alias.name.clone(), args_err.clone()))
-        })
-        .collect::<Result<Vec<_>, _>>()?;
-
-    {
-        // for b in alias.instantiate(&args).unwrap() {
-        //     println!("A {:#04X} {:?}", b.inst.encode(), b.binding);
-        // }
-
-        // for b in blobs.iter().map(|dblob| &dblob.blob) {
-        //     println!("B {:#04X} {:?}", b.inst.encode(), b.binding);
-        // }
-
-        // let aa = alias.instantiate(&args).unwrap();
-        // let l1 =  aa.iter().next().unwrap();
-        // let l2 = blobs.iter().map(|dblob| &dblob.blob).next().unwrap();
-
-        // println!("A {:#04X} {:?}", l1.inst.encode(), l1.binding);
-        // println!("B {:#04X} {:?}", l2.inst.encode(), l2.binding);
-
-        // println!("C {:#?} {:#?} {:#?}", l1.inst,  l2.inst, Inst::decode(l1.inst.encode()));
-
-        // Verify that when the alias we have identified is instantiated with the resolved arguments we
-        // recover the original list of `ResolvedBlob`s.
-
-        // RUSTFIX (Only consider:) make this a debug assertion, or just make a whole bunch of tests which check this?
-        assert!(alias
-            .instantiate(&args)
-            .unwrap()
-            .iter()
-            .eq(blobs.iter().map(|dblob| &dblob.blob)));
     }
 
-    Ok(DisassembledAlias { alias, args, blobs })
+    if matches.len() == 0 {
+        // Recalulate the alias candidate list excluding las `new_blob` we read,
+        // and generate a formatted error.
+        candidates = Lang::get()
+            .alias_iter()
+            .map(PartialDisassembledAlias::new)
+            .map(Some)
+            .collect::<Vec<_>>();
+        for idx in 0..blobs.len() - 1 {
+            resolve_partials_against_blob(None, &mut candidates, idx, &blobs[idx])?;
+        }
+
+        return Err(Error::NoSuitableAlias(
+            blobs.iter().map(ToString::to_string).collect(),
+            candidates
+                .into_iter()
+                .filter_map(|x| x)
+                .map(|partial| partial.alias.name.clone())
+                .collect(),
+        ));
+    }
+
+    let disasm = matches
+        .into_iter()
+        .try_fold(None, |best: Option<DisassembledAlias>, next| {
+            Ok(match best {
+                None => Some(next),
+                Some(best) => {
+                    let cmp = best
+                        .partial_cmp(&next)
+                        .ok_or(Error::AmbiguousAliasSpecificity(
+                            best.to_string(),
+                            next.to_string(),
+                        ))?;
+                    Some(if cmp == Ordering::Greater { best } else { next })
+                }
+            })
+        })?
+        .unwrap();
+
+    // The `blobs` list may contain more `ResolvedBlob`s then actually match the finally-selected
+    // `DisassembledAlias`---consider the case where `matches` consists of just 1 blob, thus
+    // containing the single finally-selected alias, but other aliases of length 2 matched the first
+    // blob read, so we read one more blob and then happened to rule all other aliases out.
+    //
+    // Thus, we drop the blobs at the end of the blobs list which aren't part of `disasm`.
+    blobs.resize_with(disasm.alias.vinsts.len(), || unreachable!());
+
+    {
+        // BUGCHECK Consider making this whole thing a debug assertion.
+        if !disasm
+            .alias
+            .instantiate(&disasm.args)
+            .unwrap()
+            .iter()
+            .eq(blobs.iter().map(|dblob| &dblob.blob))
+        {
+            panic!(
+                "re-instantiation disagree, disassembled:\n\t{}\nfrom:\n\t{:#?}",
+                disasm,
+                blobs.iter().map(ToString::to_string).collect::<Vec<_>>()
+            );
+        }
+    }
+
+    Ok((disasm, blobs))
 }
 
 /// Try to find the "most general" `Family` which includes this `Alias`, which will obviously be imperfect.
@@ -267,22 +395,13 @@ pub fn family_reverse_lookup(alias: &Alias) -> &Family {
 
 /// Container for stateful version of `disassemble_alias`, which keeps track of when we are "inside"
 /// a multiple-instruction `Alias`, so that the computed disassembly doesn't change (and remains correct).
-/// Should have an API which returns the current `Alias` and current instruction, so that when we are
-/// inside a multi-instruction alias we can show this in a pretty print (as a `DisassemblyContext`).
-///
-/// RUSTFIX How are we going to deal with writes over the code we have already disassembled?
-/// I think we should store the pre-disassembled raw opcodes and check at each iteration (eating
-/// at each stage a brand new iterator pointing to the current instruction) that they have not
-/// changed. As a first measure we could just panic if they change, and later if we need we can
-/// just recompute the disassemble when this is detected.
-///
-/// In particular, the `SteppingDissasembler` doesn't need to know anything about current RIP.
+/// The `DisassemblyContext` stores the current `Alias` and current instruction, so that when we are
+/// inside a multi-instruction alias we can show this in a pretty print.
 #[derive(Debug)]
 pub struct SteppingDisassembler<'a> {
-    context: Option<Context<'a>>,
+    context: Context<'a>,
 }
 
-// RUSTFIX implement a nice `Display` for this struct, which displays the current sub-instruction
 #[derive(Debug)]
 pub struct Context<'a> {
     family: &'a str,
@@ -301,27 +420,22 @@ impl<'a> Display for Context<'a> {
     }
 }
 
-#[derive(Debug)]
-pub enum RelativePos {
-    AliasBoundary,
-    InsideAlias,
-}
-
 impl<'a> SteppingDisassembler<'a> {
-    pub fn new() -> Self {
-        SteppingDisassembler { context: None }
+    pub fn new(it: &mut impl Iterator<Item = Word>) -> Result<Self, Error> {
+        Ok(Self {
+            context: Self::compute_context(None, it)?,
+        })
     }
 
-    fn recompute_context(
-        &mut self,
+    fn compute_context(
         first_blob: Option<DisassembledBlob<'a>>,
         it: &mut impl Iterator<Item = Word>,
-    ) -> Result<&Context<'a>, Error> {
+    ) -> Result<Context<'a>, Error> {
         let mut it = it.peekable();
 
         // Recompute the current disassembly context, assuming that the first word from `it`
         // is the beginning of an `Alias`.
-        let blobs = first_blob
+        let blobs_it = first_blob
             .map(Result::Ok)
             .into_iter()
             .chain(std::iter::from_fn(move || {
@@ -332,51 +446,39 @@ impl<'a> SteppingDisassembler<'a> {
                 }
             }));
 
-        let alias = disassemble_alias(&mut blobs.peekable())?;
-        let family = &family_reverse_lookup(alias.alias).name;
-        let blob_queue: VecDeque<_> = alias.blobs.iter().cloned().collect();
-
-        self.context = Some(Context {
-            family,
+        let (alias, blobs) = disassemble_alias(blobs_it)?;
+        Ok(Context {
+            family: &family_reverse_lookup(alias.alias).name,
             alias,
-            inst_count: blob_queue.len(),
-            blob_queue,
-        });
-
-        Ok(self.context.as_ref().unwrap())
+            inst_count: blobs.len(),
+            blob_queue: VecDeque::from(blobs),
+        })
     }
 
-    pub fn step(
-        &mut self,
-        mut it: impl Iterator<Item = Word>,
-    ) -> Result<(&Context<'a>, RelativePos), Error> {
-        let mut context = self.context.as_mut();
-        context
-            .as_mut()
-            .map(|context| context.blob_queue.pop_front());
-
-        if context.is_none() || context.as_ref().unwrap().blob_queue.front().is_none() {
-            return Ok((
-                self.recompute_context(None, &mut it)?,
-                RelativePos::AliasBoundary,
-            ));
+    pub fn step(&mut self, mut it: impl Iterator<Item = Word>) -> Result<(), Error> {
+        match self.context.blob_queue.pop_front() {
+            None => {
+                self.context = SteppingDisassembler::compute_context(None, &mut it)?;
+                return Ok(());
+            }
+            Some(front_blob) => {
+                // Check that the current blob matches the expected on from the top of the `blob_queue`.
+                // If not, recompute everything (calling `recompute_context`), but don't forget that we've already read a `ResolvedBlob` so we'll need
+                // to pass that to some version of `recompute_context` and consequenrly `disassemble_alias`.
+                let blob = disassemble_blob(&mut it)?;
+                if blob.blob.to_words() == front_blob.blob.to_words() {
+                    Ok(())
+                } else {
+                    // In principle (e.g. if the code itself was overwritten, or we jumped) this could happen and we would need
+                    // to recalculate, but for now let's just panic to find likely bugs.
+                    panic!("The blob cache was invalidated, did we jump/or did the code itself change? (otherwise, this is a bug)");
+                }
+            }
         }
+    }
 
-        let front_blob = context.unwrap().blob_queue.pop_front().unwrap();
-
-        // Check that the current blob matches the expected on from the top of the `blob_queue`, if so pop it.
-        // If not, recompute everything (calling `recompute_context`), but don't forget that we've already read a `ResolvedBlob` so we'll need
-        // to pass that to some version of `recompute_context` and consequenrly `disassemble_alias`.
-
-        let blob = disassemble_blob(&mut it)?;
-
-        if blob.blob.to_words() == front_blob.blob.to_words() {
-            Ok((self.context.as_ref().unwrap(), RelativePos::InsideAlias))
-        } else {
-            // In principle (e.g. if the code itself was overwritten, or we jumped) this could happen and we would need
-            // to recalculate, but for now let's just panic to find likely bugs.
-            panic!("The blob cache was invalidated, did we jump/or did the code itself change? (otherwise, this is a bug)");
-        }
+    pub fn context(&self) -> &Context<'a> {
+        &self.context
     }
 }
 

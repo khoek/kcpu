@@ -1,39 +1,46 @@
 use enum_map::EnumMap;
-use std::num::Wrapping;
+use std::{fmt::Display, num::Wrapping};
 
 use super::{interface, types::*};
 use crate::spec::{defs::usig, types::hw::*};
 
 pub struct Reg<'a> {
-    logger: &'a Logger,
+    log_level: &'a LogLevel,
     regs: EnumMap<PReg, Word>,
 }
 
-impl<'a> Reg<'a> {
-    pub fn new(logger: &Logger) -> Reg {
-        Reg {
-            logger,
-            regs: EnumMap::new(),
-        }
-    }
-
-    pub fn dump_registers(&self) {
-        println!("RID: {:#04X}", self.regs[PReg::ID]);
-        println!(
-            "RA:  {:#04X} RB:  {:#04X}",
+impl<'a> Display for Reg<'a> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        writeln!(f, "RID: {:#06X}", self.regs[PReg::ID])?;
+        writeln!(
+            f,
+            "RA:  {:#06X} RB:  {:#06X}",
             self.regs[PReg::A],
             self.regs[PReg::B]
-        );
-        println!(
-            "RC:  {:#04X} RD:  {:#04X}",
+        )?;
+        writeln!(
+            f,
+            "RC:  {:#06X} RD:  {:#06X}",
             self.regs[PReg::C],
             self.regs[PReg::D]
-        );
-        println!(
-            "RSP: {:#04X} RBP: {:#04X}",
+        )?;
+        writeln!(
+            f,
+            "RSP: {:#06X} RBP: {:#06X}",
             self.regs[PReg::SP],
             self.regs[PReg::BP]
-        );
+        )?;
+
+        Ok(())
+    }
+}
+
+impl<'a> Reg<'a> {
+    pub fn new(log_level: &LogLevel) -> Reg {
+        Reg {
+            log_level,
+            regs: EnumMap::new(),
+        }
     }
 
     const fn should_perform_rsp_early_inc(ui: UInst) -> bool {
@@ -46,7 +53,7 @@ impl<'a> Reg<'a> {
 
     fn maybe_assign(&self, iunum: u8, s: &mut BusState, iu: u16, r: PReg) {
         if usig::rctrl_iu_is_en(iu) && usig::rctrl_iu_is_output(iu) {
-            if self.logger.dump_bus {
+            if self.log_level.internals {
                 println!("  iu{}: {} <- {}:", iunum, usig::rctrl_iu_get_bus(iu), r);
             }
             s.assign(usig::rctrl_iu_get_bus(iu), self.regs[r]);
@@ -58,7 +65,7 @@ impl<'a> Reg<'a> {
 
     fn maybe_read(&mut self, iunum: u8, s: &BusState, iu: u16, r: PReg) {
         if usig::rctrl_iu_is_en(iu) && usig::rctrl_iu_is_input(iu) {
-            if self.logger.dump_bus {
+            if self.log_level.internals {
                 println!("  iu{}: {} -> {}:", iunum, usig::rctrl_iu_get_bus(iu), r);
             }
             self.regs[r] = s.read(usig::rctrl_iu_get_bus(iu));
@@ -82,7 +89,7 @@ impl<'a> Reg<'a> {
         register (after passing through the IU machinery) if the O line
         is also asserted.
     */
-    // fn filter_simultaneous_i_and_o(logger: &vm_logger, is: iu_state) -> iu_state {
+    // fn filter_simultaneous_i_and_o(log_level: &vm_log_level, is: iu_state) -> iu_state {
     //     for(uint i = 0; i < 3; i++) {
     //         if(!rctrl_iu_is_en(is.dec[i])) {
     //             continue;
@@ -97,7 +104,7 @@ impl<'a> Reg<'a> {
     //                 bool has_i = usig::rctrl_iu_is_input(is.dec[i]) || usig::rctrl_iu_is_input(is.dec[j]);
     //                 bool has_o = usig::rctrl_iu_is_output(is.dec[i]) || usig::rctrl_iu_is_output(is.dec[j]);
     //                 if(has_i && has_o) {
-    //                     if(logger.dump_bus) println!("filtering simultaneous i:%d and o:%d", usig::rctrl_iu_is_input(is.dec[i]) ? i : j, usig::rctrl_iu_is_input(is.dec[i]) ? j : i);
+    //                     if(log_level.dump_bus) println!("filtering simultaneous i:%d and o:%d", usig::rctrl_iu_is_input(is.dec[i]) ? i : j, usig::rctrl_iu_is_input(is.dec[i]) ? j : i);
     //                     is.dec[rctrl_iu_is_input(is.dec[i]) ? i : j] = 0;
     //                 }
     //             }
@@ -118,7 +125,7 @@ impl<'a> Reg<'a> {
         );
 
         // RUSTFIX re-enable
-        // is = filter_simultaneous_i_and_o(logger, is);
+        // is = filter_simultaneous_i_and_o(log_level, is);
 
         self.maybe_assign(1, s, dec1, iu1);
         self.maybe_assign(2, s, dec2, iu2);
@@ -136,7 +143,7 @@ impl<'a> Reg<'a> {
         );
 
         // RUSTFIX re-enable
-        // is = filter_simultaneous_i_and_o(logger, is);
+        // is = filter_simultaneous_i_and_o(log_level, is);
 
         self.maybe_read(1, s, dec1, iu1);
         self.maybe_read(2, s, dec2, iu2);

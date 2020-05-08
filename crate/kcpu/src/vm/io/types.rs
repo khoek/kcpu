@@ -1,7 +1,7 @@
 use super::super::interface;
 use crate::spec::types::hw::*;
 use std::cell::RefCell;
-use std::rc::Rc;
+use std::{fmt::Display, rc::Rc};
 
 pub(in crate::vm::io) type HalfcycleCount = u32;
 
@@ -68,11 +68,14 @@ impl<T: SinglePortDevice> Device for T {
 }
 
 // RUSTFIX macro-ify this concept?
-pub struct Handle<T>
-where
-    T: Device + ?Sized,
-{
-    pub(in crate::vm::io) rc: Rc<RefCell<T>>,
+pub struct Handle<T: Device + ?Sized> {
+    pub rc: Rc<RefCell<T>>,
+}
+
+impl<T: Device + ?Sized + Display> Display for Handle<T> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.rc.borrow())
+    }
 }
 
 impl<T: Device + ?Sized> Handle<T> {

@@ -6,21 +6,25 @@ use super::{
     types::*,
 };
 use crate::spec::{defs::usig, types::hw::*};
+use std::fmt::Display;
 
 pub struct Ioc<'a> {
-    //RUSTFIX implement
     manager: Manager<'a>,
     pic: Handle<Pic>,
-    // id_video: io::video,
+}
 
-    // id_slow_registers: io::slow_registers,
-    // id_jumpers: io::jumpers,
-    // id_slow_ints: io::slow_ints,
+impl<'a> Display for Ioc<'a> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        writeln!(f, "{}", self.manager)?;
+        write!(f, "{}", self.pic)?;
+
+        Ok(())
+    }
 }
 
 impl<'a> Ioc<'a> {
-    pub fn new(logger: &'a Logger) -> Self {
-        let mut manager = Manager::new(logger);
+    pub fn new(log_level: &'a LogLevel) -> Self {
+        let mut manager = Manager::new(log_level);
         let pic = manager.add_device(Pic::new());
 
         manager.add_device(Uid::new());
@@ -46,11 +50,6 @@ impl<'a> Ioc<'a> {
 
     pub fn get_pic(&self) -> &dyn interface::Pic {
         &self.pic
-    }
-
-    pub fn dump_registers(&self) {
-        self.manager.dump_registers();
-        self.get_pic().dump_registers();
     }
 
     pub fn clock_outputs(&mut self, ui: UInst, s: &mut BusState, ctl: &dyn interface::Ctl) {

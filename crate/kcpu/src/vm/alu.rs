@@ -3,6 +3,7 @@ use std::{fmt, num::Wrapping};
 
 use super::types::*;
 use crate::{spec::defs::usig, spec::types::hw::*};
+use fmt::Display;
 
 bitflags! {
     #[derive(Default)]
@@ -15,7 +16,7 @@ bitflags! {
 }
 
 #[rustfmt::skip]
-impl fmt::Display for Flags {
+impl Display for Flags {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}", if self.contains(Flags::CARRY) { 'C' } else { 'c' })?;
         write!(f, "{}", if self.contains(Flags::N_ZERO) { 'z' } else { 'Z' })?;
@@ -34,6 +35,12 @@ impl From<Flags> for Word {
 struct OpResult {
     val: u16,
     flags: Flags,
+}
+
+impl Display for OpResult {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "OpResult({:#06X}:{:#06X})", self.val, self.flags)
+    }
 }
 
 impl Default for OpResult {
@@ -112,7 +119,7 @@ struct Op<'a> {
     func: OpFunc,
 }
 
-impl<'a> fmt::Display for Op<'a> {
+impl<'a> Display for Op<'a> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "Op({})", self.name)
     }
@@ -135,14 +142,14 @@ static OPS: [Op; 8] = [
     // RUSTFIX FIXME FIXME FIXME CHECK CHECK CHEK
     // HARDWARE NOTE IN THE RUST IMPLEMENTATION WE added "(a as u16)" (used to be just "a") and similarly for "b" in the calculatiuon of the carry val below, due to a
     // sign extension-caused overflow. CHECK THAT THE ARDUINO CODE VERIFIES THE HARDWARE OBEYS THIS, AND FIX THE C++ VERISON AS WELL.
-    Op::new(usig::ACTRL_MODE_ADD ,  "+", OpFunc::Arithmetic(|a, b| ((Wrapping(a) + Wrapping(b)).0, ((a as u16) as u32) + ((b as u16) as u32)))),
+    Op::new(usig::ACTRL_MODE_ADD , "+" , OpFunc::Arithmetic(|a, b| ((Wrapping(a) + Wrapping(b)).0, ((a as u16) as u32) + ((b as u16) as u32)))),
     // RUSTFIX FIXME FIXME FIXME CHECK CHECK CHEK
     // HARDWARE NOTE IN THE RUST IMPLEMENTATION WE added "(b as u16)" (used to be just "b") in the calculatiuon of the carry val below, due to a
     // sign extension overflow. CHECK THAT THE ARDUINO CODE VERIFIES THE HARDWARE OBEYS THIS, AND FIX THE C++ VERISON AS WELL.
-    Op::new(usig::ACTRL_MODE_SUB ,  "-", OpFunc::Arithmetic(|a, b| ((Wrapping(b) - Wrapping(a)).0, (((!a as u16) as u32) + 1) + ((b as u16) as u32)))),
-    Op::new(usig::ACTRL_MODE_AND ,  "&", OpFunc::Logic(|a, b| (a & b))),
-    Op::new(usig::ACTRL_MODE_OR  ,  "|", OpFunc::Logic(|a, b| (a | b))),
-    Op::new(usig::ACTRL_MODE_XOR ,  "^", OpFunc::Logic(|a, b| (a ^ b))),
+    Op::new(usig::ACTRL_MODE_SUB , "-" , OpFunc::Arithmetic(|a, b| ((Wrapping(b) - Wrapping(a)).0, (((!a as u16) as u32) + 1) + ((b as u16) as u32)))),
+    Op::new(usig::ACTRL_MODE_AND , "&" , OpFunc::Logic(|a, b| (a & b))),
+    Op::new(usig::ACTRL_MODE_OR  , "|" , OpFunc::Logic(|a, b| (a | b))),
+    Op::new(usig::ACTRL_MODE_XOR , "^" , OpFunc::Logic(|a, b| (a ^ b))),
     Op::new(usig::ACTRL_MODE_LSFT, "<<", OpFunc::Shift(|a, _| (a << 1, a & 0x8000 != 0))),
     Op::new(usig::ACTRL_MODE_RSFT, ">>", OpFunc::Shift(|a, _| (a >> 1, a & 0x0001 != 0))),
     // Not implemented in hardware:
@@ -151,25 +158,25 @@ static OPS: [Op; 8] = [
 ];
 
 pub struct Alu<'a> {
-    logger: &'a Logger,
+    log_level: &'a LogLevel,
     result: OpResult,
 }
 
-impl<'a> Alu<'a> {
-    pub fn new(logger: &'a Logger) -> Self {
-        Self {
-            logger,
-            result: Default::default(),
-        }
+impl<'a> Display for Alu<'a> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "ADATA: {:#06X} AFLAGS: {}",
+            self.result.val, self.result.flags
+        )
     }
+}
 
-    // RUSTFIX, remove this, just implement display for the Alu.
-    pub fn dump_registers(&self) {
-        if self.logger.dump_registers {
-            println!(
-                "ADATA: {:#04X} AFLAGS: {}",
-                self.result.val, self.result.flags
-            );
+impl<'a> Alu<'a> {
+    pub fn new(log_level: &'a LogLevel) -> Self {
+        Self {
+            log_level,
+            result: Default::default(),
         }
     }
 
@@ -188,8 +195,15 @@ impl<'a> Alu<'a> {
     pub fn clock_inputs(&mut self, ui: UInst, s: &BusState) {
         if ui & usig::ACTRL_INPUT_EN != 0 {
             let mode = usig::decode_actrl_mode(ui);
-            assert!(mode == usig::decode_actrl_mode(OPS[mode as usize].ui_mode));
-            self.result = OPS[mode as usize].func.eval(s.read(Bus::A), s.read(Bus::B));
+            let op = &OPS[mode as usize];
+            assert!(mode == usig::decode_actrl_mode(op.ui_mode));
+
+            let (bus_a, bus_b) = (s.read(Bus::A), s.read(Bus::B));
+            self.result = op.func.eval(bus_a, bus_b);
+
+            if self.log_level.internals {
+                println!("{}({:#06X}, {:#06X}) -> {}", op, bus_a, bus_b, self.result);
+            }
         }
     }
 }

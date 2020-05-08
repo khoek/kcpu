@@ -2,6 +2,7 @@ use super::super::types::*;
 use crate::spec::types::hw::*;
 use crate::vm::interface;
 use bitintr::Tzcnt;
+use std::fmt::Display;
 
 // HARDWARE NOTE: Since the int_mask bits have to be high to enable an interrupt,
 // the computer can start safely with interrupts disabled so long as this register
@@ -31,6 +32,16 @@ pub struct Pic {
     irq_pend: Word,
 }
 
+impl Display for Pic {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "[IRQs] mask => {:#06X} pend => {:#06X} serv => {:#06X} (ap:{})",
+            self.irq_mask, self.irq_pend, self.irq_serv, self.aint_prev
+        )
+    }
+}
+
 impl Pic {
     pub fn new() -> Self {
         Pic {
@@ -39,13 +50,6 @@ impl Pic {
             irq_serv: 0,
             irq_pend: 0,
         }
-    }
-
-    fn dump_registers(&self) {
-        println!(
-            "[IRQs] mask => {:#04X} pend => {:#04X} serv => {:#04X} (ap:{})",
-            self.irq_mask, self.irq_pend, self.irq_serv, self.aint_prev
-        );
     }
 
     /*
@@ -162,10 +166,6 @@ impl SinglePortDevice for Pic {
 }
 
 impl interface::Pic for Handle<Pic> {
-    fn dump_registers(&self) {
-        self.rc.borrow().dump_registers()
-    }
-
     fn is_pint_active(&self) -> bool {
         self.rc.borrow().is_pint_active()
     }

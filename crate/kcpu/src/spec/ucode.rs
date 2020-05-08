@@ -28,8 +28,8 @@ impl UCode {
         self.insts.iter()
     }
 
-    pub fn read(&self, uaddr: PUAddr) -> UInst {
-        self.data[usize::from(uaddr)].expect("executing undefined ucode instruction!")
+    pub fn read(&self, uaddr: PUAddr) -> Option<UInst> {
+        self.data[usize::from(uaddr)]
     }
 }
 

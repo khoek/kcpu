@@ -1,6 +1,6 @@
 use super::{
     assemble,
-    execute::{self, AbortAction, BreakMode, Config, ExecFlags, Summary, Verbosity},
+    run::execute::{self, AbortAction, Config, Summary, Verbosity},
 };
 use crate::assembler;
 use crate::vm::State;
@@ -44,19 +44,15 @@ impl UnitBin {
     fn execute(&self, max_clocks: Option<u64>) -> Summary {
         execute::execute(
             Config {
-                flags: ExecFlags {
-                    headless: true,
-                    max_clocks,
-                    mode: BreakMode::Noninteractive,
-                    abort_action: AbortAction::Stop,
-                },
+                max_clocks,
+                abort_action: AbortAction::Stop,
+                headless: true,
                 verbosity: Verbosity::Silent,
                 print_marginals: false,
             },
             self.bios_bin.as_deref(),
             self.prog_bin.as_deref(),
         )
-        .unwrap()
     }
 }
 
@@ -192,22 +188,22 @@ fn run_unit(src: &UnitSrc, num: usize, name_pad: usize, max_clocks: Option<u64>)
             false
         }
         Ok(summary) => {
-            match summary.state {
-                State::Halted => println!(
+            match (summary.timeout, &summary.state) {
+                (true, _) => println!(
+                    "{} after {}μops ({}ms)",
+                    "FAIL: DETERMINISTIC TIMEOUT".red(),
+                    max_clocks.unwrap(),
+                    summary.real_ns_elapsed / 1000 / 1000
+                ),
+                (false, State::Halted) => println!(
                     "{} {:7 }μops {: >4}ms  ({: >5.2}MHz)",
                     "PASS".green(),
                     summary.total_clocks,
                     summary.real_ns_elapsed / 1000 / 1000,
                     summary.to_effective_freq_megahertz(),
                 ),
-                State::Aborted => println!("{}", "FAIL: ABORTED".red()),
-                State::Timeout => println!(
-                    "{} after {}μops ({}ms)",
-                    "FAIL: DETERMINISTIC TIMEOUT".red(),
-                    max_clocks.unwrap(),
-                    summary.real_ns_elapsed / 1000 / 1000
-                ),
-                _ => panic!("internal unit runner error: VM still running!"),
+                (false, State::Aborted) => println!("{}", "FAIL: ABORTED".red()),
+                (false, State::Running) => panic!("internal unit runner error: VM still running!"),
             }
 
             summary.state == State::Halted

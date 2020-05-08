@@ -1,7 +1,7 @@
 use super::super::types::*;
 use super::types::*;
 use crate::spec::types::hw::*;
-use std::collections::HashMap;
+use std::{collections::HashMap, fmt::Display};
 
 #[derive(Clone, Copy)]
 pub enum Command {
@@ -45,7 +45,7 @@ enum State {
 impl std::fmt::Display for Operation {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Operation::Read { result } => write!(f, "Read[{:#04X}]", result),
+            Operation::Read { result } => write!(f, "Read[{:#06X}]", result),
             Operation::Write => write!(f, "Write"),
         }
     }
@@ -71,7 +71,7 @@ impl std::fmt::Display for State {
 }
 
 pub struct Manager<'a> {
-    logger: &'a Logger,
+    log_level: &'a LogLevel,
 
     devices: Vec<Handle<dyn Device + 'a>>,
     ports: HashMap<Word, Handle<dyn Device + 'a>>,
@@ -79,18 +79,20 @@ pub struct Manager<'a> {
     state: State,
 }
 
+impl<'a> Display for Manager<'a> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "IO: {}", self.state)
+    }
+}
+
 impl<'a> Manager<'a> {
-    pub fn new(logger: &Logger) -> Manager {
+    pub fn new(log_level: &LogLevel) -> Manager {
         Manager {
-            logger,
+            log_level,
             devices: Vec::new(),
             ports: HashMap::new(),
             state: State::Idle,
         }
-    }
-
-    pub fn dump_registers(&self) {
-        println!("IO: {}", self.state);
     }
 
     pub fn add_device<T: Device + 'a>(&mut self, d: T) -> Handle<T> {
@@ -156,7 +158,7 @@ impl<'a> Manager<'a> {
                     }
                 }
 
-                if self.logger.dump_bus {
+                if self.log_level.internals {
                     println!("io {} starting", self.state);
                 }
             }
@@ -174,7 +176,7 @@ impl<'a> Manager<'a> {
                 assert!(op.agrees_with(cmd));
 
                 self.state = State::Returning;
-                if self.logger.dump_bus {
+                if self.log_level.internals {
                     println!("io {} ending presentation", op);
                 }
             }
@@ -192,7 +194,7 @@ impl<'a> Manager<'a> {
             State::Returning => {
                 if let ClockedSignals::OffClock(_, _) = sigs {
                     self.state = State::Idle;
-                    if self.logger.dump_bus {
+                    if self.log_level.internals {
                         println!("io resetting io_done");
                     }
                 }
@@ -201,7 +203,7 @@ impl<'a> Manager<'a> {
             State::Active(Status::Ongoing(cycles), op) => {
                 if cycles > 0 {
                     self.state = State::Active(Status::Ongoing(cycles - 1), op);
-                    if self.logger.dump_bus {
+                    if self.log_level.internals {
                         println!("io {} ongoing, {} hcycles remaining", op, cycles - 1);
                     }
                 }
@@ -209,7 +211,7 @@ impl<'a> Manager<'a> {
                 if cycles == 0 {
                     self.state = State::Active(Status::Presenting, op);
 
-                    if self.logger.dump_bus {
+                    if self.log_level.internals {
                         println!("io {} now presenting", op);
                     }
                 }

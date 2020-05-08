@@ -91,7 +91,7 @@ impl Builder {
             .map(Alias::infer_type)
             .collect();
 
-        assert!(common::vec_pairwise_iter(&arglists)
+        assert!(common::slice_pairwise_ordered(&arglists)
             .all(|(a, b)| !Builder::arg_kind_lists_collide(a, b)));
 
         // RUSTFIX use expect_none once it stabilises

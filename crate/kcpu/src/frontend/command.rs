@@ -1,6 +1,9 @@
 use super::{
     assemble, assets,
-    execute::{AbortAction, BreakMode, Config, ExecFlags, Summary, Verbosity},
+    run::{
+        debug::{self, BreakOn},
+        execute::{self, AbortAction, Config, Summary, Verbosity},
+    },
     suite,
 };
 use crate::assembler::disasm;
@@ -20,23 +23,23 @@ pub enum CommandRoot {
 #[derive(StructOpt, Debug)]
 #[structopt(name = "kasm")]
 pub struct SubcommandAsm {
-    #[structopt(name = "SRC", parse(from_os_str))]
+    #[structopt(name = "in.ks", parse(from_os_str))]
     in_src: PathBuf,
 
-    #[structopt(name = "OUTBIN", parse(from_os_str))]
+    #[structopt(name = "out.kb", parse(from_os_str))]
     out_bin: Option<PathBuf>,
 }
 
 #[derive(StructOpt, Debug)]
 struct VmOpts {
-    #[structopt(short = "mc", long)]
+    #[structopt(short, long, name = "μops")]
     max_clocks: Option<u64>,
 
     #[structopt(short, long)]
-    disassemble: bool,
+    verbose: bool,
 
     #[structopt(short, long)]
-    step: bool,
+    debug: bool,
 
     #[structopt(short, long)]
     headless: bool,
@@ -48,10 +51,10 @@ pub struct SubcommandVm {
     #[structopt(flatten)]
     vm_opts: VmOpts,
 
-    #[structopt(name = "PROGBIN", parse(from_os_str))]
+    #[structopt(name = "prog.kb", parse(from_os_str))]
     in_prog_bin: PathBuf,
 
-    #[structopt(name = "BIOSBIN", parse(from_os_str))]
+    #[structopt(name = "bios.kb", parse(from_os_str))]
     in_bios_bin: Option<PathBuf>,
 }
 
@@ -60,16 +63,16 @@ pub struct SubcommandRun {
     #[structopt(flatten)]
     vm_opts: VmOpts,
 
-    #[structopt(name = "PROGSRC", parse(from_os_str))]
+    #[structopt(name = "prog.ks", parse(from_os_str))]
     in_prog_src: PathBuf,
 
-    #[structopt(name = "BIOSSRC", parse(from_os_str))]
+    #[structopt(name = "bios.ks", parse(from_os_str))]
     in_bios_src: Option<PathBuf>,
 }
 
 #[derive(StructOpt, Debug)]
 pub struct SuiteOpts {
-    #[structopt(name = "SUITEROOTDIR", parse(from_os_str))]
+    #[structopt(name = "suite/root/dir", parse(from_os_str))]
     suite_root_dir: Option<PathBuf>,
 
     #[structopt(short = "only", long, parse(from_os_str))]
@@ -83,7 +86,7 @@ pub struct SuiteOpts {
 
 #[derive(StructOpt, Debug)]
 pub struct SubcommandSuite {
-    #[structopt(name = "SUITENAME", parse(from_os_str))]
+    #[structopt(name = "suite_name", parse(from_os_str))]
     suite_name: OsString,
 
     #[structopt(flatten)]
@@ -139,10 +142,7 @@ pub fn run(cmd: SubcommandRun) -> ! {
     // let summary = execute_prog_with_opts(bios_bin.as_deref(), &prog_bin, cmd.vm_opts).unwrap();
     let summary = match execute_prog_with_opts(bios_bin.as_deref(), &prog_bin, cmd.vm_opts) {
         Ok(summary) => summary,
-        Err(disasm::Error::NoSuitableAlias(msg)) => {
-            panic!("NoSuitableAlias: {} {}", msg.len(), msg.join(", "))
-        }
-        Err(err) => panic!("{:#?}", err),
+        Err(err) => panic!("{}", err),
     };
 
     std::process::exit(summary_to_exit_code(&summary));
@@ -177,24 +177,17 @@ fn execute_prog_with_opts(
     prog_bin: &[u8],
     vm_opts: VmOpts,
 ) -> Result<Summary, disasm::Error> {
-    super::execute::execute(
+    execute::execute_with_hook(
         Config {
-            flags: ExecFlags {
-                headless: vm_opts.headless,
-                max_clocks: vm_opts.max_clocks,
-                mode: if vm_opts.step {
-                    BreakMode::OnInst
-                } else {
-                    BreakMode::Noninteractive
-                },
-                abort_action: if vm_opts.step {
-                    AbortAction::Prompt
-                } else {
-                    AbortAction::Stop
-                },
+            headless: vm_opts.headless,
+            max_clocks: vm_opts.max_clocks,
+            abort_action: if vm_opts.debug {
+                AbortAction::Prompt
+            } else {
+                AbortAction::Stop
             },
 
-            verbosity: if vm_opts.disassemble || vm_opts.step {
+            verbosity: if vm_opts.verbose || vm_opts.debug {
                 Verbosity::Disassemble
             } else {
                 Verbosity::Silent
@@ -203,5 +196,10 @@ fn execute_prog_with_opts(
         },
         bios_bin,
         Some(prog_bin),
+        debug::hook(if vm_opts.debug {
+            Some(BreakOn::Inst)
+        } else {
+            None
+        }),
     )
 }

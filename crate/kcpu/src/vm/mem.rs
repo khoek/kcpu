@@ -4,6 +4,7 @@ use crate::spec::{
     types::hw::{self, Bus, UInst, Word, BYTE_WIDTH},
 };
 use enum_map::{Enum, EnumMap};
+use std::fmt::Display;
 
 #[derive(Debug, PartialEq, Eq, Enum, Clone, Copy)]
 pub enum BankType {
@@ -78,7 +79,7 @@ impl Bank {
 }
 
 pub struct Mem<'a> {
-    logger: &'a Logger,
+    log_level: &'a LogLevel,
 
     prefix: [Word; 2],
     fidd_adr: Word,
@@ -87,8 +88,25 @@ pub struct Mem<'a> {
     banks: EnumMap<BankType, Option<Bank>>,
 }
 
+impl<'a> Display for Mem<'a> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        writeln!(
+            f,
+            "LPFX: {:#06X} FPFX: {:#06X}",
+            self.prefix[0], self.prefix[1]
+        )?;
+        write!(
+            f,
+            "FIDV: {:#06X} FIDA: {:#06X}",
+            self.fidd_val, self.fidd_adr
+        )?;
+
+        Ok(())
+    }
+}
+
 impl<'a> Mem<'a> {
-    pub fn new(logger: &'a Logger, bios: Bank, prog: Bank) -> Self {
+    pub fn new(log_level: &'a LogLevel, bios: Bank, prog: Bank) -> Self {
         // RUSTFIX make this nicer once we get const generics
         let mut banks = EnumMap::new();
         assert_eq!(bios.typ, BankType::Bios);
@@ -96,23 +114,12 @@ impl<'a> Mem<'a> {
         banks[BankType::Bios] = Some(bios);
         banks[BankType::Prog] = Some(prog);
         Mem {
-            logger,
+            log_level,
             prefix: [0, 0],
             fidd_adr: 0,
             fidd_val: 0,
             banks,
         }
-    }
-
-    pub fn dump_registers(&self) {
-        println!(
-            "LPFX => {:#04X} FPFX => {:#04X}",
-            self.prefix[0], self.prefix[1]
-        );
-        println!(
-            "FIDV => {:#04X} FIDA => {:#04X}",
-            self.fidd_val, self.fidd_adr
-        );
     }
 
     // RUSTFIX remove this, also why is the shift 7 bits?
@@ -161,9 +168,9 @@ impl<'a> Mem<'a> {
                 if (ui & usig::MASK_MCTRL_MODE) == usig::MCTRL_MODE_FI_MO
                     || (ui & usig::MASK_MCTRL_MODE) == usig::MCTRL_MODE_FI_MO_FAR
                 {
-                    if self.logger.dump_bus {
+                    if self.log_level.internals {
                         println!(
-                            "  MB({}) -> {:#04X}@{:#04X}",
+                            "  MB({}) -> {:#06X}@{:#06X}",
                             use_far,
                             self.fidd_adr,
                             self.get_selected_bank(use_far).load(self.fidd_adr)
@@ -269,9 +276,9 @@ impl<'a> Mem<'a> {
             }
             usig::MCTRL_MODE_FO => (),
             usig::MCTRL_MODE_FO_MI | usig::MCTRL_MODE_FO_MI_FAR => {
-                if self.logger.dump_bus {
+                if self.log_level.internals {
                     println!(
-                        "  MB({}) <- {:#04X}@{:#04X}",
+                        "  MB({}) <- {:#06X}@{:#06X}",
                         use_far,
                         self.fidd_adr,
                         s.read(Bus::M)

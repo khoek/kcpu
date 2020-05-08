@@ -3,6 +3,7 @@ use enum_map::{Enum, EnumMap};
 use super::interface;
 use super::types::*;
 use crate::spec::{defs::usig, types::hw::*, ucode};
+use std::fmt::Display;
 
 #[derive(Clone, Copy, Enum)]
 pub enum CBit {
@@ -113,7 +114,7 @@ pub enum SReg {
 }
 
 pub struct Ctl<'a> {
-    logger: &'a Logger,
+    log_level: &'a LogLevel,
     uinst_latch_val: UInst,
 
     // FIXME it is unfortunate that these need to be public for the run_vm/simulation tools.
@@ -124,20 +125,59 @@ pub struct Ctl<'a> {
     pub regs: EnumMap<SReg, Word>,
 }
 
+impl<'a> Display for Ctl<'a> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        writeln!(
+            f,
+            "RIP: {:#06X} RUC: {:#06X}",
+            self.regs[SReg::IP],
+            self.regs[SReg::UC]
+        )?;
+        writeln!(
+            f,
+            "RIR: {:#06X} RFG: {:#06X}",
+            self.regs[SReg::IR],
+            self.get_reg_fg()
+        )?;
+        write!(
+            f,
+            "CBITS: {}{}{}{}{}{}{}{}",
+            self.get_cbit_format(CBit::Instmask),
+            self.get_cbit_format(CBit::Ie),
+            self.get_cbit_format(CBit::Hnmi),
+            self.get_cbit_format(CBit::IoWait),
+            self.get_cbit_format(CBit::Halted),
+            self.get_cbit_format(CBit::Aborted),
+            self.get_cbit_format(CBit::PintLatch),
+            self.get_cbit_format(CBit::IntEnter)
+        )?;
+
+        Ok(())
+    }
+}
+
 impl<'a> Ctl<'a> {
-    pub fn new(logger: &'a Logger) -> Self {
+    pub fn new(log_level: &'a LogLevel) -> Self {
         let mut cbits = EnumMap::new();
         // I think it is not neccesary to implement this on real hardware, so long as
         // all of the registers (in particular RIR) are initialized to zero. (Since then
         // NOP will be the first instruction executed.)
         cbits[CBit::Instmask] = true;
 
-        Ctl {
-            logger,
+        let mut ctl = Ctl {
+            log_level,
             uinst_latch_val: 0,
             regs: EnumMap::new(),
             cbits,
-        }
+        };
+
+        // HARDWARE NOTE: How will the computer actually start? STARTUP should supress anything interesting happening,
+        // and force-load the `uinst_latch`? The clock will be LOW this whole time, then STARTUP will go low,
+        // (implemented as being cleared as the edge of input clocksource goes low, but STARTUP masks the clock),
+        // and then some time later the clock will go high for the first real uop.
+        ctl.load_uinst_latch();
+
+        ctl
     }
 
     // RUSTFIX find a nice way to remove this, probably after the whole ucode overhaul (remove in the same way)
@@ -167,35 +207,6 @@ impl<'a> Ctl<'a> {
         } else {
             s.to_lowercase()
         }
-    }
-
-    // RUSTFIX remove this, just implement the display trait for a module, probably put this trait inside a `Module` trait which implements clock_out/inputs etc
-    pub fn dump_registers(&self) {
-        println!(
-            "RIP: {:#04X} RUC: {:#04X}",
-            self.regs[SReg::IP],
-            self.regs[SReg::UC]
-        );
-        println!(
-            "RIR: {:#04X} RFG: {:#04X}",
-            self.regs[SReg::IR],
-            self.get_reg_fg()
-        );
-        println!(
-            "CBITS: {}{}{}{}{}{}{}{}",
-            self.get_cbit_format(CBit::Instmask),
-            self.get_cbit_format(CBit::Ie),
-            self.get_cbit_format(CBit::Hnmi),
-            self.get_cbit_format(CBit::IoWait),
-            self.get_cbit_format(CBit::Halted),
-            self.get_cbit_format(CBit::Aborted),
-            self.get_cbit_format(CBit::PintLatch),
-            self.get_cbit_format(CBit::IntEnter)
-        );
-    }
-
-    pub fn get_uinst(&self) -> UInst {
-        self.uinst_latch_val
     }
 
     pub fn clock_outputs(&self, ui: UInst, s: &mut BusState) {
@@ -411,6 +422,27 @@ impl<'a> Ctl<'a> {
         }
     }
 
+    pub fn read_uinst_latch(&self) -> UInst {
+        self.uinst_latch_val
+    }
+
+    fn load_uinst_latch(&mut self) {
+        if self.log_level.internals {
+            print!("uinst latch <- {:#06X}", interface::Ctl::get_inst(self));
+        }
+
+        self.uinst_latch_val = ucode::UCode::get()
+            .read(PUAddr::new(
+                Inst::decode_opcode(interface::Ctl::get_inst(self)),
+                self.regs[SReg::UC] as UCVal,
+            ))
+            .expect("latching undefined ucode instruction!");
+
+        if self.log_level.internals {
+            println!("@{:#06X}", self.uinst_latch_val);
+        }
+    }
+
     pub fn offclock_pulse(&mut self, ioc: &dyn interface::Ioc) {
         let io_done = ioc.is_io_done();
 
@@ -420,24 +452,13 @@ impl<'a> Ctl<'a> {
 
         // HARDWARE NOTE: note that io_done overrides CBit::IoWait here, and then immediately clears it.
         if io_done || !self.cbits[CBit::IoWait] {
-            if self.logger.dump_bus {
-                print!("uinst latch <- {:#04X}", interface::Ctl::get_inst(self));
-            }
-
-            self.uinst_latch_val = ucode::UCode::get().read(PUAddr::new(
-                Inst::decode_opcode(interface::Ctl::get_inst(self)),
-                self.regs[SReg::UC] as UCVal,
-            ));
-
-            if self.logger.dump_bus {
-                println!("@{:#04X}", self.uinst_latch_val);
-            }
+            self.load_uinst_latch();
         }
     }
 
     // RUSTFIX make these two `Word`s once we can make `Inst::encode` const.
 
-    // RUSTFIXFIXME use the NOP opcode and _DO_INT opcodes here.
+    // RUSTFIX FIXME use the NOP opcode and _DO_INT opcodes here.
     // We used to have to ensure that the _DO_INT instruction had SP in IU1---this is no longer the case.
     const LOAD_INSTVAL: Inst = Inst::new(false, 0x0, None, None, None);
     const INT_INSTVAL: Inst = Inst::new(false, 0x1, None, None, None);

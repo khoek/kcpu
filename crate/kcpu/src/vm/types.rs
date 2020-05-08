@@ -2,63 +2,29 @@ use crate::spec::types::hw::*;
 use enum_map::EnumMap;
 
 #[derive(Debug, Clone, Copy)]
-pub struct Logger {
-    pub disassemble: bool,
-    pub dump_registers: bool,
-    pub dump_bus: bool,
-}
-
-impl Logger {
-    pub const fn silent() -> Self {
-        Self {
-            disassemble: false,
-            dump_registers: false,
-            dump_bus: false,
-        }
-    }
-
-    pub const fn only_machine_state() -> Self {
-        Self {
-            disassemble: false,
-            dump_registers: true,
-            dump_bus: true,
-        }
-    }
-
-    pub const fn everything() -> Self {
-        Self {
-            disassemble: true,
-            dump_registers: true,
-            dump_bus: true,
-        }
-    }
-}
-
-impl Default for Logger {
-    fn default() -> Self {
-        Logger::everything()
-    }
+pub struct LogLevel {
+    pub internals: bool,
 }
 
 pub struct BusState<'a> {
-    logger: &'a Logger,
+    log_level: &'a LogLevel,
     frozen: bool,
 
     bus: EnumMap<Bus, Option<Word>>,
 }
 
 impl<'a> BusState<'a> {
-    pub fn new(logger: &'a Logger) -> Self {
+    pub fn new(log_level: &'a LogLevel) -> Self {
         Self {
-            logger,
+            log_level,
             frozen: false,
             bus: EnumMap::new(),
         }
     }
 
     pub fn assign(&mut self, b: Bus, val: Word) {
-        if self.logger.dump_bus {
-            println!("  {} <- {}", b, val);
+        if self.log_level.internals {
+            println!("  {} <- {:#06X}", b, val);
         }
 
         if self.frozen {
@@ -93,8 +59,8 @@ impl<'a> BusState<'a> {
 
     pub fn early_read(&self, b: Bus) -> Word {
         let ret = self.bus[b].unwrap_or_else(|| b.get_pulled_value());
-        if self.logger.dump_bus {
-            println!("  {} -> {}", b, ret);
+        if self.log_level.internals {
+            println!("  {} -> {:#06X}", b, ret);
         }
         ret
     }

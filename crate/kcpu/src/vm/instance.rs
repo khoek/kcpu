@@ -1,4 +1,7 @@
-use super::{types::*, *};
+use super::{
+    alu, ctl, interface, io, mem, reg,
+    types::{BusState, LogLevel},
+};
 use crate::spec::types::hw::*;
 use strum_macros::Display;
 
@@ -9,6 +12,7 @@ use super::{
     mem::Mem,
     reg::Reg,
 };
+use std::fmt::Display;
 
 pub struct DebugExecInfo {
     pub uc_reset: bool,
@@ -26,13 +30,10 @@ pub enum State {
     Running,
     Halted,
     Aborted,
-
-    // Not a real state, just returned by `run()` when it times out
-    Timeout,
 }
 
 pub struct Instance<'a> {
-    logger: &'a Logger,
+    log_level: &'a LogLevel,
     total_clocks: u64,
     real_ns_elapsed: u128,
 
@@ -43,18 +44,47 @@ pub struct Instance<'a> {
     ioc: io::Ioc<'a>,
 }
 
+impl<'a> Display for Instance<'a> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let i = interface::Ctl::get_inst(&self.ctl);
+        let ui = self.ctl.read_uinst_latch();
+
+        writeln!(
+            f,
+            "IP/UC @ I/UI: {:#06X}/{:#06X} @ {:#06X}/{:#X} {}",
+            self.ctl.regs[SReg::IP],
+            self.ctl.regs[SReg::UC],
+            i,
+            ui,
+            if self.ioc.get_pic().is_pint_active() {
+                "(PINT)"
+            } else {
+                ""
+            }
+        )?;
+
+        writeln!(f, "{}", self.ctl)?;
+        writeln!(f, "{}", self.mem)?;
+        writeln!(f, "{}", self.reg)?;
+        writeln!(f, "{}", self.alu)?;
+        write!(f, "{}", self.ioc)?;
+
+        Ok(())
+    }
+}
+
 impl<'a> Instance<'a> {
-    pub fn new(logger: &'a Logger, bios: mem::Bank, prog: mem::Bank) -> Self {
+    pub fn new(log_level: &'a LogLevel, bios: mem::Bank, prog: mem::Bank) -> Self {
         Self {
-            logger,
+            log_level,
             total_clocks: 0,
             real_ns_elapsed: 0,
 
-            ctl: Ctl::new(&logger),
-            reg: Reg::new(&logger),
-            mem: Mem::new(&logger, bios, prog),
-            alu: Alu::new(&logger),
-            ioc: Ioc::new(&logger),
+            ctl: Ctl::new(&log_level),
+            reg: Reg::new(&log_level),
+            mem: Mem::new(&log_level, bios, prog),
+            alu: Alu::new(&log_level),
+            ioc: Ioc::new(&log_level),
         }
     }
 
@@ -85,53 +115,7 @@ impl<'a> Instance<'a> {
         State::Running
     }
 
-    pub fn dump_registers(&self) {
-        println!("---------------------");
-        self.ctl.dump_registers();
-        self.mem.dump_registers();
-        self.reg.dump_registers();
-        self.alu.dump_registers();
-        self.ioc.dump_registers();
-        println!();
-    }
-
-    pub fn disassemble_current(&self) {
-        // RUSTFIX
-        // let ip = ctl.reg[REG_IP] - ((ctl.cbits[CBit::Instmask] as u32) * (2 + 2 * (INST_GET_LOADDATA(self.ctl.regs[SReg::IR] as u32))));
-        // codegen::bound_instruction b = codegen::disassemble_peek(ip, mem.get_bank(false));
-
-        // std::stringstream ss;
-        // ss << "(0x" << std::hex << std::uppercase << ip << ")  " << codegen::pretty_print(b) << std::endl;
-
-        // println!("---------------------");
-        // println!(ss.str());
-        // if(!logger.dump_registers) {
-        //     dump_registers();
-        // }
-    }
-
-    pub fn print_debug_info(&self, i: Word, ui: UInst, pint: bool) {
-        if self.logger.disassemble && !self.ctl.cbits[CBit::Instmask] {
-            self.disassemble_current();
-        }
-
-        if self.logger.dump_bus {
-            println!(
-                "IP/UC @ I/UI: {:#04X}/{:#04X} @ {:#04X}/{:#X} {}",
-                self.ctl.regs[SReg::IP],
-                self.ctl.regs[SReg::UC],
-                i,
-                ui,
-                if pint { "(PINT)" } else { "" }
-            );
-        }
-
-        if self.logger.dump_registers {
-            self.dump_registers();
-        }
-    }
-
-    pub fn ustep(&mut self) -> State {
+    pub fn ustep(&mut self) {
         let then = std::time::Instant::now();
 
         self.total_clocks += 1;
@@ -140,71 +124,54 @@ impl<'a> Instance<'a> {
             panic!("cpu already halted!");
         }
 
-        // This must be called before `ctl.get_uinst()`, as it sets up the value of the uinst latch.
-        self.ctl.offclock_pulse(&self.ioc);
-        self.ioc.offclock_pulse(&self.ctl);
+        {
+            let ui = self.ctl.read_uinst_latch();
 
-        let i = interface::Ctl::get_inst(&self.ctl);
-        let ui = self.ctl.get_uinst();
+            self.reg.offclock_pulse(ui);
 
-        self.print_debug_info(i, ui, self.ioc.get_pic().is_pint_active());
+            let mut state = BusState::new(self.log_level);
 
-        self.reg.offclock_pulse(ui);
+            self.ctl.clock_outputs(ui, &mut state);
+            self.alu.clock_outputs(ui, &mut state);
+            self.reg.clock_outputs(ui, &mut state, &self.ctl);
+            self.mem.clock_outputs(ui, &mut state);
+            self.ioc.clock_outputs(ui, &mut state, &self.ctl);
 
-        let mut state = BusState::new(self.logger);
+            self.mem.clock_connects(ui, &mut state);
 
-        self.ctl.clock_outputs(ui, &mut state);
-        self.alu.clock_outputs(ui, &mut state);
-        self.reg.clock_outputs(ui, &mut state, &self.ctl);
-        self.mem.clock_outputs(ui, &mut state);
-        self.ioc.clock_outputs(ui, &mut state, &self.ctl);
+            state.freeze();
 
-        self.mem.clock_connects(ui, &mut state);
+            self.ioc.clock_inputs(ui, &state, &self.ctl);
+            self.mem.clock_inputs(ui, &state);
+            self.reg.clock_inputs(ui, &state, &self.ctl);
+            self.alu.clock_inputs(ui, &state);
+            self.ctl.clock_inputs(ui, &state, self.ioc.get_pic());
 
-        state.freeze();
-
-        self.ioc.clock_inputs(ui, &state, &self.ctl);
-        self.mem.clock_inputs(ui, &state);
-        self.reg.clock_inputs(ui, &state, &self.ctl);
-        self.alu.clock_inputs(ui, &state);
-        self.ctl.clock_inputs(ui, &state, self.ioc.get_pic());
-
-        self.real_ns_elapsed += then.elapsed().as_nanos();
-
-        self.get_state()
-    }
-
-    pub fn step(&mut self) -> State {
-        if self.ctl.cbits[CBit::Halted] {
-            panic!("cpu already halted!");
-        }
-
-        loop {
-            self.ustep();
-
-            if self.ctl.regs[SReg::UC] == 0 || self.ctl.cbits[CBit::Halted] {
-                break;
+            if !self.ctl.cbits[CBit::Halted] {
+                self.ctl.offclock_pulse(&self.ioc);
+                self.ioc.offclock_pulse(&self.ctl);
             }
         }
 
-        self.get_state()
+        self.real_ns_elapsed += then.elapsed().as_nanos();
     }
 
-    // RUSTFIX FIXME it is silly that all these functions just return `get_state()`, but it happens right now in order to return TIMEOUT in one case.
-    pub fn run(&mut self, max_clocks: Option<u64>) -> State {
-        let then = self.total_clocks;
-
+    /// Returns `true` if the VM ran for `max_clock`s, or
+    /// `false` if it was interrupted for another reason.
+    pub fn run(&mut self, max_clocks: Option<u64>) -> bool {
+        let mut clocks = 0;
         while !self.ctl.cbits[CBit::Halted] {
             if let Some(max_clocks) = max_clocks {
-                if max_clocks < (self.total_clocks - then) {
-                    return State::Timeout;
+                if clocks >= max_clocks {
+                    return true;
                 }
             }
 
-            self.step();
+            self.ustep();
+            clocks += 1;
         }
 
-        self.get_state()
+        return false;
     }
 
     pub fn resume(&mut self) {
