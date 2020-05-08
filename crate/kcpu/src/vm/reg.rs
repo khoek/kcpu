@@ -54,9 +54,9 @@ impl<'a> Reg<'a> {
     fn maybe_assign(&self, iunum: u8, s: &mut BusState, iu: u16, r: PReg) {
         if usig::rctrl_iu_is_en(iu) && usig::rctrl_iu_is_output(iu) {
             if self.log_level.internals {
-                println!("  iu{}: {} <- {}:", iunum, usig::rctrl_iu_get_bus(iu), r);
+                println!("  iu{}: {} <- {}:", iunum, usig::rctrl_iu_to_bus(iu), r);
             }
-            s.assign(usig::rctrl_iu_get_bus(iu), self.regs[r]);
+            s.assign(usig::rctrl_iu_to_bus(iu), self.regs[r]);
 
             // NOTE Even if `r == REG_SP` we don't need to check for should_perform_rsp_inc/dec() here,
             // since there would be no timing problem (the DEC occurs on the offclock just before this clock).
@@ -66,9 +66,9 @@ impl<'a> Reg<'a> {
     fn maybe_read(&mut self, iunum: u8, s: &BusState, iu: u16, r: PReg) {
         if usig::rctrl_iu_is_en(iu) && usig::rctrl_iu_is_input(iu) {
             if self.log_level.internals {
-                println!("  iu{}: {} -> {}:", iunum, usig::rctrl_iu_get_bus(iu), r);
+                println!("  iu{}: {} -> {}:", iunum, usig::rctrl_iu_to_bus(iu), r);
             }
-            self.regs[r] = s.read(usig::rctrl_iu_get_bus(iu));
+            self.regs[r] = s.read(usig::rctrl_iu_to_bus(iu));
 
             // NOTE Even if `r == REG_SP` we don't need to check for should_perform_rsp_inc/dec() here,
             // since there would be no timing problem (the DEC occurs on the offclock just before this clock).
@@ -115,7 +115,7 @@ impl<'a> Reg<'a> {
 
     pub fn clock_outputs(&self, ui: UInst, s: &mut BusState, ctl: &dyn interface::Ctl) {
         // RUSTFIX remove this duplication
-        let inst = ctl.get_inst();
+        let inst = ctl.inst();
         let (iu1, iu2, iu3) = IU::decode_all(inst);
         let iu3 = Reg::consider_iu3_override(ui, iu3);
         let (dec1, dec2, dec3) = (
@@ -133,7 +133,7 @@ impl<'a> Reg<'a> {
     }
 
     pub fn clock_inputs(&mut self, ui: UInst, s: &BusState, ctl: &dyn interface::Ctl) {
-        let inst = ctl.get_inst();
+        let inst = ctl.inst();
         let (iu1, iu2, iu3) = IU::decode_all(inst);
         let iu3 = Reg::consider_iu3_override(ui, iu3);
         let (dec1, dec2, dec3) = (

@@ -75,6 +75,7 @@ pub(crate) fn gen_alu(builder: &mut Builder) {
         "JNE",
         Virtual::with_1(I_JNZ, Slot::with_arg(0)),
     ));
+    // RUSTFIX test these three: (and commented ones at the bottom)
     builder.register_alias(Alias::with_single(
         "JL",
         Virtual::with_1(I_JNC, Slot::with_arg(0)),

@@ -281,7 +281,7 @@ pub enum Bus {
 }
 
 impl Bus {
-    pub fn get_pulled_value(self) -> Word {
+    pub fn pulled_value(self) -> Word {
         match self {
             Bus::A => 0,
             Bus::B => 0,

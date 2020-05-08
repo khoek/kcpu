@@ -1,27 +1,33 @@
+use super::ctl::{CBit, SReg};
 use super::{
     alu, ctl, interface, io, mem, reg,
     types::{BusState, LogLevel},
 };
-use crate::spec::types::hw::*;
+use crate::spec::types::hw::{UCVal, Word};
+use std::fmt::Display;
 use strum_macros::Display;
 
-use super::{
-    alu::Alu,
-    ctl::{CBit, Ctl, SReg},
-    io::Ioc,
-    mem::Mem,
-    reg::Reg,
-};
-use std::fmt::Display;
+pub mod debug {
+    use crate::spec::types::hw::UCVal;
 
-pub struct DebugExecInfo {
-    pub uc_reset: bool,
-    pub mask_active: bool,
-}
+    #[derive(Debug, PartialEq, Eq)]
+    pub enum ExecPhase {
+        TrueInst(UCVal),
+        Load(UCVal),
+        DispatchInterrupt(UCVal),
+        IoWait(bool),
+    }
 
-impl DebugExecInfo {
-    pub fn is_true_inst_beginning(&self) -> bool {
-        self.uc_reset && !self.mask_active
+    impl ExecPhase {
+        pub fn is_first_uop(&self) -> bool {
+            match self {
+                ExecPhase::TrueInst(0) => true,
+                ExecPhase::Load(0) => true,
+                ExecPhase::DispatchInterrupt(0) => true,
+                ExecPhase::IoWait(true) => true,
+                _ => false,
+            }
+        }
     }
 }
 
@@ -46,7 +52,7 @@ pub struct Instance<'a> {
 
 impl<'a> Display for Instance<'a> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let i = interface::Ctl::get_inst(&self.ctl);
+        let i = interface::Ctl::inst(&self.ctl);
         let ui = self.ctl.read_uinst_latch();
 
         writeln!(
@@ -56,7 +62,7 @@ impl<'a> Display for Instance<'a> {
             self.ctl.regs[SReg::UC],
             i,
             ui,
-            if self.ioc.get_pic().is_pint_active() {
+            if self.ioc.pic().is_pint_active() {
                 "(PINT)"
             } else {
                 ""
@@ -80,30 +86,41 @@ impl<'a> Instance<'a> {
             total_clocks: 0,
             real_ns_elapsed: 0,
 
-            ctl: Ctl::new(&log_level),
-            reg: Reg::new(&log_level),
-            mem: Mem::new(&log_level, bios, prog),
-            alu: Alu::new(&log_level),
-            ioc: Ioc::new(&log_level),
+            ctl: ctl::Ctl::new(&log_level),
+            reg: reg::Reg::new(&log_level),
+            mem: mem::Mem::new(&log_level, bios, prog),
+            alu: alu::Alu::new(&log_level),
+            ioc: io::Ioc::new(&log_level),
         }
     }
 
-    pub fn get_total_clocks(&self) -> u64 {
+    pub fn total_clocks(&self) -> u64 {
         self.total_clocks
     }
 
-    pub fn get_real_ns_elapsed(&self) -> u128 {
+    pub fn real_ns_elapsed(&self) -> u128 {
         self.real_ns_elapsed
     }
 
-    pub fn get_debug_exec_info(&self) -> DebugExecInfo {
-        DebugExecInfo {
-            uc_reset: self.ctl.regs[SReg::UC] == 0,
-            mask_active: self.ctl.cbits[CBit::Instmask],
+    pub fn debug_exec_phase(&self) -> debug::ExecPhase {
+        let uc = self.ctl.regs[SReg::UC] as UCVal;
+
+        if self.ctl.cbits[CBit::IoWait] {
+            // RUSTFIX/HARDWARE NOTE Is it really true that `InstMask` is low on the first
+            // IoWait lock and then high on successive clocks?
+            return debug::ExecPhase::IoWait(!self.ctl.cbits[CBit::Instmask]);
+        } else if self.ctl.cbits[CBit::Instmask] {
+            if self.ctl.cbits[CBit::PintLatch] {
+                return debug::ExecPhase::DispatchInterrupt(uc);
+            } else {
+                return debug::ExecPhase::Load(uc);
+            }
         }
+
+        return debug::ExecPhase::TrueInst(uc);
     }
 
-    pub fn get_state(&self) -> State {
+    pub fn state(&self) -> State {
         if self.ctl.cbits[CBit::Halted] {
             return if self.ctl.cbits[CBit::Aborted] {
                 State::Aborted
@@ -145,7 +162,7 @@ impl<'a> Instance<'a> {
             self.mem.clock_inputs(ui, &state);
             self.reg.clock_inputs(ui, &state, &self.ctl);
             self.alu.clock_inputs(ui, &state);
-            self.ctl.clock_inputs(ui, &state, self.ioc.get_pic());
+            self.ctl.clock_inputs(ui, &state, self.ioc.pic());
 
             if !self.ctl.cbits[CBit::Halted] {
                 self.ctl.offclock_pulse(&self.ioc);
@@ -175,7 +192,7 @@ impl<'a> Instance<'a> {
     }
 
     pub fn resume(&mut self) {
-        if self.get_state() != State::Aborted {
+        if self.state() != State::Aborted {
             panic!("cannot resume, cpu not aborted");
         }
 

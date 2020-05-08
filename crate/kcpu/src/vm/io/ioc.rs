@@ -43,12 +43,12 @@ impl<'a> Ioc<'a> {
         }
 
         // RUSTFIX unfortunately for now, must be last.
-        manager.add_device(Probe::new(manager.get_registered_ports()));
+        manager.add_device(Probe::new(manager.registered_ports()));
 
         Ioc { manager, pic }
     }
 
-    pub fn get_pic(&self) -> &dyn interface::Pic {
+    pub fn pic(&self) -> &dyn interface::Pic {
         &self.pic
     }
 
@@ -73,7 +73,7 @@ impl<'a> Ioc<'a> {
 
         if let Some(Command::Read { port: _ }) = cmd {
             if self.manager.is_io_done() {
-                if let Some(result) = self.manager.get_read_result() {
+                if let Some(result) = self.manager.read_result() {
                     s.assign(Bus::B, result);
                 }
             }

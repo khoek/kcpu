@@ -8,6 +8,10 @@ mod io;
 mod mem;
 mod reg;
 
-pub use instance::{DebugExecInfo, Instance, State};
+pub use instance::{Instance, State};
 pub use mem::{Bank, BankType};
 pub use types::LogLevel;
+
+pub mod debug {
+    pub use super::instance::debug::ExecPhase;
+}

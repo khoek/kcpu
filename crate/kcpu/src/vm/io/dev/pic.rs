@@ -57,12 +57,11 @@ impl Pic {
         is being serviced, or 2) the NMI is pending and is not currently being serviced.
     */
     fn is_pint_active(&self) -> bool {
-        (self.irq_serv == 0 && self.get_next_pending_bit(false, false) != 0)
-            || self.is_pnmi_active()
+        (self.irq_serv == 0 && self.next_pending_bit(false, false) != 0) || self.is_pnmi_active()
     }
 
     fn is_pnmi_active(&self) -> bool {
-        (self.irq_serv & MASK_NMIS) == 0 && self.get_next_pending_bit(false, true) != 0
+        (self.irq_serv & MASK_NMIS) == 0 && self.next_pending_bit(false, true) != 0
     }
 
     // HARDWARE NOTE: Let's only set an interrupt pending in the PIC on the rising edge of an interrupt line, so we can implement a hard "reset button" for example.
@@ -74,7 +73,7 @@ impl Pic {
         self.irq_pend |= 1 << bit;
     }
 
-    fn get_lowest_bit(bitmask: Word) -> Word {
+    fn lowest_bit(bitmask: Word) -> Word {
         if bitmask != 0 {
             1 << bitmask.tzcnt()
         } else {
@@ -84,18 +83,18 @@ impl Pic {
 
     // HARDWARE NOTE: NMI enable jumper?
     // HARDWARE NOTE: This function ignores the masked bits!
-    fn get_next_pending_bit(&self, expect_nonzero: bool, nmi_only: bool) -> Word {
+    fn next_pending_bit(&self, expect_nonzero: bool, nmi_only: bool) -> Word {
         let irqs_masked: Word = self.irq_pend
             & ((self.irq_mask | MASK_NMIS) & (if nmi_only { MASK_NMIS } else { 0xFFFF }));
         if irqs_masked == 0 && expect_nonzero {
             panic!("irq_ACK with no active interrupt");
         }
-        Pic::get_lowest_bit(irqs_masked)
+        Pic::lowest_bit(irqs_masked)
     }
 }
 
 impl SinglePortDevice for Pic {
-    fn get_reserved_port(&self) -> Word {
+    fn reserved_port(&self) -> Word {
         PORT_BASE
     }
 
@@ -105,7 +104,7 @@ impl SinglePortDevice for Pic {
                 if self.irq_serv == 0 {
                     panic!("EOI with no active interrupt");
                 }
-                self.irq_serv &= !Pic::get_lowest_bit(self.irq_serv);
+                self.irq_serv &= !Pic::lowest_bit(self.irq_serv);
             }
             CMD_SET_MASK => {
                 self.irq_mask = val & MASK_VAL;
@@ -154,7 +153,7 @@ impl SinglePortDevice for Pic {
         }
 
         // HARDWARE NOTE: Implement this in hardware using daisy-chaining.
-        let pending_bit = self.get_next_pending_bit(true, false);
+        let pending_bit = self.next_pending_bit(true, false);
         self.irq_serv |= pending_bit;
         // HARDWARE NOTE: It is important that we clear the pending bit, and record it in the in-service register
         // at this point, so that we can recieve further copies of that interrupt while it is being serviced.

@@ -39,7 +39,7 @@ impl<'a> Display for Error {
             ),
             Error::AmbiguousAliasSpecificity(a1, a2) => write!(
                 f,
-                "Aliases '{}' and '{}' are incompariable w.r.t. the specificity partial order",
+                "Aliases '{}' and '{}' are incomparable w.r.t. the specificity partial order",
                 a1, a2,
             ),
         }
@@ -79,9 +79,9 @@ pub fn next_resolved_blob<'a>(
 
 #[derive(Debug, Clone)]
 pub struct DisassembledBlob<'a> {
-    blob: ResolvedBlob,
-    idef: &'a InstDef,
-    args: EnumMap<IU, Option<ResolvedArg>>,
+    pub blob: ResolvedBlob,
+    pub idef: &'a InstDef,
+    pub args: EnumMap<IU, Option<ResolvedArg>>,
 }
 
 impl<'a> Display for DisassembledBlob<'a> {
@@ -115,6 +115,13 @@ pub fn disassemble_blob<'a>(
     Ok(DisassembledBlob { blob, idef, args })
 }
 
+fn fmt_option_arg(f: &mut std::fmt::Formatter<'_>, arg: Option<&ResolvedArg>) -> std::fmt::Result {
+    match arg {
+        Some(arg) => write!(f, " {}", arg),
+        None => write!(f, " <unresolved>"),
+    }
+}
+
 #[derive(Debug, Clone)]
 struct PartialDisassembledAlias<'a> {
     alias: &'a Alias,
@@ -125,10 +132,7 @@ impl<'a> Display for PartialDisassembledAlias<'a> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.alias.name)?;
         for arg in &self.args {
-            match arg {
-                Some(arg) => write!(f, " {}", arg)?,
-                None => write!(f, " <unresolved>")?,
-            }
+            fmt_option_arg(f, arg.as_ref())?;
         }
         Ok(())
     }
@@ -152,8 +156,8 @@ impl<'a> PartialDisassembledAlias<'a> {
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct DisassembledAlias<'a> {
-    alias: &'a Alias,
-    args: Vec<ResolvedArg>,
+    pub alias: &'a Alias,
+    pub args: Vec<ResolvedArg>,
 }
 
 impl<'a> Display for DisassembledAlias<'a> {
@@ -172,8 +176,8 @@ impl<'a> DisassembledAlias<'a> {
 }
 
 impl<'a> DisassembledAlias<'a> {
-    fn specificity_score(&self) -> (usize, isize) {
-        (self.alias.vinsts.len(), -(self.alias.arg_count as isize))
+    fn specificity_score(&self) -> (usize, isize, bool) {
+        (self.alias.vinsts.len(), -(self.alias.arg_count as isize), self.alias.from_idef)
     }
 }
 
@@ -201,13 +205,6 @@ fn reconstruct_args_using_blob_partials(
         return false;
     }
 
-    // The opclass check we have just performed means that we just need to check
-    // the `Slot::Arg`s in `virt`---all others are automatically known to be
-    // compatible.
-    // RUSTFIX THIS COMMENT IS WRONG.
-    //
-    // FIXME FIXME FIXME
-    //
     for (iu, slot) in virt.slots {
         match (&blob.args[iu], slot) {
             (Some(arg), Some(Slot::Arg(idx))) => match &args[idx] {
@@ -217,7 +214,7 @@ fn reconstruct_args_using_blob_partials(
             },
             // If the slot is not `Slot::Arg` then it is bound, so it is
             // safe to `unwrap()` after `Slot::to_arg()`.
-            (Some(arg), Some(slot)) if slot.to_arg().unwrap() != *arg => return false,
+            (Some(arg), Some(slot)) => if slot.to_arg().as_ref().unwrap() != arg { return false },
             (None, None) => (),
             _ => panic!(
                 "argument disagree for same opcode: '{:?}' vs '{:?}'",
@@ -393,6 +390,48 @@ pub fn family_reverse_lookup(alias: &Alias) -> &Family {
         .expect("Alias is not in any families!")
 }
 
+#[derive(Debug)]
+pub struct Context<'a> {
+    family: &'a str,
+    alias: DisassembledAlias<'a>,
+    pub current_blob: Option<DisassembledBlob<'a>>,
+    blob_queue: VecDeque<DisassembledBlob<'a>>,
+    inst_count: usize,
+}
+
+impl<'a> Display for Context<'a> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.family.to_uppercase())?;
+        for arg in &self.alias.args {
+            fmt_option_arg(f, Some(arg))?;
+        }
+        if self.inst_count != 1 {
+            write!(f, "\t{}", self.blob_queue.front().unwrap())?;
+        }
+        Ok(())
+    }
+}
+
+impl<'a> Context<'a> {
+    fn new(alias: DisassembledAlias<'a>, blobs: Vec<DisassembledBlob<'a>>) -> Self {
+        Context {
+            family: &family_reverse_lookup(alias.alias).name,
+            alias,
+            inst_count: blobs.len(),
+            blob_queue: VecDeque::from(blobs),
+            current_blob: None,
+        }
+    }
+
+    pub fn current_blob(&self) -> Option<&DisassembledBlob<'a>> {
+        self.current_blob.as_ref()
+    }
+
+    fn advance_blob_queue(&mut self) {
+        self.current_blob = self.blob_queue.pop_front();
+    }
+}
+
 /// Container for stateful version of `disassemble_alias`, which keeps track of when we are "inside"
 /// a multiple-instruction `Alias`, so that the computed disassembly doesn't change (and remains correct).
 /// The `DisassemblyContext` stores the current `Alias` and current instruction, so that when we are
@@ -400,24 +439,6 @@ pub fn family_reverse_lookup(alias: &Alias) -> &Family {
 #[derive(Debug)]
 pub struct SteppingDisassembler<'a> {
     context: Context<'a>,
-}
-
-#[derive(Debug)]
-pub struct Context<'a> {
-    family: &'a str,
-    alias: DisassembledAlias<'a>,
-    blob_queue: VecDeque<DisassembledBlob<'a>>,
-    inst_count: usize,
-}
-
-impl<'a> Display for Context<'a> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.alias)?;
-        if self.inst_count != 1 {
-            write!(f, "\t{}", self.blob_queue.front().unwrap())?;
-        }
-        Ok(())
-    }
 }
 
 impl<'a> SteppingDisassembler<'a> {
@@ -447,34 +468,35 @@ impl<'a> SteppingDisassembler<'a> {
             }));
 
         let (alias, blobs) = disassemble_alias(blobs_it)?;
-        Ok(Context {
-            family: &family_reverse_lookup(alias.alias).name,
-            alias,
-            inst_count: blobs.len(),
-            blob_queue: VecDeque::from(blobs),
-        })
+        Ok(Context::new(alias, blobs))
     }
 
     pub fn step(&mut self, mut it: impl Iterator<Item = Word>) -> Result<(), Error> {
-        match self.context.blob_queue.pop_front() {
-            None => {
-                self.context = SteppingDisassembler::compute_context(None, &mut it)?;
-                return Ok(());
-            }
-            Some(front_blob) => {
-                // Check that the current blob matches the expected on from the top of the `blob_queue`.
-                // If not, recompute everything (calling `recompute_context`), but don't forget that we've already read a `ResolvedBlob` so we'll need
-                // to pass that to some version of `recompute_context` and consequenrly `disassemble_alias`.
-                let blob = disassemble_blob(&mut it)?;
-                if blob.blob.to_words() == front_blob.blob.to_words() {
-                    Ok(())
-                } else {
-                    // In principle (e.g. if the code itself was overwritten, or we jumped) this could happen and we would need
-                    // to recalculate, but for now let's just panic to find likely bugs.
-                    panic!("The blob cache was invalidated, did we jump/or did the code itself change? (otherwise, this is a bug)");
-                }
-            }
+        let actual_blob = disassemble_blob(&mut it)?;
+
+        self.context.advance_blob_queue();
+        if let None = self.context.current_blob() {
+            self.context = SteppingDisassembler::compute_context(Some(actual_blob.clone()), &mut it)?;
+            self.context.advance_blob_queue();
         }
+
+        // Check that the current blob matches the expected on from the top of the `blob_queue`.
+        // If not, if we haven't already, recompute everything (calling `compute_context`), but
+        // don't forget that we've already read a `ResolvedBlob` so we'll need to pass that to
+        // some version of `recompute_context` and consequently `disassemble_alias`.
+        let front_blob = self.context.current_blob().unwrap();
+        if actual_blob.blob.to_words() != front_blob.blob.to_words() {
+            // In principle (e.g. if the code itself was overwritten, or we jumped) this could happen and we would need
+            // to recalculate, but for now let's just panic to find likely bugs.
+            panic!(
+                "{}\n\tactual_blob was: {:#}\n\tfront_blob was: {:#}",
+                "The blob cache was invalidated, did we jump/or did the code itself change? (otherwise, this is a bug):",
+                actual_blob,
+                front_blob,
+            );
+        }
+
+        Ok(())
     }
 
     pub fn context(&self) -> &Context<'a> {

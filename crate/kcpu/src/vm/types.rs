@@ -58,7 +58,7 @@ impl<'a> BusState<'a> {
     }
 
     pub fn early_read(&self, b: Bus) -> Word {
-        let ret = self.bus[b].unwrap_or_else(|| b.get_pulled_value());
+        let ret = self.bus[b].unwrap_or_else(|| b.pulled_value());
         if self.log_level.internals {
             println!("  {} -> {:#06X}", b, ret);
         }

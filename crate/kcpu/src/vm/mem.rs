@@ -125,7 +125,7 @@ impl<'a> Mem<'a> {
     // RUSTFIX remove this, also why is the shift 7 bits?
     const F_BANK_SELECT: Word = 1 << 7;
 
-    fn get_selected_bank_type(&self, far: bool) -> BankType {
+    fn selected_bank_type(&self, far: bool) -> BankType {
         if self.prefix[far as usize] & Mem::F_BANK_SELECT == 0 {
             BankType::Bios
         } else {
@@ -133,14 +133,14 @@ impl<'a> Mem<'a> {
         }
     }
 
-    fn get_selected_bank(&self, far: bool) -> &Bank {
-        (&self.banks[self.get_selected_bank_type(far)])
+    fn selected_bank(&self, far: bool) -> &Bank {
+        (&self.banks[self.selected_bank_type(far)])
             .as_ref()
             .unwrap()
     }
 
-    fn get_mut_selected_bank(&mut self, far: bool) -> &mut Bank {
-        let typ = self.get_selected_bank_type(far);
+    fn mut_selected_bank(&mut self, far: bool) -> &mut Bank {
+        let typ = self.selected_bank_type(far);
         (&mut self.banks[typ]).as_mut().unwrap()
     }
 
@@ -173,10 +173,10 @@ impl<'a> Mem<'a> {
                             "  MB({}) -> {:#06X}@{:#06X}",
                             use_far,
                             self.fidd_adr,
-                            self.get_selected_bank(use_far).load(self.fidd_adr)
+                            self.selected_bank(use_far).load(self.fidd_adr)
                         );
                     }
-                    s.assign(Bus::M, self.get_selected_bank(use_far).load(self.fidd_adr));
+                    s.assign(Bus::M, self.selected_bank(use_far).load(self.fidd_adr));
                 }
             }
             _ => panic!("unknown memmode"),
@@ -285,8 +285,7 @@ impl<'a> Mem<'a> {
                     );
                 }
                 let adr = self.fidd_adr;
-                self.get_mut_selected_bank(use_far)
-                    .store(adr, s.read(Bus::M));
+                self.mut_selected_bank(use_far).store(adr, s.read(Bus::M));
             }
             usig::MCTRL_MODE_FI | usig::MCTRL_MODE_FI_MO | usig::MCTRL_MODE_FI_MO_FAR => {
                 // Note the address latching happens "early" in the outputcall,
@@ -298,6 +297,6 @@ impl<'a> Mem<'a> {
     }
 
     pub fn iter_at(&'a self, far: bool, addr: Word) -> impl Iterator<Item = Word> + 'a {
-        self.get_selected_bank(far).iter_at(addr)
+        self.selected_bank(far).iter_at(addr)
     }
 }

@@ -8,7 +8,7 @@ use crate::spec::types::hw::*;
 
 // RUSTFIX bring this trait into use, IU decoder (and other decoding that we have decided to do off-module?)
 pub trait Dcd {
-    // fn get_ius(IU) -> PReg;
+    // fn ius(IU) -> PReg;
 }
 
 pub trait Ctl {
@@ -32,8 +32,8 @@ pub trait Ctl {
     */
     fn is_tui_active(&self) -> bool;
 
-    // RUSTFIX Implement IU decoding (move this out of Reg), so that we can remove `get_inst()`,
-    fn get_inst(&self) -> Word;
+    // RUSTFIX Implement IU decoding (move this out of Reg), so that we can remove `inst()`,
+    fn inst(&self) -> Word;
 }
 
 pub trait Ioc {

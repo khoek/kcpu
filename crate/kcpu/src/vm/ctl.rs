@@ -137,19 +137,19 @@ impl<'a> Display for Ctl<'a> {
             f,
             "RIR: {:#06X} RFG: {:#06X}",
             self.regs[SReg::IR],
-            self.get_reg_fg()
+            self.reg_fg()
         )?;
         write!(
             f,
             "CBITS: {}{}{}{}{}{}{}{}",
-            self.get_cbit_format(CBit::Instmask),
-            self.get_cbit_format(CBit::Ie),
-            self.get_cbit_format(CBit::Hnmi),
-            self.get_cbit_format(CBit::IoWait),
-            self.get_cbit_format(CBit::Halted),
-            self.get_cbit_format(CBit::Aborted),
-            self.get_cbit_format(CBit::PintLatch),
-            self.get_cbit_format(CBit::IntEnter)
+            self.cbit_format(CBit::Instmask),
+            self.cbit_format(CBit::Ie),
+            self.cbit_format(CBit::Hnmi),
+            self.cbit_format(CBit::IoWait),
+            self.cbit_format(CBit::Halted),
+            self.cbit_format(CBit::Aborted),
+            self.cbit_format(CBit::PintLatch),
+            self.cbit_format(CBit::IntEnter)
         )?;
 
         Ok(())
@@ -183,7 +183,7 @@ impl<'a> Ctl<'a> {
     // RUSTFIX find a nice way to remove this, probably after the whole ucode overhaul (remove in the same way)
     const FG_CBIT_IE: Word = 1 << 0;
 
-    fn get_reg_fg(&self) -> Word {
+    fn reg_fg(&self) -> Word {
         (self.regs[SReg::RawFG] & 0x00FF) | (self.cbits[CBit::Ie] as Word * Ctl::FG_CBIT_IE)
     }
 
@@ -200,7 +200,7 @@ impl<'a> Ctl<'a> {
         assert!(val & !0x01FF == 0);
     }
 
-    fn get_cbit_format(&self, b: CBit) -> String {
+    fn cbit_format(&self, b: CBit) -> String {
         let s = b.to_string();
         if self.cbits[b] {
             s.to_uppercase()
@@ -219,7 +219,7 @@ impl<'a> Ctl<'a> {
                 usig::GCTRL_ALT_P_IE | usig::GCTRL_ALT_P_O_CHNMI_OR_I_ALUFG => (),
                 usig::GCTRL_ALT_CREG_FG => {
                     if usig::gctrl_creg_is_output(ui) {
-                        s.assign(Bus::B, self.get_reg_fg());
+                        s.assign(Bus::B, self.reg_fg());
                     }
                 }
                 usig::GCTRL_ALT_CREG_IHPR => {
@@ -411,7 +411,7 @@ impl<'a> Ctl<'a> {
             }
             _ => {
                 // It was one of the 8 JCOND codes
-                if ((self.get_reg_fg() /* only care about the low "ALU" bits of FG */ & Ctl::decode_jcond_mask(ui))
+                if ((self.reg_fg() /* only care about the low "ALU" bits of FG */ & Ctl::decode_jcond_mask(ui))
                     != 0)
                     != (ui & usig::GCTRL_JM_INVERTCOND != 0)
                 {
@@ -428,12 +428,12 @@ impl<'a> Ctl<'a> {
 
     fn load_uinst_latch(&mut self) {
         if self.log_level.internals {
-            print!("uinst latch <- {:#06X}", interface::Ctl::get_inst(self));
+            print!("uinst latch <- {:#06X}", interface::Ctl::inst(self));
         }
 
         self.uinst_latch_val = ucode::UCode::get()
             .read(PUAddr::new(
-                Inst::decode_opcode(interface::Ctl::get_inst(self)),
+                Inst::decode_opcode(interface::Ctl::inst(self)),
                 self.regs[SReg::UC] as UCVal,
             ))
             .expect("latching undefined ucode instruction!");
@@ -490,7 +490,7 @@ impl<'a> interface::Ctl for Ctl<'a> {
         !self.cbits[CBit::Hnmi] && !self.cbits[CBit::Instmask]
     }
 
-    fn get_inst(&self) -> Word {
+    fn inst(&self) -> Word {
         // HARDWARE NOTE: CBit::IoWait inhibits CBit::Instmask, for obvious reasons,
         // EXCEPT WHEN IO_DONE IS ASSERTED, WHEN CBit::Instmask BEHAVES AS NORMAL.
         // (This is the actual behaviour as emulated, see the hardware note in `offclock_pulse()`.)

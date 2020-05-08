@@ -5,7 +5,7 @@ use crate::spec::types::{
     hw::{self, Byte, Word},
     schema::ArgKind,
 };
-use colored::Colorize;
+use ansi_term::Color::{Green, Red, Yellow};
 use itertools::{EitherOrBoth, Itertools};
 use std::{fmt::Display, iter};
 
@@ -27,14 +27,14 @@ impl Error {
             .iter()
             .zip_longest(args.iter())
             .map(|res| match res {
-                EitherOrBoth::Left(kind) => format!("{}", kind).yellow(),
-                EitherOrBoth::Right(_) => format!("<extra>").yellow(),
+                EitherOrBoth::Left(kind) => Yellow.paint(kind.to_string()),
+                EitherOrBoth::Right(_) => Yellow.paint("<extra>"),
                 EitherOrBoth::Both(kind, arg) => {
-                    let kind_fmt = format!("{}", kind);
+                    let kind_fmt = kind.to_string();
                     if kind.matches(arg) {
-                        kind_fmt.green()
+                        Green.paint(kind_fmt)
                     } else {
-                        kind_fmt.red()
+                        Red.paint(kind_fmt)
                     }
                 }
             })

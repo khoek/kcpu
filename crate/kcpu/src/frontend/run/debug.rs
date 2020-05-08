@@ -1,8 +1,9 @@
 use super::execute::{ExecutionHook, ExecutionMode};
 use crate::{
     assembler::disasm::{self, SteppingDisassembler},
-    vm::{DebugExecInfo, Instance},
+    vm::{debug::ExecPhase, Instance},
 };
+use ansi_term::{Color, Style};
 use io::{BufRead, Write};
 use std::io;
 
@@ -14,11 +15,10 @@ pub enum BreakOn {
 }
 
 impl BreakOn {
-    // RUSTFIX remove??
-    fn should_pause(&self, dbg: DebugExecInfo) -> bool {
+    fn should_pause(&self, phase: ExecPhase) -> bool {
         match self {
-            BreakOn::Inst => dbg.is_true_inst_beginning(),
-            BreakOn::UCReset => dbg.uc_reset,
+            BreakOn::Inst => phase == ExecPhase::TrueInst(0),
+            BreakOn::UCReset => phase.is_first_uop(),
             BreakOn::UInst => true,
         }
     }
@@ -29,24 +29,65 @@ fn debug_hook(
     break_on: BreakOn,
     disasm: &mut Option<SteppingDisassembler>,
 ) -> Result<ExecutionMode, disasm::Error> {
+    let phase = vm.debug_exec_phase();
+
     if let None = disasm {
         *disasm = Some(SteppingDisassembler::new(&mut vm.iter_at_ip())?);
     }
+
     let disasm = disasm.as_mut().unwrap();
-
-    let dbg = vm.get_debug_exec_info();
-
-    if dbg.is_true_inst_beginning() {
+    if let ExecPhase::Load(0) = phase {
         disasm.step(vm.iter_at_ip())?;
     }
+    let ctx = disasm.context();
 
-    println!("----------------------------------");
-    println!("\t{}", format!("{}", disasm.context()).replace("\n", "\t"));
-    println!("----------------------------------");
+    let (style, prefix) = match phase {
+        ExecPhase::DispatchInterrupt(_) => (
+            Color::White.bold().on(Color::Fixed(55)),
+            String::from("DINT"),
+        ),
+        ExecPhase::IoWait(_) => (Color::White.bold().on(Color::Fixed(90)), String::from("IO")),
+        ExecPhase::Load(uc) => (
+            Color::White.bold().on(Color::Fixed(88)),
+            format!(
+                "L {}/{}",
+                (uc as usize) + 1,
+                ctx.current_blob()
+                    .map(|blob| if blob.blob.inst.load_data { 4 } else { 2 })
+                    .map(|i| i.to_string())
+                    .unwrap_or(Style::new().blink().paint("???").to_string())
+            ),
+        ),
+        ExecPhase::TrueInst(uc) => (
+            if uc == 0 {
+                Color::White.bold().on(Color::Fixed(22))
+            } else {
+                Color::White.bold().on(Color::Fixed(130))
+            },
+            String::from("TRUE"),
+        ),
+    };
+
+    let inst = format!("{}", ctx.to_string().replace("\n", "\t"));
+
+    let col_space = 16;
+    println!("{:-<50}", "");
+    println!(
+        "{}",
+        style.paint(format!(
+            " {}{: <padding1$}{: <padding2$}",
+            prefix,
+            "",
+            inst,
+            padding1 = col_space - 1 - prefix.len(),
+            padding2 = 50 - col_space,
+        ))
+    );
+    println!("{:-<50}", "");
     println!("{}", vm);
-    println!("----------------------------------");
+    println!("{:-<50}", "");
 
-    if break_on.should_pause(dbg) {
+    if break_on.should_pause(phase) {
         let prompt_msg = "[ENTER to step]";
         println!("{}", prompt_msg);
         io::stdout().flush().unwrap();
@@ -62,8 +103,9 @@ fn debug_hook(
 }
 
 pub fn hook(break_on: Option<BreakOn>) -> impl ExecutionHook<disasm::Error> {
+    let mut disasm = None;
     move |vm: &Instance| match break_on {
         None => Ok(ExecutionMode::Continue),
-        Some(break_on) => debug_hook(vm, break_on, &mut None),
+        Some(break_on) => debug_hook(vm, break_on, &mut disasm),
     }
 }

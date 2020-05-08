@@ -28,7 +28,7 @@ impl ClockedSignals {
 // RUSTFIX better API using rusts enums/etc.?
 pub trait Device {
     // RUSTFIX move this to an associated constant (in another trait, like `PortAddressed`, and make `add_device` accept something which is both `Device` and `PortAddressed`)
-    fn get_reserved_ports(&self) -> Vec<Word>;
+    fn reserved_ports(&self) -> Vec<Word>;
 
     fn write(&mut self, port: Word, val: Word) -> HalfcycleCount;
     fn read(&mut self, port: Word) -> (HalfcycleCount, Word);
@@ -38,8 +38,8 @@ pub trait Device {
 }
 
 pub trait SinglePortDevice {
-    // RUSTFIX move this to an associated constant once we move `get_reserved_ports()`
-    fn get_reserved_port(&self) -> Word;
+    // RUSTFIX move this to an associated constant once we move `reserved_ports()`
+    fn reserved_port(&self) -> Word;
 
     fn write(&mut self, val: Word) -> HalfcycleCount;
     fn read(&mut self) -> (HalfcycleCount, Word);
@@ -48,17 +48,17 @@ pub trait SinglePortDevice {
 
 impl<T: SinglePortDevice> Device for T {
     // RUSTFIX move this to an associated constant (in another trait, like `PortAddressed`, and make `add_device` accept something which is both `Device` and `PortAddressed`)
-    fn get_reserved_ports(&self) -> Vec<Word> {
-        vec![self.get_reserved_port()]
+    fn reserved_ports(&self) -> Vec<Word> {
+        vec![self.reserved_port()]
     }
 
     fn write(&mut self, port: Word, val: Word) -> HalfcycleCount {
-        assert_eq!(port, self.get_reserved_port());
+        assert_eq!(port, self.reserved_port());
         self.write(val)
     }
 
     fn read(&mut self, port: Word) -> (HalfcycleCount, Word) {
-        assert_eq!(port, self.get_reserved_port());
+        assert_eq!(port, self.reserved_port());
         self.read()
     }
 
@@ -106,8 +106,8 @@ impl<T: Device + ?Sized> Handle<T> {
 }
 
 impl<T: Device + ?Sized> Handle<T> {
-    pub(super) fn get_reserved_ports(&self) -> Vec<Word> {
-        self.rc.borrow().get_reserved_ports()
+    pub(super) fn reserved_ports(&self) -> Vec<Word> {
+        self.rc.borrow().reserved_ports()
     }
 
     pub(super) fn write(&self, port: Word, val: Word) -> HalfcycleCount {

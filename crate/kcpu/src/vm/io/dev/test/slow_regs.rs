@@ -15,7 +15,7 @@ impl SlowRegs {
 }
 
 impl SinglePortDevice for SlowRegs {
-    fn get_reserved_port(&self) -> Word {
+    fn reserved_port(&self) -> Word {
         PORT_BASE + (self.delay as Word)
     }
 

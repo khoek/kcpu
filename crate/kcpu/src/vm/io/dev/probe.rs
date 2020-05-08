@@ -19,7 +19,7 @@ impl Probe {
 }
 
 impl SinglePortDevice for Probe {
-    fn get_reserved_port(&self) -> Word {
+    fn reserved_port(&self) -> Word {
         PORT_BASE
     }
 

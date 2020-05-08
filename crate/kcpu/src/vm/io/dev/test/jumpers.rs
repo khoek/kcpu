@@ -20,7 +20,7 @@ impl Jumpers {
 }
 
 impl SinglePortDevice for Jumpers {
-    fn get_reserved_port(&self) -> Word {
+    fn reserved_port(&self) -> Word {
         PORT_BASE
     }
 

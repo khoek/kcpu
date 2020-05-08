@@ -4,7 +4,7 @@ use super::{
 };
 use crate::assembler;
 use crate::vm::State;
-use colored::Colorize;
+use ansi_term::Color::{Green, Red};
 use derive_more::Constructor;
 use std::ffi::OsString;
 use std::io::{self, Write};
@@ -153,9 +153,9 @@ fn run_units(max_clocks: Option<u64>, units: &[UnitSrc]) -> bool {
     println!(
         "Suite Result: {}, {}/{} passes",
         if success {
-            "SUCCESS".green()
+            Green.paint("SUCCESS")
         } else {
-            "FAILED".red()
+            Red.paint("FAILED")
         },
         passes,
         units.len()
@@ -181,8 +181,8 @@ fn run_unit(src: &UnitSrc, num: usize, name_pad: usize, max_clocks: Option<u64>)
         Err(err) => {
             println!(
                 "{}:\n\t{}",
-                "FAIL: ASSEMBLY ERROR".red(),
-                format!("{}", err).replace("\n", "\n\t")
+                Red.paint("FAIL: ASSEMBLY ERROR"),
+                err.to_string().replace("\n", "\n\t")
             );
 
             false
@@ -191,18 +191,18 @@ fn run_unit(src: &UnitSrc, num: usize, name_pad: usize, max_clocks: Option<u64>)
             match (summary.timeout, &summary.state) {
                 (true, _) => println!(
                     "{} after {}μops ({}ms)",
-                    "FAIL: DETERMINISTIC TIMEOUT".red(),
+                    Red.paint("FAIL: DETERMINISTIC TIMEOUT"),
                     max_clocks.unwrap(),
                     summary.real_ns_elapsed / 1000 / 1000
                 ),
                 (false, State::Halted) => println!(
                     "{} {:7 }μops {: >4}ms  ({: >5.2}MHz)",
-                    "PASS".green(),
+                    Green.paint("PASS"),
                     summary.total_clocks,
                     summary.real_ns_elapsed / 1000 / 1000,
                     summary.to_effective_freq_megahertz(),
                 ),
-                (false, State::Aborted) => println!("{}", "FAIL: ABORTED".red()),
+                (false, State::Aborted) => println!("{}", Red.paint("FAIL: ABORTED")),
                 (false, State::Running) => panic!("internal unit runner error: VM still running!"),
             }
 

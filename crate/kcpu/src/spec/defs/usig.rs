@@ -247,7 +247,7 @@ pub const fn rctrl_iu_is_en(dec: u16) -> bool {
     0b100 & dec != 0
 }
 
-pub fn rctrl_iu_get_bus(dec: u16) -> Bus {
+pub fn rctrl_iu_to_bus(dec: u16) -> Bus {
     if 0b010 & dec == 0 { Bus::A } else { Bus::B }
 }
 

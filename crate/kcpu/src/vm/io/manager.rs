@@ -98,7 +98,7 @@ impl<'a> Manager<'a> {
     pub fn add_device<T: Device + 'a>(&mut self, d: T) -> Handle<T> {
         let h = Handle::new(d);
 
-        for port in &h.get_reserved_ports() {
+        for port in &h.reserved_ports() {
             assert!(self.ports.insert(*port, h.forget()).is_none());
         }
 
@@ -107,7 +107,7 @@ impl<'a> Manager<'a> {
         h
     }
 
-    pub fn get_registered_ports(&self) -> Vec<Word> {
+    pub fn registered_ports(&self) -> Vec<Word> {
         self.ports.keys().copied().collect()
     }
 
@@ -118,7 +118,7 @@ impl<'a> Manager<'a> {
         }
     }
 
-    pub fn get_read_result(&self) -> Option<Word> {
+    pub fn read_result(&self) -> Option<Word> {
         match self.state {
             // NOTE: I think this might be too constrained, erroring when we are trying to read but waiting. Of course we could return a dummy value, but there are still some checks we can do
             // e.g. whether we are actually reading and not writing or something.
@@ -132,7 +132,7 @@ impl<'a> Manager<'a> {
         }
     }
 
-    fn get_device(&self, port: Word) -> &Handle<dyn Device + 'a> {
+    fn device(&self, port: Word) -> &Handle<dyn Device + 'a> {
         match self.ports.get(&port) {
             None => panic!("command to floating port: {:#0X}", port),
             Some(dev) => dev,
@@ -148,12 +148,12 @@ impl<'a> Manager<'a> {
             (State::Idle, Some(cmd)) => {
                 match cmd {
                     Command::Read { port } => {
-                        let (cycles, result) = self.get_device(port).read(port);
+                        let (cycles, result) = self.device(port).read(port);
                         self.state =
                             State::Active(Status::Ongoing(cycles), Operation::Read { result });
                     }
                     Command::Write { port, value } => {
-                        let cycles = self.get_device(port).write(port, value);
+                        let cycles = self.device(port).write(port, value);
                         self.state = State::Active(Status::Ongoing(cycles), Operation::Write);
                     }
                 }

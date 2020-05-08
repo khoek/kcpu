@@ -108,6 +108,7 @@ pub struct Family {
 
 #[derive(Debug, PartialEq, Eq)]
 pub struct Alias {
+    pub from_idef: bool,
     pub name: String,
     pub arg_count: usize,
     pub vinsts: Vec<Virtual>,
@@ -334,7 +335,7 @@ impl Family {
 }
 
 impl Alias {
-    pub fn new(name: String, vinsts: Vec<Virtual>) -> Self {
+    pub fn new(from_idef: bool, name: String, vinsts: Vec<Virtual>) -> Self {
         // Check that we can infer the type of `a`. This verifies
         // that the type of `a` "makes sense", in that the unbound
         // slots in the `Virtual` list are not contradictory in
@@ -343,6 +344,7 @@ impl Alias {
         let typ = Self::infer_type_from_virtuals(&vinsts);
 
         Self {
+            from_idef,
             name: sanitize_name(&name),
             arg_count: typ.len(),
             vinsts,
@@ -350,11 +352,20 @@ impl Alias {
     }
 
     pub fn with(name: &str, vinsts: Vec<Virtual>) -> Self {
-        Self::new(name.to_owned(), vinsts)
+        Self::new(false, name.to_owned(), vinsts)
     }
 
     pub fn with_single(name: &str, vinst: Virtual) -> Self {
-        Self::new(name.to_owned(), vec![vinst])
+        Self::new(false, name.to_owned(), vec![vinst])
+    }
+
+    fn with_inst_def_and_name(idef: &InstDef, name: String) -> Self {
+        let mut slots = EnumMap::new();
+        for iu in IU::iter() {
+            slots[iu] = idef.args[iu].map(|_| Slot::Arg(iu as ArgIdx));
+        }
+
+        Alias::new(true, name, vec![Virtual::new(idef.opclass.clone(), slots)])
     }
 
     fn infer_type_from_virtuals(vinsts: &[Virtual]) -> Vec<ArgKind> {
@@ -414,14 +425,16 @@ impl Alias {
     }
 }
 
-impl From<InstDef> for Alias {
-    fn from(idef: InstDef) -> Self {
-        let mut slots = EnumMap::new();
-        for iu in IU::iter() {
-            slots[iu] = idef.args[iu].map(|_| Slot::Arg(iu as ArgIdx));
-        }
+impl From<&InstDef> for Alias {
+    fn from(idef: &InstDef) -> Self {
+        Self::with_inst_def_and_name(idef, idef.name.clone())
+    }
+}
 
-        Alias::new(idef.name, vec![Virtual::new(idef.opclass, slots)])
+impl From<OpClass> for Alias {
+    fn from(oc: OpClass) -> Self {
+        // RUSTFIX EVIL? encapsulation breaking
+        Self::from(common::unwrap_singleton(UCode::get().inst_def_iter().filter(|idef| idef.opclass == oc)))
     }
 }
 

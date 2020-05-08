@@ -4,6 +4,7 @@ use derive_more::Constructor;
 use std::convert::Infallible;
 use std::io::{self, BufRead, Write};
 
+// RUSTFIX probably remove this
 #[derive(Debug, Clone, Copy)]
 pub enum Verbosity {
     Silent,
@@ -75,19 +76,15 @@ pub fn execute_with_hook<Error>(
 ) -> Result<Summary, Error> {
     let bios = Bank::new(
         BankType::Bios,
-        raw_bios
-            .unwrap_or_else(|| assets::get_default_bios())
-            .to_vec(),
+        raw_bios.unwrap_or_else(|| assets::default_bios()).to_vec(),
     );
     let prog = Bank::new(
         BankType::Prog,
-        raw_prog
-            .unwrap_or_else(|| assets::get_default_prog())
-            .to_vec(),
+        raw_prog.unwrap_or_else(|| assets::default_prog()).to_vec(),
     );
 
     // RUSTFIX implement graphics
-    // graphics::get_graphics().configure(self.headless);
+    // graphics::graphics().configure(self.headless);
 
     if cfg.print_marginals {
         println!("CPU Start");
@@ -104,7 +101,7 @@ pub fn execute_with_hook<Error>(
 
         vm.run(clocks);
 
-        match vm.get_state() {
+        match vm.state() {
             State::Running => (),
             State::Halted => break false,
             State::Aborted => {
@@ -133,17 +130,17 @@ pub fn execute_with_hook<Error>(
         }
 
         if let Some(max_clocks) = cfg.max_clocks {
-            if vm.get_total_clocks() >= max_clocks {
+            if vm.total_clocks() >= max_clocks {
                 break true;
             }
         }
     };
 
     let summary = Summary::new(
-        vm.get_state(),
+        vm.state(),
         did_timeout,
-        vm.get_total_clocks(),
-        vm.get_real_ns_elapsed(),
+        vm.total_clocks(),
+        vm.real_ns_elapsed(),
     );
 
     if cfg.print_marginals {

@@ -139,10 +139,9 @@ pub fn run(cmd: SubcommandRun) -> ! {
         .unwrap();
     let prog_bin = assemble::assemble_path(&cmd.in_prog_src).unwrap();
 
-    // let summary = execute_prog_with_opts(bios_bin.as_deref(), &prog_bin, cmd.vm_opts).unwrap();
     let summary = match execute_prog_with_opts(bios_bin.as_deref(), &prog_bin, cmd.vm_opts) {
         Ok(summary) => summary,
-        Err(err) => panic!("{}", err),
+        Err(err) => panic!("Error: {}", err),
     };
 
     std::process::exit(summary_to_exit_code(&summary));
@@ -154,7 +153,7 @@ pub fn suite(cmd: SubcommandSuite) -> ! {
         &cmd.suite_name,
         &cmd.opts
             .suite_root_dir
-            .unwrap_or_else(assets::get_default_suite_dir),
+            .unwrap_or_else(assets::default_suite_dir),
         &cmd.opts.only,
         Some(cmd.opts.max_clocks),
     )

@@ -58,7 +58,7 @@ impl Builder {
 
         // RUSTFIX EVIL? breaking out of encapsulation
         for idef in UCode::get().inst_def_iter() {
-            builder.register_alias(Alias::from((*idef).clone()));
+            builder.register_alias(Alias::from(idef));
         }
 
         builder

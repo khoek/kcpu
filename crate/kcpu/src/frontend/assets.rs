@@ -5,7 +5,7 @@ use std::path::PathBuf;
 pub const DEFAULT_BINARY_EXT: &str = "kb";
 
 // RUSTFIX make this const once `PathBuf` is.
-pub fn get_default_suite_dir() -> PathBuf {
+pub fn default_suite_dir() -> PathBuf {
     ["asm"].iter().collect()
 }
 
@@ -25,10 +25,10 @@ fn assemble_default_prog() -> Vec<u8> {
         .expect("Could not compile binary-packaged default PROGRAM source file")
 }
 
-pub fn get_default_bios() -> &'static Vec<u8> {
+pub fn default_bios() -> &'static Vec<u8> {
     Lazy::force(&DEFAULT_BIOS_BIN)
 }
 
-pub fn get_default_prog() -> &'static Vec<u8> {
+pub fn default_prog() -> &'static Vec<u8> {
     Lazy::force(&DEFAULT_PROG_BIN)
 }

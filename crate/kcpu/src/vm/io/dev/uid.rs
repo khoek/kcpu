@@ -13,7 +13,7 @@ impl Uid {
 }
 
 impl SinglePortDevice for Uid {
-    fn get_reserved_port(&self) -> Word {
+    fn reserved_port(&self) -> Word {
         PORT_BASE
     }
 
