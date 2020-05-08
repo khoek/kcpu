@@ -54,7 +54,7 @@ impl<'a> Reg<'a> {
     fn maybe_assign(&self, iunum: u8, s: &mut BusState, iu: u16, r: PReg) {
         if usig::rctrl_iu_is_en(iu) && usig::rctrl_iu_is_output(iu) {
             if self.log_level.internals {
-                println!("  iu{}: {} <- {}:", iunum, usig::rctrl_iu_to_bus(iu), r);
+                println!("  iu{}: {} <- r{}:", iunum, usig::rctrl_iu_to_bus(iu), r);
             }
             s.assign(usig::rctrl_iu_to_bus(iu), self.regs[r]);
 
@@ -66,7 +66,7 @@ impl<'a> Reg<'a> {
     fn maybe_read(&mut self, iunum: u8, s: &BusState, iu: u16, r: PReg) {
         if usig::rctrl_iu_is_en(iu) && usig::rctrl_iu_is_input(iu) {
             if self.log_level.internals {
-                println!("  iu{}: {} -> {}:", iunum, usig::rctrl_iu_to_bus(iu), r);
+                println!("  iu{}: {} -> r{}:", iunum, usig::rctrl_iu_to_bus(iu), r);
             }
             self.regs[r] = s.read(usig::rctrl_iu_to_bus(iu));
 
