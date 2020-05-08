@@ -1,6 +1,6 @@
 use super::{lang::Lang, model::RegRef};
 use crate::assembler::model::{
-    Alias, Arg, Const, ConstBinding, Family, ResolvedArg, ResolvedBlob, Slot, Virtual,
+    Alias, Arg, Const, ConstBinding, Family, ResolvedArg, ResolvedBlob, Slot,
 };
 use crate::{
     common,
@@ -194,12 +194,17 @@ impl<'a> PartialDisassembledAlias<'a> {
         }
     }
 
-    /// Reconstructs some of its arguments using the passed `Virtual` and a `DisassembledBlob`, with
-    /// the former supposedly obtained by instantiating the latter.
+    /// Reconstructs some of its arguments using the passed index in `self.alias` for a `Virtual`
+    /// and a `DisassembledBlob`, with the latter supposedly obtained by instantiating the former.
     ///
     /// Destroys itself if it finds a contradiction, so reconstruction is not possible (it doesn't
     /// even make sense).
-    fn reconstruct_args(mut self, virt: &Virtual, blob: &DisassembledBlob) -> Option<Self> {
+    fn reconstruct_args(mut self, idx: usize, blob: &DisassembledBlob) -> Option<Self> {
+        let virt = match self.alias.vinsts.get(idx) {
+            Some(virt) => virt,
+            None => return None,
+        };
+
         if virt.opclass != blob.idef.opclass {
             return None;
         }
@@ -258,73 +263,61 @@ impl<'a> PartialDisassembledAlias<'a> {
         Some(self)
     }
 
-    fn into_complete(self) -> DisassembledAlias<'a> {
+    fn into_complete(self) -> Result<DisassembledAlias<'a>, Error> {
+        let fmt = self.to_string();
+        let args = self
+            .args
+            .into_iter()
+            .enumerate()
+            .map(|(i, arg)| arg.ok_or(Error::CouldNotResolveAliasArgs(fmt.clone(), i)))
+            .collect::<Result<Vec<_>, _>>()?;
+
         {
             // BUGCHECK Consider making this whole thing a debug assertion.
-            if self
-                .args
-                .iter()
-                .filter(|arg| {
-                    if let Some(Arg::Const(_)) = arg {
-                        true
-                    } else {
-                        false
-                    }
-                })
-                .count()
-                > 1
-            {
-                panic!("Attempting to complete partial alias '{}' which has multiple constant arguments", self);
+            if args.iter().filter(|arg| arg.is_const()).count() > 1 {
+                panic!("Attempting to complete partial alias '{}' which has multiple constant arguments", fmt);
             }
         }
 
-        DisassembledAlias {
+        Ok(DisassembledAlias {
             alias: self.alias,
-            args: self.args.into_iter().map(|arg| arg.unwrap()).collect(),
-        }
+            args,
+        })
     }
 }
 
 /// Returns the number of `PartialDisassembledAlias`es which have not yet been ruled out nor matched.
 fn resolve_partials_against_blob<'a>(
-    candidates: &mut Vec<Option<PartialDisassembledAlias<'a>>>,
+    candidates: &mut [Option<PartialDisassembledAlias<'a>>],
     mut matches: Option<&mut Vec<DisassembledAlias<'a>>>,
     idx: usize,
     blob: &DisassembledBlob,
-) -> Result<usize, Error> {
+) -> Result<bool, Error> {
     // RUSTFIX change `candidates` to use a `LinkedList` with `drain_filter` when it arrives.
+    // RUSTFIX this is a real mess
 
-    let mut remaining_unresolved = 0;
+    let mut any_remaining = false;
+
     for cand in candidates {
         if let Some(partial) = cand.take() {
-            match partial.alias.vinsts.get(idx) {
-                Some(virt) => {
-                    // If `partial` is still consistent given this new information,
-                    // put it back, otherwise destroy it.
-                    *cand = partial.reconstruct_args(virt, blob);
-                    if cand.is_some() {
-                        remaining_unresolved += 1;
-                    }
-                }
-                None => {
-                    {
-                        // BUGCHECK Consider making this whole thing a debug assertion.
-                        partial.args.iter().enumerate().try_for_each(|(i, arg)| {
-                            arg.as_ref()
-                                .map(|_| ())
-                                .ok_or(Error::CouldNotResolveAliasArgs(partial.to_string(), i))
-                        })?;
-                    }
+            // If `partial` is still consistent given this new information,
+            // put it back, otherwise destroy it.
+            *cand = partial.reconstruct_args(idx, blob);
+        }
 
-                    if let Some(matches) = matches.as_mut() {
-                        matches.push(partial.into_complete());
-                    }
+        if let Some(partial) = cand {
+            // Has this alias run out of `vinsts`?
+            if partial.alias.vinsts.get(idx + 1).is_none() {
+                if let Some(matches) = matches.as_mut() {
+                    matches.push(cand.take().unwrap().into_complete()?);
                 }
+            } else {
+                any_remaining = true;
             }
         }
     }
 
-    Ok(remaining_unresolved)
+    Ok(any_remaining)
 }
 
 /// Statically disassemble the given stream of `Word`s from main memory, taking ownership
@@ -353,15 +346,17 @@ pub fn disassemble_alias<'a>(
 
     loop {
         let new_blob = it.next().ok_or(Error::UnexpectedEndOfStream)??;
-        let remaining = resolve_partials_against_blob(
+
+        let any_remaining = resolve_partials_against_blob(
             &mut candidates,
             Some(&mut matches),
             blobs.len(),
             &new_blob,
         )?;
+
         blobs.push(new_blob);
 
-        if remaining == 0 {
+        if !any_remaining {
             break;
         }
     }
@@ -458,12 +453,21 @@ pub struct Context<'a> {
 
 impl<'a> Display for Context<'a> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        if self.inst_count != 1 {
+            write!(f, "<")?;
+        }
         write!(f, "{}", self.family.to_uppercase())?;
         for arg in &self.alias.args {
             fmt_option_arg(f, Some(arg))?;
         }
         if self.inst_count != 1 {
-            write!(f, "\t{}", self.current_blob().unwrap())?;
+            write!(
+                f,
+                ":{}/{}> {}",
+                self.alias.alias.vinsts.len() - self.blob_queue.len(),
+                self.alias.alias.vinsts.len(),
+                self.current_blob().unwrap()
+            )?;
         }
         Ok(())
     }
@@ -499,7 +503,7 @@ pub struct SteppingDisassembler<'a> {
 }
 
 impl<'a> SteppingDisassembler<'a> {
-    pub fn new(it: &mut impl Iterator<Item = Word>) -> Result<Self, Error> {
+    pub fn new(it: impl Iterator<Item = Word>) -> Result<Self, Error> {
         Ok(Self {
             context: Self::compute_context(None, it)?,
         })
@@ -507,7 +511,7 @@ impl<'a> SteppingDisassembler<'a> {
 
     fn compute_context(
         first_blob: Option<DisassembledBlob<'a>>,
-        it: &mut impl Iterator<Item = Word>,
+        it: impl Iterator<Item = Word>,
     ) -> Result<Context<'a>, Error> {
         let mut it = it.peekable();
 
@@ -533,8 +537,7 @@ impl<'a> SteppingDisassembler<'a> {
 
         self.context.advance_blob_queue();
         if let None = self.context.current_blob() {
-            self.context =
-                SteppingDisassembler::compute_context(Some(actual_blob.clone()), &mut it)?;
+            self.context = SteppingDisassembler::compute_context(Some(actual_blob.clone()), it)?;
             self.context.advance_blob_queue();
         }
 

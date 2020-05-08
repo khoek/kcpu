@@ -294,6 +294,13 @@ impl<Tag> Arg<Tag> {
         }
     }
 
+    pub fn is_const(&self) -> bool {
+        match self {
+            Arg::Reg(_) => false,
+            Arg::Const(_) => true,
+        }
+    }
+
     pub fn disassemble(blob: &Blob<Tag>, iu: IU, kind: ArgKind) -> Self
     where
         Tag: Clone,
