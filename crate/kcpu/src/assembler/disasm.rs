@@ -146,7 +146,7 @@ impl<'a> PartialDisassembledAlias<'a> {
         }
     }
 
-    fn unwrap(self) -> DisassembledAlias<'a> {
+    fn unwrap_args(self) -> DisassembledAlias<'a> {
         DisassembledAlias {
             alias: self.alias,
             args: self.args.into_iter().map(|arg| arg.unwrap()).collect(),
@@ -177,7 +177,11 @@ impl<'a> DisassembledAlias<'a> {
 
 impl<'a> DisassembledAlias<'a> {
     fn specificity_score(&self) -> (usize, isize, bool) {
-        (self.alias.vinsts.len(), -(self.alias.arg_count as isize), self.alias.from_idef)
+        (
+            self.alias.vinsts.len(),
+            -(self.alias.arg_count as isize),
+            self.alias.from_idef,
+        )
     }
 }
 
@@ -214,7 +218,11 @@ fn reconstruct_args_using_blob_partials(
             },
             // If the slot is not `Slot::Arg` then it is bound, so it is
             // safe to `unwrap()` after `Slot::to_arg()`.
-            (Some(arg), Some(slot)) => if slot.to_arg().as_ref().unwrap() != arg { return false },
+            (Some(arg), Some(slot)) => {
+                if slot.to_arg().as_ref().unwrap() != arg {
+                    return false;
+                }
+            }
             (None, None) => (),
             _ => panic!(
                 "argument disagree for same opcode: '{:?}' vs '{:?}'",
@@ -260,7 +268,7 @@ fn resolve_partials_against_blob<'a>(
                     }
 
                     if let Some(matches) = matches.as_mut() {
-                        matches.push(partial.unwrap());
+                        matches.push(partial.unwrap_args());
                     }
                 }
             }
@@ -476,7 +484,8 @@ impl<'a> SteppingDisassembler<'a> {
 
         self.context.advance_blob_queue();
         if let None = self.context.current_blob() {
-            self.context = SteppingDisassembler::compute_context(Some(actual_blob.clone()), &mut it)?;
+            self.context =
+                SteppingDisassembler::compute_context(Some(actual_blob.clone()), &mut it)?;
             self.context.advance_blob_queue();
         }
 

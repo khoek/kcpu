@@ -434,7 +434,11 @@ impl From<&InstDef> for Alias {
 impl From<OpClass> for Alias {
     fn from(oc: OpClass) -> Self {
         // RUSTFIX EVIL? encapsulation breaking
-        Self::from(common::unwrap_singleton(UCode::get().inst_def_iter().filter(|idef| idef.opclass == oc)))
+        Self::from(common::unwrap_singleton(
+            UCode::get()
+                .inst_def_iter()
+                .filter(|idef| idef.opclass == oc),
+        ))
     }
 }
 
