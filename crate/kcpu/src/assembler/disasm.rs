@@ -115,45 +115,6 @@ pub fn disassemble_blob<'a>(
     Ok(DisassembledBlob { blob, idef, args })
 }
 
-fn fmt_option_arg(f: &mut std::fmt::Formatter<'_>, arg: Option<&ResolvedArg>) -> std::fmt::Result {
-    match arg {
-        Some(arg) => write!(f, " {}", arg),
-        None => write!(f, " <unresolved>"),
-    }
-}
-
-#[derive(Debug, Clone)]
-struct PartialDisassembledAlias<'a> {
-    alias: &'a Alias,
-    args: Vec<Option<ResolvedArg>>,
-}
-
-impl<'a> Display for PartialDisassembledAlias<'a> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.alias.name)?;
-        for arg in &self.args {
-            fmt_option_arg(f, arg.as_ref())?;
-        }
-        Ok(())
-    }
-}
-
-impl<'a> PartialDisassembledAlias<'a> {
-    fn new(alias: &'a Alias) -> Self {
-        Self {
-            alias,
-            args: vec![None; alias.arg_count],
-        }
-    }
-
-    fn unwrap_args(self) -> DisassembledAlias<'a> {
-        DisassembledAlias {
-            alias: self.alias,
-            args: self.args.into_iter().map(|arg| arg.unwrap()).collect(),
-        }
-    }
-}
-
 #[derive(Debug, Clone, PartialEq)]
 pub struct DisassembledAlias<'a> {
     pub alias: &'a Alias,
@@ -199,45 +160,87 @@ impl<'a> PartialOrd for DisassembledAlias<'a> {
     }
 }
 
-// Returns `false` if we found a contradiction, so reconstruction is not possible (it doesn't even make sense).
-fn reconstruct_args_using_blob_partials(
-    args: &mut Vec<Option<ResolvedArg>>,
-    virt: &Virtual,
-    blob: &DisassembledBlob,
-) -> bool {
-    if virt.opclass != blob.idef.opclass {
-        return false;
+fn fmt_option_arg(f: &mut std::fmt::Formatter<'_>, arg: Option<&ResolvedArg>) -> std::fmt::Result {
+    match arg {
+        Some(arg) => write!(f, " {}", arg),
+        None => write!(f, " <unresolved>"),
     }
+}
 
-    for (iu, slot) in virt.slots {
-        match (&blob.args[iu], slot) {
-            (Some(arg), Some(Slot::Arg(idx))) => match &args[idx] {
-                Some(blob_arg) if arg != blob_arg => return false,
-                Some(_) => (),
-                None => args[idx] = blob.args[iu].clone(),
-            },
-            // If the slot is not `Slot::Arg` then it is bound, so it is
-            // safe to `unwrap()` after `Slot::to_arg()`.
-            (Some(arg), Some(slot)) => {
-                if slot.to_arg().as_ref().unwrap() != arg {
-                    return false;
-                }
-            }
-            (None, None) => (),
-            _ => panic!(
-                "argument disagree for same opcode: '{:?}' vs '{:?}'",
-                slot, blob.args[iu]
-            ),
+#[derive(Debug, Clone)]
+struct PartialDisassembledAlias<'a> {
+    alias: &'a Alias,
+    args: Vec<Option<ResolvedArg>>,
+}
+
+impl<'a> Display for PartialDisassembledAlias<'a> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.alias.name)?;
+        for arg in &self.args {
+            fmt_option_arg(f, arg.as_ref())?;
+        }
+        Ok(())
+    }
+}
+
+impl<'a> PartialDisassembledAlias<'a> {
+    fn new(alias: &'a Alias) -> Self {
+        Self {
+            alias,
+            args: vec![None; alias.arg_count],
         }
     }
 
-    true
+    /// Reconstructs some of its arguments using the passed `Virtual` and a `DisassembledBlob`, with
+    /// the former supposedly obtained by instantiating the latter.
+    ///
+    /// Destroys itself if it finds a contradiction, so reconstruction is not possible (it doesn't
+    /// even make sense).
+    fn reconstruct_args(mut self,
+        virt: &Virtual,
+        blob: &DisassembledBlob,
+    ) -> Option<Self> {
+        if virt.opclass != blob.idef.opclass {
+            return None;
+        }
+    
+        for (iu, slot) in virt.slots {
+            match (&blob.args[iu], slot) {
+                (Some(arg), Some(Slot::Arg(idx))) => match &self.args[idx] {
+                    Some(blob_arg) if arg != blob_arg => return None,
+                    Some(_) => (),
+                    None => self.args[idx] = blob.args[iu].clone(),
+                },
+                // If the slot is not `Slot::Arg` then it is bound, so it is
+                // safe to `unwrap()` after `Slot::to_arg()`.
+                (Some(arg), Some(slot)) => {
+                    if slot.to_arg().as_ref().unwrap() != arg {
+                        return None;
+                    }
+                }
+                (None, None) => (),
+                _ => panic!(
+                    "argument disagree for same opcode: '{:?}' vs '{:?}'",
+                    slot, blob.args[iu]
+                ),
+            }
+        }
+    
+        Some(self)
+    }
+
+    fn into_complete(self) -> DisassembledAlias<'a> {
+        DisassembledAlias {
+            alias: self.alias,
+            args: self.args.into_iter().map(|arg| arg.unwrap()).collect(),
+        }
+    }
 }
 
-/// Returns the number of `PartialDisassembledAlias` which have not been ruled out nor matched.
+/// Returns the number of `PartialDisassembledAlias`es which have not yet been ruled out nor matched.
 fn resolve_partials_against_blob<'a>(
-    mut matches: Option<&mut Vec<DisassembledAlias<'a>>>,
     candidates: &mut Vec<Option<PartialDisassembledAlias<'a>>>,
+    mut matches: Option<&mut Vec<DisassembledAlias<'a>>>,
     idx: usize,
     blob: &DisassembledBlob,
 ) -> Result<usize, Error> {
@@ -245,13 +248,14 @@ fn resolve_partials_against_blob<'a>(
 
     let mut remaining_unresolved = 0;
     for cand in candidates {
-        if let Some(mut partial) = cand.take() {
+        if let Some(partial) = cand.take() {
             match partial.alias.vinsts.get(idx) {
                 Some(virt) => {
-                    if reconstruct_args_using_blob_partials(&mut partial.args, virt, blob) {
+                    // If `partial` is still consistent given this new information,
+                    // put it back, otherwise destroy it.
+                    *cand = partial.reconstruct_args(virt, blob);
+                    if cand.is_some() {
                         remaining_unresolved += 1;
-                        // Put the option back
-                        *cand = Some(partial);
                     }
                 }
                 None => {
@@ -268,7 +272,7 @@ fn resolve_partials_against_blob<'a>(
                     }
 
                     if let Some(matches) = matches.as_mut() {
-                        matches.push(partial.unwrap_args());
+                        matches.push(partial.into_complete());
                     }
                 }
             }
@@ -305,8 +309,8 @@ pub fn disassemble_alias<'a>(
     loop {
         let new_blob = it.next().ok_or(Error::UnexpectedEndOfStream)??;
         let remaining = resolve_partials_against_blob(
-            Some(&mut matches),
             &mut candidates,
+            Some(&mut matches),
             blobs.len(),
             &new_blob,
         )?;
