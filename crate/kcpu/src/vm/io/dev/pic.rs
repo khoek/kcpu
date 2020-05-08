@@ -69,7 +69,7 @@ impl Pic {
         let bit = irq.to_num();
 
         // NOTE in practice this condition can arise, but for testing purposes in the simulator it likely indicates a bug.
-        assert!(self.irq_serv & (1 << bit) != 0);
+        assert!(self.irq_serv & (1 << bit) == 0);
         self.irq_pend |= 1 << bit;
     }
 
