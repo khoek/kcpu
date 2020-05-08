@@ -26,28 +26,30 @@ PUSH %ra
 MOV %rid %ra
 CMP $0xBEEF %ra
 # IMPORTANT NOTE: Preservation of RID has been disabled, since no aliases use RID between
-# instructions. Re-enable this if we add aliases which do (since otherwise we would have
-# register state corruption if an interrupt came in at an inopportune time).
-#JNZ fail
+# instructions. Toggle comments on the next two lines if we add aliases which do (since
+# otherwise we would have register state corruption if an interrupt came in at an
+# inopportune time).
+# JNZ fail
+JE fail
 POP %ra
 
 CMP $0x7154 %rbp
-JNZ fail
+JNE fail
 
 CMP $0xD10D %re
-JNZ fail
+JNE fail
 
 CMP $0x0FF0 %rd
-JNZ fail
+JNE fail
 
 CMP $0xF00F %rc
-JNZ fail
+JNE fail
 
 CMP $0xDEAD %rb
-JNZ fail
+JNE fail
 
 CMP $0x1337 %ra
-JNZ fail
+JNE fail
 
 
 HLT
