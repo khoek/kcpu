@@ -67,7 +67,7 @@ pub fn suite(
     suite_dir.push(suite_name);
     let all_units = find_units(&suite_dir);
 
-    let selected_units = match only_this {
+    let mut selected_units = match only_this {
         None => all_units,
         Some(only_this) => {
             // RUSTFIX report an error!
@@ -77,6 +77,8 @@ pub fn suite(
                 .unwrap()]
         }
     };
+
+    selected_units.sort_unstable_by(|unit1, unit2| unit1.name.cmp(&unit2.name));
 
     Ok(run_units(max_clocks, &selected_units))
 }
@@ -153,9 +155,9 @@ fn run_units(max_clocks: Option<u64>, units: &[UnitSrc]) -> bool {
     println!(
         "Suite Result: {}, {}/{} passes",
         if success {
-            Green.paint("SUCCESS")
+            Green.bold().paint("SUCCESS")
         } else {
-            Red.paint("FAILED")
+            Red.bold().paint("FAILED")
         },
         passes,
         units.len()
@@ -181,7 +183,7 @@ fn run_unit(src: &UnitSrc, num: usize, name_pad: usize, max_clocks: Option<u64>)
         Err(err) => {
             println!(
                 "{}:\n\t{}",
-                Red.paint("FAIL: ASSEMBLY ERROR"),
+                Red.bold().paint("FAIL: ASSEMBLY ERROR"),
                 err.to_string().replace("\n", "\n\t")
             );
 
@@ -191,18 +193,18 @@ fn run_unit(src: &UnitSrc, num: usize, name_pad: usize, max_clocks: Option<u64>)
             match (summary.timeout, &summary.state) {
                 (true, _) => println!(
                     "{} after {}μops ({}ms)",
-                    Red.paint("FAIL: DETERMINISTIC TIMEOUT"),
+                    Red.bold().paint("FAIL: DETERMINISTIC TIMEOUT"),
                     max_clocks.unwrap(),
                     summary.real_ns_elapsed / 1000 / 1000
                 ),
                 (false, State::Halted) => println!(
                     "{} {:7 }μops {: >4}ms  ({: >5.2}MHz)",
-                    Green.paint("PASS"),
+                    Green.bold().paint("PASS"),
                     summary.total_clocks,
                     summary.real_ns_elapsed / 1000 / 1000,
                     summary.to_effective_freq_megahertz(),
                 ),
-                (false, State::Aborted) => println!("{}", Red.paint("FAIL: ABORTED")),
+                (false, State::Aborted) => println!("{}", Red.bold().paint("FAIL: ABORTED")),
                 (false, State::Running) => panic!("internal unit runner error: VM still running!"),
             }
 
