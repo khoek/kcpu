@@ -1,13 +1,16 @@
-use super::lang::Lang;
+use super::{lang::Lang, model::RegRef};
 use crate::assembler::model::{
     Alias, Arg, Const, ConstBinding, Family, ResolvedArg, ResolvedBlob, Slot, Virtual,
 };
-use crate::spec::{
-    types::{
-        hw::{Inst, Word, IU},
-        schema::InstDef,
+use crate::{
+    common,
+    spec::{
+        types::{
+            hw::{Inst, PReg, Word, IU},
+            schema::{ConstPolicy, InstDef},
+        },
+        ucode::UCode,
     },
-    ucode::UCode,
 };
 use enum_map::EnumMap;
 use std::{cmp::Ordering, collections::VecDeque, fmt::Display};
@@ -196,20 +199,46 @@ impl<'a> PartialDisassembledAlias<'a> {
     ///
     /// Destroys itself if it finds a contradiction, so reconstruction is not possible (it doesn't
     /// even make sense).
-    fn reconstruct_args(mut self,
-        virt: &Virtual,
-        blob: &DisassembledBlob,
-    ) -> Option<Self> {
+    fn reconstruct_args(mut self, virt: &Virtual, blob: &DisassembledBlob) -> Option<Self> {
         if virt.opclass != blob.idef.opclass {
             return None;
         }
-    
+
         for (iu, slot) in virt.slots {
             match (&blob.args[iu], slot) {
                 (Some(arg), Some(Slot::Arg(idx))) => match &self.args[idx] {
                     Some(blob_arg) if arg != blob_arg => return None,
                     Some(_) => (),
-                    None => self.args[idx] = blob.args[iu].clone(),
+                    None => {
+                        // Instructions like `MOV $0xBEEF %rid` will trip us up here, since we
+                        // could naively bind the constant `$0xBEEF` to both arguments of the
+                        // `MOV`. Instead we use the `ConstPolicy` of the `InstDef` for `virt`.
+
+                        // RUSTFIX EVIL? encapsulation breaking
+                        let kind = common::unwrap_singleton(
+                            UCode::get()
+                                .inst_def_iter()
+                                .filter(|idef| idef.opclass == virt.opclass),
+                        )
+                        .args[iu]
+                            .unwrap();
+
+                        let correct_arg = if kind.matches(arg) {
+                            (*arg).clone()
+                        } else {
+                            match (arg, kind.policy) {
+                                (Arg::Const(cb), ConstPolicy::Never) => {
+                                    // As warned against above, a constant has been bound to a non-const
+                                    // argument: we infer that the argument was actually a reference to
+                                    // `%rid` instead.
+                                    Arg::Reg(RegRef::new(PReg::ID, cb.to_width()))
+                                },
+                                _ => panic!("Argument in correct slot violates ArgKind declaration in corresponding InstDef"),
+                            }
+                        };
+
+                        self.args[idx] = Some(correct_arg);
+                    }
                 },
                 // If the slot is not `Slot::Arg` then it is bound, so it is
                 // safe to `unwrap()` after `Slot::to_arg()`.
@@ -225,11 +254,30 @@ impl<'a> PartialDisassembledAlias<'a> {
                 ),
             }
         }
-    
+
         Some(self)
     }
 
     fn into_complete(self) -> DisassembledAlias<'a> {
+        {
+            // BUGCHECK Consider making this whole thing a debug assertion.
+            if self
+                .args
+                .iter()
+                .filter(|arg| {
+                    if let Some(Arg::Const(_)) = arg {
+                        true
+                    } else {
+                        false
+                    }
+                })
+                .count()
+                > 1
+            {
+                panic!("Attempting to complete partial alias '{}' which has multiple constant arguments", self);
+            }
+        }
+
         DisassembledAlias {
             alias: self.alias,
             args: self.args.into_iter().map(|arg| arg.unwrap()).collect(),
@@ -261,14 +309,11 @@ fn resolve_partials_against_blob<'a>(
                 None => {
                     {
                         // BUGCHECK Consider making this whole thing a debug assertion.
-                        for i in 0..partial.args.len() {
-                            if partial.args[i].is_none() {
-                                return Err(Error::CouldNotResolveAliasArgs(
-                                    partial.to_string(),
-                                    i,
-                                ));
-                            }
-                        }
+                        partial.args.iter().enumerate().try_for_each(|(i, arg)| {
+                            arg.as_ref()
+                                .map(|_| ())
+                                .ok_or(Error::CouldNotResolveAliasArgs(partial.to_string(), i))
+                        })?;
                     }
 
                     if let Some(matches) = matches.as_mut() {
@@ -330,7 +375,7 @@ pub fn disassemble_alias<'a>(
             .map(Some)
             .collect::<Vec<_>>();
         for idx in 0..blobs.len() - 1 {
-            resolve_partials_against_blob(None, &mut candidates, idx, &blobs[idx])?;
+            resolve_partials_against_blob(&mut candidates, None, idx, &blobs[idx])?;
         }
 
         return Err(Error::NoSuitableAlias(
@@ -418,7 +463,7 @@ impl<'a> Display for Context<'a> {
             fmt_option_arg(f, Some(arg))?;
         }
         if self.inst_count != 1 {
-            write!(f, "\t{}", self.blob_queue.front().unwrap())?;
+            write!(f, "\t{}", self.current_blob().unwrap())?;
         }
         Ok(())
     }

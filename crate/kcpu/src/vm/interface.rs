@@ -23,7 +23,7 @@ pub trait Ctl {
     fn is_aint_active(&self) -> bool;
 
     /*
-        "True uinstruction". High on the falling edge before
+        "True μinstruction". High on the falling edge before
         a clock where a uinst which is part of a "true instruction",
         i.e. not an instruction fetch or interrupt handling.
 
