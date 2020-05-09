@@ -22,12 +22,14 @@ jobs:
       - uses: actions-rs/cargo@v1
         with:
           command: build
+          args: --release --all-features
 
       - uses: actions-rs/cargo@v1
         with:
           command: test
+          args: --release --all-features
 
       - uses: actions/upload-artifact@v2
         with:
-          name: target
-          path: target
+          name: kcpu-release
+          path: target/release
