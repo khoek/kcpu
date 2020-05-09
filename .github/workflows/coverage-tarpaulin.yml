@@ -1,6 +1,6 @@
 on: [push, pull_request]
 
-name: Code coverage with Tarpaulin
+name: Code coverage with tarpaulin
 
 jobs:
   tarpaulin:
