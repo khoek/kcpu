@@ -166,8 +166,8 @@ impl<'a> Display for Alu<'a> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
-            "ADATA: {:#06X} AFLAGS: {}",
-            self.result.val, self.result.flags
+            "ADATA: {:#06X} AFLAGS: {}({:#04X})",
+            self.result.val, self.result.flags, self.result.flags
         )
     }
 }

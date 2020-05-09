@@ -35,7 +35,7 @@ impl<'a> BusState<'a> {
             panic!("out bus collision");
         }
 
-        self.bus[b] = Option::Some(val);
+        self.bus[b] = Some(val);
     }
 
     pub fn connect(&mut self, b1: Bus, b2: Bus) {

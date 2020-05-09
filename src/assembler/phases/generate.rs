@@ -9,7 +9,7 @@ use ansi_term::Color::{Green, Red, Yellow};
 use itertools::{EitherOrBoth, Itertools};
 use std::{fmt::Display, iter};
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 pub enum Error {
     BadDataParity,
     LabelNameCollidesWithInst(LabelName),
@@ -119,11 +119,7 @@ impl Statement {
     }
 
     fn generate_raw_bytes(bytes: Vec<Byte>) -> Result<Vec<BinaryElement>, Error> {
-        Statement::generate_raw_words(
-            hw::bytes_to_words(bytes)
-                .map(Result::Ok)
-                .unwrap_or(Err(Error::BadDataParity))?,
-        )
+        Statement::generate_raw_words(hw::bytes_to_words(bytes).ok_or(Error::BadDataParity)?)
     }
 
     fn generate_raw_string(string: String) -> Result<Vec<BinaryElement>, Error> {
@@ -144,14 +140,15 @@ impl Statement {
         // This latter thing could be fine, but we don't want to do it yet.
         let args: Vec<Arg<LabelName>> = args.into_iter().map(Located::value).collect();
 
+        // RUSTFIX this condition is too harsh: have aliases generate a named error for this (during instantiate) when they do
+        // Don't throw away failures though: consider this a match, error on more then one, and only then open up the error message.
         if args.iter().filter(|arg| arg.is_const()).count() > 1 {
-            return Err(Error::InstMultipleConstArgs(inst.clone(), args));
+            return Err(Error::InstMultipleConstArgs(inst, args));
         }
 
         let family = Lang::get()
             .lookup_family(&inst)
-            .map(Result::Ok)
-            .unwrap_or_else(|| Err(Error::InstUnknown(inst.clone())))?;
+            .ok_or_else(|| Error::InstUnknown(inst.clone()))?;
 
         let matches = family
             .variants
@@ -161,9 +158,7 @@ impl Statement {
         let blobs = common::unwrap_at_most_one(matches);
 
         // RUSTFIX list candiates when there is no match.
-        let blobs = blobs
-            .map(Result::Ok)
-            .unwrap_or_else(|| Err(Error::InstUnacceptableArgKinds(inst, args)))?;
+        let blobs = blobs.ok_or_else(|| Error::InstUnacceptableArgKinds(inst, args))?;
 
         Ok(blobs.into_iter().map(BinaryElement::Inst).collect())
 

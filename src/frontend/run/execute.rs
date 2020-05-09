@@ -146,8 +146,8 @@ pub fn execute_with_hook<Error>(
     if cfg.print_marginals {
         println!(
             "CPU Stop (in state {}{}), {}μinsts executed taking μops {}ms, @{: >5.2}MHz",
-            summary.state,
             if did_timeout { "Timeout/" } else { "" },
+            summary.state,
             summary.total_clocks,
             (summary.real_ns_elapsed / 1000 / 1000),
             summary.to_effective_freq_megahertz()

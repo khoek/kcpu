@@ -8,7 +8,7 @@ use super::{
 };
 use crate::assembler::disasm;
 use std::ffi::OsString;
-use std::path::PathBuf;
+use std::{fmt::Display, path::PathBuf, str::FromStr};
 use structopt::StructOpt;
 
 #[cfg(windows)]
@@ -40,8 +40,8 @@ pub struct SubcommandAsm {
 
 #[derive(StructOpt, Debug)]
 struct VmOpts {
-    #[structopt(short, long, name = "μops")]
-    max_clocks: Option<u64>,
+    #[structopt(short, long, name = "max-clocks")]
+    max_clocks: Option<ClockLimit>,
 
     #[structopt(short, long)]
     verbose: bool,
@@ -79,6 +79,15 @@ pub struct SubcommandRun {
 }
 
 #[derive(StructOpt, Debug)]
+pub struct SubcommandSuite {
+    #[structopt(name = "suite_name", parse(from_os_str))]
+    suite_name: OsString,
+
+    #[structopt(flatten)]
+    opts: SuiteOpts,
+}
+
+#[derive(StructOpt, Debug)]
 pub struct SuiteOpts {
     #[structopt(name = "suite/root/dir", parse(from_os_str))]
     suite_root_dir: Option<PathBuf>,
@@ -86,19 +95,46 @@ pub struct SuiteOpts {
     #[structopt(short = "only", long, parse(from_os_str))]
     only: Option<OsString>,
 
-    // RUSTFIX at the moment there is no way to specify "unlimited"
-    // for suite runs.
-    #[structopt(short = "mc", long, default_value = "50000000")]
-    max_clocks: u64,
+    #[structopt(short, long, name = "max-clocks")]
+    max_clocks: Option<ClockLimit>,
 }
 
-#[derive(StructOpt, Debug)]
-pub struct SubcommandSuite {
-    #[structopt(name = "suite_name", parse(from_os_str))]
-    suite_name: OsString,
+#[derive(Debug)]
+pub struct ClockLimit(Option<u64>);
 
-    #[structopt(flatten)]
-    opts: SuiteOpts,
+impl Display for ClockLimit {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{}",
+            self.0.map(|lim| lim.to_string()).as_deref().unwrap_or("∞")
+        )
+    }
+}
+
+impl FromStr for ClockLimit {
+    type Err = <u64 as FromStr>::Err;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        if s.eq_ignore_ascii_case("unlimited") || s.eq_ignore_ascii_case("infinity") || s.eq("∞")
+        {
+            Ok(ClockLimit(None))
+        } else {
+            Ok(ClockLimit(Some(u64::from_str(s)?)))
+        }
+    }
+}
+
+impl Default for ClockLimit {
+    fn default() -> Self {
+        ClockLimit(Some(50_000_000))
+    }
+}
+
+impl ClockLimit {
+    pub fn into_option(self) -> Option<u64> {
+        self.0
+    }
 }
 
 pub fn root(cmd: CommandRoot) -> ! {
@@ -157,13 +193,13 @@ pub fn run(cmd: SubcommandRun) -> ! {
 
 pub fn suite(cmd: SubcommandSuite) -> ! {
     // RUSTFIX proper error handling, instead of just calling `unwrap()`.
-    let success = suite::suite(
+    let success = suite::run_suite(
         &cmd.suite_name,
         &cmd.opts
             .suite_root_dir
             .unwrap_or_else(assets::default_suite_dir),
-        &cmd.opts.only,
-        Some(cmd.opts.max_clocks),
+        cmd.opts.only.as_ref(),
+        cmd.opts.max_clocks.unwrap_or_default().into_option(),
     )
     .unwrap();
 
@@ -187,7 +223,7 @@ fn execute_prog_with_opts(
     execute::execute_with_hook(
         Config {
             headless: vm_opts.headless,
-            max_clocks: vm_opts.max_clocks,
+            max_clocks: vm_opts.max_clocks.unwrap_or_default().into_option(),
             abort_action: if vm_opts.debugger {
                 AbortAction::Prompt
             } else {

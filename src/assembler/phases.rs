@@ -1,9 +1,9 @@
-pub(super) mod types;
+pub mod types;
 
-pub(super) mod generate;
-pub(super) mod parse;
-pub(super) mod resolve;
-pub(super) mod tokenize;
+pub mod generate;
+pub mod parse;
+pub mod resolve;
+pub mod tokenize;
 
 pub use generate::generate;
 pub use parse::parse;

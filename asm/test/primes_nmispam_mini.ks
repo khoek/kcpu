@@ -1,10 +1,71 @@
-# Test: testcases for function find_next_prime
-# for functions: all arguments passed on the stack, %ra is return code
+# Test: A merger of the tests "primes" and "flag_tui2nmi", which counts the
+#       number of TIs (true instructions, not an instruction load or
+#       interrupt handle) taken to execute the tests.
 
-CALL run_tests
+LIHP int_handle
 
-# all cases pass
+# Enable jumper TUI2NMI
+IOR $0xD0 %ra
+OR $0x0001 %ra
+IOW $0xD0 %ra
+
+### Instruction counting starts now ###
+
+    CALL run_tests
+
+    # Disable jumper TUI2NMI
+    IOR $0xD0 %ra
+    AND $0xFFFE %ra
+    IOW $0xD0 %ra
+
+### Instruction counting ends now ###
+
 HLT
+
+int_handle:
+    PUSHA
+
+    # Check that we are in an NMI
+    IOR $0x01 %ra
+    CMP $0x0001 %ra
+    JNE fail
+
+    # Increment NMI count
+    LD data.nmi_count.1 %ra
+    INC %ra
+    ST data.nmi_count.1 %ra
+
+    # Check if the counter just overflowed, and
+    # if so update the second counter.
+    CMP $0x0 %ra
+    JNE int_handle.skip_overflow
+    LD data.nmi_count.2 %ra
+    INC %ra
+    ST data.nmi_count.2 %ra
+
+    # Check if the second counter just overflowed,
+    # and if so abort.
+    CMP $0x0 %ra
+    JE fail
+
+    int_handle.skip_overflow:
+        # Issue EOI
+        MOV $0x4000 %ra
+        IOW $0x01 %ra
+
+        POPA
+        IRET
+
+data.nmi_count.1:
+    NOP
+
+data.nmi_count.2:
+    NOP
+
+fail:
+    LD data.nmi_count.1 %ra
+    LD data.nmi_count.2 %rb
+    ABRT
 
 run_tests:
     # test cases
@@ -14,26 +75,12 @@ run_tests:
     CALL try_case
     ADD $4 %rsp
 
-    PUSH $47
-    PUSH $45
-    CALL try_case
-    ADD $4 %rsp
-
-    PUSH $79
-    PUSH $74
-    CALL try_case
-    ADD $4 %rsp
-
-    PUSH $197
-    PUSH $194
+    PUSH $13
+    PUSH $12
     CALL try_case
     ADD $4 %rsp
 
     RET
-
-case_fail:
-    ABRT
-    HLT
 
 try_case:
     ENTER
@@ -46,7 +93,7 @@ try_case:
 
     LDWO %rsp $6 %rb
     CMP %rb %ra
-    JNZ case_fail
+    JNZ fail
 
     LEAVE
     RET

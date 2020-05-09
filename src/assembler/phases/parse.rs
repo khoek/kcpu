@@ -4,7 +4,7 @@ use crate::assembler::model::{Arg, ConstBinding};
 use crate::common;
 use std::fmt::Display;
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 pub enum Error {
     UnknownSpecialCommandName(String),
     UnexpectedToken(Token, &'static str),
@@ -118,8 +118,7 @@ impl Statement {
             "string" => Ok(Statement::RawString(
                 tokens
                     .next()
-                    .map(Result::Ok)
-                    .unwrap_or(Err(Error::UnexpectedEndOfStream("string literal")))?
+                    .ok_or(Error::UnexpectedEndOfStream("string literal"))?
                     .try_map_err(|tk| tk.into_string())?,
             )),
             _ => Err(Located::from(Error::UnknownSpecialCommandName(

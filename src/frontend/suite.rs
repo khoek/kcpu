@@ -57,10 +57,10 @@ impl UnitBin {
 }
 
 // RUSTFIX proper error handling
-pub fn suite(
+pub fn run_suite(
     suite_name: &OsString,
     suite_root_dir: &PathBuf,
-    only_this: &Option<OsString>,
+    only_this: Option<&OsString>,
     max_clocks: Option<u64>,
 ) -> Result<bool, assembler::Error> {
     let mut suite_dir = suite_root_dir.clone();
@@ -139,6 +139,7 @@ fn find_units(suite_dir: &PathBuf) -> Vec<UnitSrc> {
         .collect()
 }
 
+// RUSTFIX run these in parallel using green threads, using `rayon`.
 fn run_units(max_clocks: Option<u64>, units: &[UnitSrc]) -> bool {
     let name_pad = units.iter().map(|unit| unit.name.len()).max().unwrap_or(0);
 

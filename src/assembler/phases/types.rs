@@ -214,35 +214,35 @@ impl<T> Located<Located<T>> {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 pub enum Error {
-    Tokenize(Located<String>),
-    Parse(Located<String>),
-    Generate(Located<String>),
-    Resolve(String), // RUSTFIX Does a `Loc` make sense for this?
+    Tokenize(Located<tokenize::Error>),
+    Parse(Located<parse::Error>),
+    Generate(Located<generate::Error>),
+    Resolve(resolve::Error), // RUSTFIX Does a `Loc` make sense for this?
 }
 
 impl From<Located<tokenize::Error>> for Error {
     fn from(err: Located<tokenize::Error>) -> Self {
-        Error::Tokenize(err.map(|err| format!("{}", err)))
+        Error::Tokenize(err)
     }
 }
 
 impl From<Located<parse::Error>> for Error {
     fn from(err: Located<parse::Error>) -> Self {
-        Error::Parse(err.map(|err| format!("{}", err)))
+        Error::Parse(err)
     }
 }
 
 impl From<Located<generate::Error>> for Error {
     fn from(err: Located<generate::Error>) -> Self {
-        Error::Generate(err.map(|err| format!("{}", err)))
+        Error::Generate(err)
     }
 }
 
 impl From<resolve::Error> for Error {
     fn from(err: resolve::Error) -> Self {
-        Error::Resolve(format!("{}", err))
+        Error::Resolve(err)
     }
 }
 

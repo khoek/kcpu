@@ -4,7 +4,7 @@ use crate::spec::types::hw::*;
 use std::collections::HashMap;
 use std::{convert::TryFrom, fmt::Display};
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 pub enum Error {
     DuplicateLabel(String),
     UnknownLabel(String),

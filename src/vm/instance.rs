@@ -57,7 +57,7 @@ impl<'a> Display for Instance<'a> {
 
         writeln!(
             f,
-            "IP/UC @ I/UI: {:#06X}/{:#06X} @ {:#06X}/{:#X} {}",
+            "IP/UC @ I/UI: {:#06X}/{:#04X} @ {:#06X}/{:#010X} {}",
             self.ctl.regs[SReg::IP],
             self.ctl.regs[SReg::UC],
             i,

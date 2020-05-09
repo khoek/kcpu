@@ -132,7 +132,7 @@ impl<'a> DisassembledAlias<'a> {
     fn to_partial(&self) -> PartialDisassembledAlias<'a> {
         PartialDisassembledAlias {
             alias: self.alias,
-            args: self.args.iter().cloned().map(Option::Some).collect(),
+            args: self.args.iter().cloned().map(Some).collect(),
         }
     }
 }
@@ -512,7 +512,7 @@ impl<'a> SteppingDisassembler<'a> {
         // Recompute the current disassembly context, assuming that the first word from `it`
         // is the beginning of an `Alias`.
         let blobs_it = first_blob
-            .map(Result::Ok)
+            .map(Ok)
             .into_iter()
             .chain(std::iter::from_fn(move || {
                 if it.peek().is_none() {

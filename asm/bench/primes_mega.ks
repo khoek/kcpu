@@ -14,18 +14,53 @@ run_tests:
     CALL try_case
     ADD $4 %rsp
 
-    PUSH $47
-    PUSH $45
-    CALL try_case
-    ADD $4 %rsp
-
-    PUSH $79
-    PUSH $74
-    CALL try_case
-    ADD $4 %rsp
-
     PUSH $197
     PUSH $194
+    CALL try_case
+    ADD $4 %rsp
+
+    PUSH $569
+    PUSH $564
+    CALL try_case
+    ADD $4 %rsp
+
+    PUSH $1009
+    PUSH $998
+    CALL try_case
+    ADD $4 %rsp
+
+    PUSH $1931
+    PUSH $1914
+    CALL try_case
+    ADD $4 %rsp
+
+    PUSH $5051
+    PUSH $5040
+    CALL try_case
+    ADD $4 %rsp
+
+    PUSH $7537
+    PUSH $7530
+    CALL try_case
+    ADD $4 %rsp
+
+    PUSH $11701
+    PUSH $11700
+    CALL try_case
+    ADD $4 %rsp
+
+    PUSH $31337
+    PUSH $31334
+    CALL try_case
+    ADD $4 %rsp
+
+    PUSH $36107
+    PUSH $36098
+    CALL try_case
+    ADD $4 %rsp
+
+    PUSH $36919
+    PUSH $36914
     CALL try_case
     ADD $4 %rsp
 

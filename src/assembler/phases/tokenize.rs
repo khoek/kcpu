@@ -12,7 +12,7 @@ use std::{
 };
 use strum::IntoEnumIterator;
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 pub enum Error {
     MalformedToken(String, &'static str),
     UnterminatedStringLiteral,
@@ -46,7 +46,7 @@ impl Display for Error {
 // as we parse a stream. It *does not* model the semantics of the assemble language, where
 // e.g. there is a distinction between an instruction name and a reference to a label
 // (which for us is inferred from context).
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 pub enum Token {
     LabelDef(String),
     SpecialName(String),
