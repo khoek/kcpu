@@ -1,10 +1,10 @@
-on: [push]
+on: [push, pull_request]
 
-name: Tarpaulin
+name: Code coverage with Tarpaulin
 
 jobs:
-  check:
-    name: Rust project
+  tarpaulin:
+    name: Run tarpaulin
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository

@@ -1,6 +1,6 @@
 on: push
 
-name: Continuous integration (platforms)
+name: Continuous integration (platform binaries)
 
 jobs:
   ci:
