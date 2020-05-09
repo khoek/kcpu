@@ -12,7 +12,7 @@ fn run_suite_test() -> Result<(), kcpu::assembler::Error> {
 }
 
 #[test]
-#[ignore]
+#[cfg_attr(not(feature = "big_tests"), ignore)]
 fn run_suite_bench() -> Result<(), kcpu::assembler::Error> {
     assert!(suite::run_suite(
         &std::ffi::OsString::from("bench"),
