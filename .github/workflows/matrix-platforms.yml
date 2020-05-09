@@ -25,3 +25,8 @@ jobs:
       - uses: actions-rs/cargo@v1
         with:
           command: test
+
+      - uses: actions/upload-artifact@v2
+        with:
+          name: target
+          path: target
