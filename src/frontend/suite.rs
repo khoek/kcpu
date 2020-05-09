@@ -7,7 +7,6 @@ use crate::vm::State;
 use ansi_term::Color::{Green, Red};
 use derive_more::Constructor;
 use std::ffi::OsString;
-use std::io::{self, Write};
 use std::path::{Path, PathBuf};
 
 #[derive(Constructor)]
@@ -80,7 +79,11 @@ pub fn run_suite(
 
     selected_units.sort_unstable_by(|unit1, unit2| unit1.name.cmp(&unit2.name));
 
-    Ok(run_units(max_clocks, &selected_units))
+    Ok(run_units(
+        &suite_name.to_string_lossy(),
+        max_clocks,
+        &selected_units,
+    ))
 }
 
 fn find_file_unit(path: &Path) -> Option<UnitSrc> {
@@ -140,19 +143,20 @@ fn find_units(suite_dir: &PathBuf) -> Vec<UnitSrc> {
 }
 
 // RUSTFIX run these in parallel using green threads, using `rayon`.
-fn run_units(max_clocks: Option<u64>, units: &[UnitSrc]) -> bool {
+fn run_units(name: &str, max_clocks: Option<u64>, units: &[UnitSrc]) -> bool {
     let name_pad = units.iter().map(|unit| unit.name.len()).max().unwrap_or(0);
 
-    println!("--------------------------------------------------------------");
+    println!("Running suite: '{}'", name);
+    println!("{:-<line_len$}", line_len = name_pad + 50);
 
-    let passes: usize = units
+    let passes = units
         .iter()
         .enumerate()
         .filter(|(num, unit)| run_unit(unit, num + 1, name_pad, max_clocks))
         .count();
     let success = passes == units.len();
 
-    println!("--------------------------------------------------------------");
+    println!("{:-<line_len$}", line_len = name_pad + 50);
     println!(
         "Suite Result: {}, {}/{} passes",
         if success {
@@ -168,48 +172,49 @@ fn run_units(max_clocks: Option<u64>, units: &[UnitSrc]) -> bool {
 }
 
 fn run_unit(src: &UnitSrc, num: usize, name_pad: usize, max_clocks: Option<u64>) -> bool {
-    print!(
-        "Unit {:2 }: {} {}",
-        num,
-        src.name
-            .to_str()
-            .unwrap_or(&format!("<invalid UTF-8>: {:?}", src.name)),
-        " ".repeat(name_pad - src.name.len())
-    );
-
-    io::stdout().flush().ok();
     let summary = src.assemble().map(|bin| bin.execute(max_clocks));
 
-    match summary {
-        Err(err) => {
-            println!(
+    let (success, msg) = match summary {
+        Err(err) => (
+            false,
+            format!(
                 "{}:\n\t{}",
                 Red.bold().paint("FAIL: ASSEMBLY ERROR"),
                 err.to_string().replace("\n", "\n\t")
-            );
-
-            false
-        }
+            ),
+        ),
         Ok(summary) => {
-            match (summary.timeout, &summary.state) {
-                (true, _) => println!(
+            let msg = match (summary.timeout, &summary.state) {
+                (true, _) => format!(
                     "{} after {}μops ({}ms)",
                     Red.bold().paint("FAIL: DETERMINISTIC TIMEOUT"),
-                    max_clocks.unwrap(),
+                    summary.total_clocks,
                     summary.real_ns_elapsed / 1000 / 1000
                 ),
-                (false, State::Halted) => println!(
+                (false, State::Halted) => format!(
                     "{} {:7 }μops {: >4}ms  ({: >5.2}MHz)",
                     Green.bold().paint("PASS"),
                     summary.total_clocks,
                     summary.real_ns_elapsed / 1000 / 1000,
                     summary.to_effective_freq_megahertz(),
                 ),
-                (false, State::Aborted) => println!("{}", Red.bold().paint("FAIL: ABORTED")),
+                (false, State::Aborted) => format!("{}", Red.bold().paint("FAIL: ABORTED")),
                 (false, State::Running) => panic!("internal unit runner error: VM still running!"),
-            }
+            };
 
-            summary.state == State::Halted
+            (summary.state == State::Halted, msg)
         }
-    }
+    };
+
+    println!(
+        "Unit {:2 }: {} {}{}",
+        num,
+        src.name
+            .to_str()
+            .unwrap_or(&format!("<invalid UTF-8>: {:?}", src.name)),
+        " ".repeat(name_pad - src.name.len()),
+        msg
+    );
+
+    success
 }
