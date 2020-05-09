@@ -13,7 +13,7 @@ use structopt::StructOpt;
 
 #[cfg(windows)]
 pub fn terminal_init() {
-    ansi_term::enable_ansi_support();
+    ansi_term::enable_ansi_support().expect("Could enable terminal ANSI support");
 }
 
 #[cfg(not(windows))]
