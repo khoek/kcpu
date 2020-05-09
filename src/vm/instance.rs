@@ -117,7 +117,7 @@ impl<'a> Instance<'a> {
             }
         }
 
-        return debug::ExecPhase::TrueInst(uc);
+        debug::ExecPhase::TrueInst(uc)
     }
 
     pub fn state(&self) -> State {
@@ -188,7 +188,7 @@ impl<'a> Instance<'a> {
             clocks += 1;
         }
 
-        return false;
+        false
     }
 
     pub fn resume(&mut self) {
