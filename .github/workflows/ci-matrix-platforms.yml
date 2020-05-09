@@ -28,23 +28,10 @@ jobs:
         with:
           command: test
           args: --release --all-features
+          
+      - name: build archive
+        run: tar -C target/release -czf $(pwd)/kcpu-target-${{ matrix.os }}.tar.gz libkcpu.rlib kcpu kasm kcpu-vm
 
       - uses: actions/upload-artifact@v2
         with:
-          name: libkcpu.rlib
-          path: target/release/libkcpu.rlib
-
-      - uses: actions/upload-artifact@v2
-        with:
-          name: kcpu
-          path: target/release/kcpu
-
-      - uses: actions/upload-artifact@v2
-        with:
-          name: kasm
-          path: target/release/kasm
-
-      - uses: actions/upload-artifact@v2
-        with:
-          name: kcpu-vm
-          path: target/release/kcpu-vm
+          path: kcpu-target-${{ matrix.os }}.tar.gz
