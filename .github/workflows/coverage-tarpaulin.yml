@@ -20,7 +20,8 @@ jobs:
         uses: actions-rs/tarpaulin@v0.1
         with:
           version: '0.12.3'
-          args: '--all-features -- --timeout 1000 --test-threads 1'
+          args: '--all-features -- --test-threads 1'
+          timeout: 1000
 
       - name: Upload to codecov.io
         uses: codecov/codecov-action@v1
