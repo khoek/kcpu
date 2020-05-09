@@ -31,7 +31,7 @@ jobs:
 
       - name: build archive (windows)
         if: runner.os == 'Windows'
-        run: tar -C target\\release -czf kcpu-target-${{ matrix.os }}.tar.gz libkcpu.rlib kcpu kasm kcpu-vm
+        run: tar -C target\\release -czf kcpu-target-${{ matrix.os }}.tar.gz libkcpu.rlib kcpu.exe kasm.exe kcpu-vm.exe
 
       - name: build archive (non-windows)
         if: runner.os != 'Windows'
