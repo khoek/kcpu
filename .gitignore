@@ -1,6 +1,2 @@
-bin
-*.kb
-*.o
-*.bin
 .vscode
 target
