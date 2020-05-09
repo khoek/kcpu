@@ -11,6 +11,14 @@ use std::ffi::OsString;
 use std::path::PathBuf;
 use structopt::StructOpt;
 
+#[cfg(windows)]
+pub fn terminal_init() {
+    ansi_term::enable_ansi_support();
+}
+
+#[cfg(not(windows))]
+pub fn terminal_init() { }
+
 #[derive(StructOpt, Debug)]
 #[structopt(name = "kcpu")]
 pub enum CommandRoot {
@@ -39,7 +47,7 @@ struct VmOpts {
     verbose: bool,
 
     #[structopt(short, long)]
-    debug: bool,
+    debugger: bool,
 
     #[structopt(short, long)]
     headless: bool,
@@ -180,13 +188,13 @@ fn execute_prog_with_opts(
         Config {
             headless: vm_opts.headless,
             max_clocks: vm_opts.max_clocks,
-            abort_action: if vm_opts.debug {
+            abort_action: if vm_opts.debugger {
                 AbortAction::Prompt
             } else {
                 AbortAction::Stop
             },
 
-            verbosity: if vm_opts.verbose || vm_opts.debug {
+            verbosity: if vm_opts.verbose {
                 Verbosity::Disassemble
             } else {
                 Verbosity::Silent
@@ -195,7 +203,7 @@ fn execute_prog_with_opts(
         },
         bios_bin,
         Some(prog_bin),
-        debug::hook(if vm_opts.debug {
+        debug::hook(vm_opts.verbose, if vm_opts.debugger {
             Some(BreakOn::Inst)
         } else {
             None

@@ -26,6 +26,7 @@ impl BreakOn {
 
 fn debug_hook(
     vm: &Instance,
+    verbose: bool,
     break_on: BreakOn,
     disasm: &mut Option<SteppingDisassembler>,
 ) -> Result<ExecutionMode, disasm::Error> {
@@ -83,8 +84,10 @@ fn debug_hook(
             padding2 = 50 - col_space,
         ))
     );
-    println!("{:-<50}", "");
-    println!("{}", vm);
+    if verbose {
+        println!("{:-<50}", "");
+        println!("{}", vm);
+    }
     println!("{:-<50}", "");
 
     if break_on.should_pause(phase) {
@@ -102,10 +105,10 @@ fn debug_hook(
     Ok(ExecutionMode::Stepping)
 }
 
-pub fn hook(break_on: Option<BreakOn>) -> impl ExecutionHook<disasm::Error> {
+pub fn hook(verbose: bool, break_on: Option<BreakOn>) -> impl ExecutionHook<disasm::Error> {
     let mut disasm = None;
     move |vm: &Instance| match break_on {
         None => Ok(ExecutionMode::Continue),
-        Some(break_on) => debug_hook(vm, break_on, &mut disasm),
+        Some(break_on) => debug_hook(vm, verbose, break_on, &mut disasm),
     }
 }
