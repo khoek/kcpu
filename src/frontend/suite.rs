@@ -146,8 +146,8 @@ fn find_units(suite_dir: &PathBuf) -> Vec<UnitSrc> {
 fn run_units(name: &str, max_clocks: Option<u64>, units: &[UnitSrc]) -> bool {
     let name_pad = units.iter().map(|unit| unit.name.len()).max().unwrap_or(0);
 
-    println!("Running suite: '{}'", name);
-    println!("{:-<line_len$}", line_len = name_pad + 50);
+    println!("Running suite: '{}' ({} units)", name, units.len());
+    println!("{:-<line_len$}", "", line_len = name_pad + 45);
 
     let passes = units
         .iter()
@@ -156,7 +156,7 @@ fn run_units(name: &str, max_clocks: Option<u64>, units: &[UnitSrc]) -> bool {
         .count();
     let success = passes == units.len();
 
-    println!("{:-<line_len$}", line_len = name_pad + 50);
+    println!("{:-<line_len$}", "", line_len = name_pad + 45);
     println!(
         "Suite Result: {}, {}/{} passes",
         if success {
