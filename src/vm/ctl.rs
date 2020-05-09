@@ -89,9 +89,6 @@ impl CBit {
     }
 }
 
-// RUSTFIX
-// #define FG_CBit_IE (1 << 8)
-
 // RUSTFIX? (put this in the spec like before, or? I am actually relucant, since this is module private.) Acutally good idea?
 #[derive(Enum)]
 pub enum SReg {
@@ -184,7 +181,7 @@ impl<'a> Ctl<'a> {
     const FG_CBIT_IE: Word = 1 << 0;
 
     fn reg_fg(&self) -> Word {
-        (self.regs[SReg::RawFG] & 0x00FF) | (self.cbits[CBit::Ie] as Word * Ctl::FG_CBIT_IE)
+        ((self.cbits[CBit::Ie] as Word * Ctl::FG_CBIT_IE) << 8) | (self.regs[SReg::RawFG] & 0x00FF)
     }
 
     fn set_reg_fg_alu(&mut self, val: Word) {
@@ -195,9 +192,9 @@ impl<'a> Ctl<'a> {
 
     fn set_reg_fg_entire(&mut self, val: Word) {
         self.regs[SReg::RawFG] = val & 0x00FF;
-        self.cbits[CBit::Ie] = val & Ctl::FG_CBIT_IE != 0;
+        self.cbits[CBit::Ie] = ((val & 0xFF00) >> 8) & Ctl::FG_CBIT_IE != 0;
 
-        assert!(val & !0x01FF == 0);
+        assert!(val & !((Ctl::FG_CBIT_IE << 8) | 0x00FF) == 0);
     }
 
     fn cbit_format(&self, b: CBit) -> String {
