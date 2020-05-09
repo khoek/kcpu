@@ -110,7 +110,9 @@ fn ucode_memb_st_step2(_lo_or_hi: bool, _zero: bool) -> UInst {
     MCTRL_MODE_FO_MI | MCTRL_BUSMODE_CONW_BUSM
 }
 
-fn mk_mem_byte_instruction(
+// RUSTFIX remove, make nicer
+#[allow(clippy::too_many_arguments)]
+fn mk_mem_inst_byte(
     far: bool,
     farbit: Word,
     name: &str,
@@ -153,7 +155,7 @@ fn gen_mem_variants(builder: &mut Builder, far: bool) {
         ],
     ));
 
-    builder.register(mk_mem_byte_instruction(
+    builder.register(mk_mem_inst_byte(
         far,
         ITFLAG_MEM_FAR,
         "LDBL",
@@ -166,7 +168,7 @@ fn gen_mem_variants(builder: &mut Builder, far: bool) {
         false,
         false,
     ));
-    builder.register(mk_mem_byte_instruction(
+    builder.register(mk_mem_inst_byte(
         far,
         ITFLAG_MEM_FAR,
         "LDBH",
@@ -179,7 +181,7 @@ fn gen_mem_variants(builder: &mut Builder, far: bool) {
         true,
         false,
     ));
-    builder.register(mk_mem_byte_instruction(
+    builder.register(mk_mem_inst_byte(
         far,
         ITFLAG_MEM_FAR,
         "LDBLZ",
@@ -192,7 +194,7 @@ fn gen_mem_variants(builder: &mut Builder, far: bool) {
         false,
         true,
     ));
-    builder.register(mk_mem_byte_instruction(
+    builder.register(mk_mem_inst_byte(
         far,
         ITFLAG_MEM_FAR,
         "LDBHZ",
@@ -221,7 +223,7 @@ fn gen_mem_variants(builder: &mut Builder, far: bool) {
         ],
     ));
 
-    builder.register(mk_mem_byte_instruction(
+    builder.register(mk_mem_inst_byte(
         far,
         ITFLAG_MEM_FAR,
         "STBL",
@@ -234,7 +236,7 @@ fn gen_mem_variants(builder: &mut Builder, far: bool) {
         false,
         false,
     ));
-    builder.register(mk_mem_byte_instruction(
+    builder.register(mk_mem_inst_byte(
         far,
         ITFLAG_MEM_FAR,
         "STBH",
@@ -522,6 +524,8 @@ fn gen_ctl(builder: &mut Builder) {
     ));
 }
 
+// RUSTFIX remove, make nicer
+#[allow(clippy::too_many_arguments)]
 fn mk_alu_inst(
     name: &str,
     op: OpClass,

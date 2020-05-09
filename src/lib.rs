@@ -1,3 +1,6 @@
+// RUSTFIX remove this
+#![allow(clippy::identity_op)]
+
 pub(crate) mod common;
 
 pub mod assembler;

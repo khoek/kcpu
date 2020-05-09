@@ -49,9 +49,7 @@ impl<'a> Display for Error {
     }
 }
 
-pub fn next_resolved_blob<'a>(
-    insts: &mut impl Iterator<Item = Word>,
-) -> Result<ResolvedBlob, Error> {
+pub fn next_resolved_blob(insts: &mut impl Iterator<Item = Word>) -> Result<ResolvedBlob, Error> {
     let raw_inst = insts.next().ok_or(Error::UnexpectedEndOfStream)?;
 
     let inst = Inst::decode(raw_inst);
@@ -269,7 +267,7 @@ impl<'a> PartialDisassembledAlias<'a> {
             .args
             .into_iter()
             .enumerate()
-            .map(|(i, arg)| arg.ok_or(Error::CouldNotResolveAliasArgs(fmt.clone(), i)))
+            .map(|(i, arg)| arg.ok_or_else(|| Error::CouldNotResolveAliasArgs(fmt.clone(), i)))
             .collect::<Result<Vec<_>, _>>()?;
 
         {
@@ -361,16 +359,15 @@ pub fn disassemble_alias<'a>(
         }
     }
 
-    if matches.len() == 0 {
-        // Recalulate the alias candidate list excluding las `new_blob` we read,
-        // and generate a formatted error.
+    if matches.is_empty() {
+        // Recalulate the alias candidate list excluding last `new_blob` we read, and generate a formatted error.
         candidates = Lang::get()
             .alias_iter()
             .map(PartialDisassembledAlias::new)
             .map(Some)
             .collect::<Vec<_>>();
-        for idx in 0..blobs.len() - 1 {
-            resolve_partials_against_blob(&mut candidates, None, idx, &blobs[idx])?;
+        for (idx, blob) in blobs.iter().enumerate().take(blobs.len() - 1) {
+            resolve_partials_against_blob(&mut candidates, None, idx, blob)?;
         }
 
         return Err(Error::NoSuitableAlias(
@@ -391,7 +388,7 @@ pub fn disassemble_alias<'a>(
                 Some(best) => {
                     let cmp = best
                         .partial_cmp(&next)
-                        .ok_or(Error::AmbiguousAliasSpecificity(
+                        .ok_or_else(|| Error::AmbiguousAliasSpecificity(
                             best.to_string(),
                             next.to_string(),
                         ))?;
@@ -536,7 +533,7 @@ impl<'a> SteppingDisassembler<'a> {
         let actual_blob = disassemble_blob(&mut it)?;
 
         self.context.advance_blob_queue();
-        if let None = self.context.current_blob() {
+        if self.context.current_blob().is_none() {
             self.context = SteppingDisassembler::compute_context(Some(actual_blob.clone()), it)?;
             self.context.advance_blob_queue();
         }

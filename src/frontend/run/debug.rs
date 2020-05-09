@@ -15,7 +15,7 @@ pub enum BreakOn {
 }
 
 impl BreakOn {
-    fn should_pause(&self, phase: ExecPhase) -> bool {
+    fn should_pause(self, phase: ExecPhase) -> bool {
         match self {
             BreakOn::Inst => phase == ExecPhase::TrueInst(0),
             BreakOn::UCReset => phase.is_first_uop(),
@@ -32,7 +32,7 @@ fn debug_hook(
 ) -> Result<ExecutionMode, disasm::Error> {
     let phase = vm.debug_exec_phase();
 
-    if let None = disasm {
+    if disasm.is_none() {
         *disasm = Some(SteppingDisassembler::new(&mut vm.iter_at_ip())?);
     }
 
@@ -59,7 +59,7 @@ fn debug_hook(
                 ctx.current_blob()
                     .map(|blob| if blob.blob.inst.load_data { 4 } else { 2 })
                     .map(|i| i.to_string())
-                    .unwrap_or(Style::new().blink().paint("???").to_string())
+                    .unwrap_or_else(|| Style::new().blink().paint("???").to_string())
             ),
         ),
         ExecPhase::TrueInst(uc) => (
@@ -72,7 +72,7 @@ fn debug_hook(
         ),
     };
 
-    let inst = format!("{}", ctx.to_string().replace("\n", "\t"));
+    let inst = ctx.to_string().replace("\n", "\t");
 
     let col_space = 16;
     println!("{:-<50}", "");
