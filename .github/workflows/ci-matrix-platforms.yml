@@ -28,9 +28,14 @@ jobs:
         with:
           command: test
           args: --release --all-features
-          
-      - name: build archive
-        run: tar -C target/release -czf $(pwd)/kcpu-target-${{ matrix.os }}.tar.gz libkcpu.rlib kcpu kasm kcpu-vm
+
+      - name: build archive (windows)
+        if: runner.os == 'Windows'
+        run: tar -C target\\release -czf kcpu-target-${{ matrix.os }}.tar.gz libkcpu.rlib kcpu kasm kcpu-vm
+
+      - name: build archive (non-windows)
+        if: runner.os != 'Windows'
+        run: tar -C target/release -czf kcpu-target-${{ matrix.os }}.tar.gz libkcpu.rlib kcpu kasm kcpu-vm
 
       - uses: actions/upload-artifact@v2
         with:
