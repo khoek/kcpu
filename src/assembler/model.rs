@@ -716,8 +716,11 @@ mod test {
 
     #[test]
     fn const_policy_partial_order() {
+        assert!(ConstPolicy::Allow >= ConstPolicy::Allow);
         assert!(ConstPolicy::Allow >= ConstPolicy::Only);
-
-        todo!();
+        assert!(ConstPolicy::Allow >= ConstPolicy::Never);
+        assert!(ConstPolicy::Only >= ConstPolicy::Only);
+        assert!(ConstPolicy::Never >= ConstPolicy::Never);
+        assert!(ConstPolicy::Never.partial_cmp(&ConstPolicy::Only) == None);
     }
 }

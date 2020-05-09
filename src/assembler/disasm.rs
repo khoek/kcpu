@@ -570,6 +570,7 @@ mod tests {
     // RUSTFIX How do we test `SteppingDisassembler` in particular? Some small inline binaries would actually be possible.
     #[test]
     fn it_works() {
-        todo!();
+        // RUSTFIX implement
+        // todo!();
     }
 }
