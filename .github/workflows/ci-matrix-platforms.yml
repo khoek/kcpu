@@ -31,5 +31,20 @@ jobs:
 
       - uses: actions/upload-artifact@v2
         with:
-          name: kcpu-release
-          path: target/release
+          name: libkcpu.rlib
+          path: target/release/libkcpu.rlib
+
+      - uses: actions/upload-artifact@v2
+        with:
+          name: kcpu
+          path: target/release/kcpu
+
+      - uses: actions/upload-artifact@v2
+        with:
+          name: kasm
+          path: target/release/kasm
+
+      - uses: actions/upload-artifact@v2
+        with:
+          name: kcpu-vm
+          path: target/release/kcpu-vm
