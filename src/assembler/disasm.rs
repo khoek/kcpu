@@ -386,12 +386,9 @@ pub fn disassemble_alias<'a>(
             Ok(match best {
                 None => Some(next),
                 Some(best) => {
-                    let cmp = best
-                        .partial_cmp(&next)
-                        .ok_or_else(|| Error::AmbiguousAliasSpecificity(
-                            best.to_string(),
-                            next.to_string(),
-                        ))?;
+                    let cmp = best.partial_cmp(&next).ok_or_else(|| {
+                        Error::AmbiguousAliasSpecificity(best.to_string(), next.to_string())
+                    })?;
                     Some(if cmp == Ordering::Greater { best } else { next })
                 }
             })
