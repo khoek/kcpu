@@ -47,7 +47,10 @@ fn debug_hook(
             Color::White.bold().on(Color::Fixed(55)),
             String::from("DINT"),
         ),
-        ExecPhase::IoWait(_) => (Color::White.bold().on(Color::Fixed(125)), String::from("IO")),
+        ExecPhase::IoWait(_) => (
+            Color::White.bold().on(Color::Fixed(125)),
+            String::from("IO"),
+        ),
         ExecPhase::Load(uc) => (
             Color::White.bold().on(Color::Fixed(88)),
             format!(

@@ -17,7 +17,7 @@ pub fn terminal_init() {
 }
 
 #[cfg(not(windows))]
-pub fn terminal_init() { }
+pub fn terminal_init() {}
 
 #[derive(StructOpt, Debug)]
 #[structopt(name = "kcpu")]
@@ -203,10 +203,13 @@ fn execute_prog_with_opts(
         },
         bios_bin,
         Some(prog_bin),
-        debug::hook(vm_opts.verbose, if vm_opts.debugger {
-            Some(BreakOn::Inst)
-        } else {
-            None
-        }),
+        debug::hook(
+            vm_opts.verbose,
+            if vm_opts.debugger {
+                Some(BreakOn::Inst)
+            } else {
+                None
+            },
+        ),
     )
 }
