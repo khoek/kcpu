@@ -553,8 +553,11 @@ impl Virtual {
     /// Turn this `Virtual` instruction into a `Blob` by binding against the passed
     /// argument list (against which we resolve our unbound `Slot`s). Returns `None`
     /// if there is a type mismatch between the argument list and the instruction
-    /// represented by this virtual instruction. Panics if the argument list is not
-    /// long enough to resolve a bound variable.
+    /// represented by this virtual instruction.
+    ///
+    /// Panics if the passed argument list is invalid: currently either a) the
+    /// argument list is not long enough to resolve a bound variable, or includes
+    /// multiple constants.
     pub fn instantiate<Tag: Clone>(&self, args: &[Arg<Tag>]) -> Option<Blob<Tag>> {
         // RUSTFIX we want to be performing runtime checks with `opclass.is_compatible` in this method
         //         oop, actually, if an opcode has a "bind" instruction where it binds an EnumMap of ius,

@@ -14,7 +14,8 @@ pub enum Error {
     BadDataParity,
     LabelNameCollidesWithInst(LabelName),
     InstUnknown(String),
-    InstInvalidArgs(String, Vec<Arg<LabelName>>),
+    InstMultipleConstArgs(String, Vec<Arg<LabelName>>),
+    InstUnacceptableArgKinds(String, Vec<Arg<LabelName>>),
 }
 
 impl Error {
@@ -54,7 +55,16 @@ impl Display for Error {
                 ln
             ),
             Error::InstUnknown(name) => write!(f, "Unknown instruction '{}'", name),
-            Error::InstInvalidArgs(name, args) => {
+            Error::InstMultipleConstArgs(name, args) => write!(
+                f,
+                "Instruction '{}' uses multiple constant arguments, arguments were: {}",
+                name,
+                args.iter()
+                    .map(ToString::to_string)
+                    .collect::<Vec<_>>()
+                    .join(", ")
+            ),
+            Error::InstUnacceptableArgKinds(name, args) => {
                 writeln!(
                     f,
                     "Invalid arguments passed to instruction '{}', arguments were:",
@@ -131,11 +141,12 @@ impl Statement {
     ) -> Result<Vec<BinaryElement>, Error> {
         // RUSTFIX at the moment, we drop argument location information, since we don't have anything to do with it
         // (and, even if we could think of something(?), we'd have to peer into `Alias::instantiate` to assign it).
-        // This latter thing could be find, but we don't want to do it yet.
+        // This latter thing could be fine, but we don't want to do it yet.
         let args: Vec<Arg<LabelName>> = args.into_iter().map(Located::value).collect();
 
-        // RUSTFIX Actually, don't make this a function in `Lang`, since it is meant to generate multiple kinds of errors
-        //         and `Lang` shouldn't have to know about that.
+        if args.iter().filter(|arg| arg.is_const()).count() > 1 {
+            return Err(Error::InstMultipleConstArgs(inst.clone(), args));
+        }
 
         let family = Lang::get()
             .lookup_family(&inst)
@@ -152,7 +163,7 @@ impl Statement {
         // RUSTFIX list candiates when there is no match.
         let blobs = blobs
             .map(Result::Ok)
-            .unwrap_or_else(|| Err(Error::InstInvalidArgs(inst, args)))?;
+            .unwrap_or_else(|| Err(Error::InstUnacceptableArgKinds(inst, args)))?;
 
         Ok(blobs.into_iter().map(BinaryElement::Inst).collect())
 
