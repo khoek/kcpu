@@ -20,7 +20,7 @@ pub const fn byte_flip(v: Word) -> Word {
 
 pub fn bytes_to_words_into_buff(buff: &mut Vec<Word>, bytes: Vec<Byte>) -> Option<()> {
     for (idx, ch) in bytes.chunks(2).enumerate() {
-        buff[idx] = std::primitive::u16::from_le_bytes(ch.try_into().map_or(None, Some)?)
+        buff[idx] = std::primitive::u16::from_le_bytes(ch.try_into().ok()?)
     }
     Some(())
 }
