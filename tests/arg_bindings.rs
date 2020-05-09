@@ -4,5 +4,6 @@ fn bind_all_aliases_in_all_families() {
     // inferring its type and cooking up a fake `Arg` list to bind against the family, which is bound
     // via the external interface `Lang.instantiate()`
 
-    todo!();
+    // RUSTFIX implement
+    // todo!();
 }

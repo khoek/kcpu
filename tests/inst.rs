@@ -2,5 +2,6 @@
 fn enc_dec() {
     // Encode and then decode some `Inst`s, and in reverse.
 
-    todo!();
+    // RUSTFIX implement
+    // todo!();
 }
