@@ -4,7 +4,7 @@ on: [push, pull_request]
 
 jobs:
   grcov:
-    name: Run grcov
+    name: grcov
     runs-on: ${{ matrix.os }}
 
     strategy:

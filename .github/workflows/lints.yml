@@ -4,7 +4,7 @@ on: [push, pull_request]
 
 jobs:
   rustfmt:
-    name: Run rustfmt
+    name: rustfmt
     runs-on: ubuntu-latest
 
     steps:
@@ -17,29 +17,37 @@ jobs:
           profile: minimal
           toolchain: nightly
           override: true
+          components: rustfmt
 
-      - run: rustup component add rustfmt
+      - name: Install rustfmt
+        run: rustup component add rustfmt
 
-      - uses: actions-rs/cargo@v1
+      - name: Run rustfmt
+        uses: actions-rs/cargo@v1
         with:
           command: fmt
           args: --all -- --check
 
   clippy:
-    name: Run Clippy
+    name: Clippy
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - name: Checkout repository
+        uses: actions/checkout@v2
 
-      - uses: actions-rs/toolchain@v1
+      - name: Install toolchain
+        uses: actions-rs/toolchain@v1
         with:
           profile: minimal
           toolchain: nightly
           override: true
+          components: clippy
 
-      - run: rustup component add clippy
+      - name: Install Clippy
+        run: rustup component add clippy
 
-      - uses: actions-rs/cargo@v1
+      - name: Run Clippy
+        uses: actions-rs/cargo@v1
         with:
           command: clippy
           args: -- -D warnings

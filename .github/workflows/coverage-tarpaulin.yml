@@ -4,7 +4,7 @@ on: [push, pull_request]
 
 jobs:
   tarpaulin:
-    name: Run tarpaulin
+    name: tarpaulin
     runs-on: ubuntu-latest
 
     steps:
