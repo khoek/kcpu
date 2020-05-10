@@ -569,12 +569,11 @@ mod tests {
     use crate::{assembler, common};
 
     #[test]
-    // #[should_panic(expected = "reason")]
     fn does_read_at_all() {
-        assert_eq!(super::disassemble_alias(super::disassemble_blob_iter(
-            // common::test::UnrechableIterator::new(),
-            std::iter::empty()
-        )).unwrap_err(), super::Error::UnexpectedEndOfStream);
+        assert_eq!(
+            super::disassemble_alias(super::disassemble_blob_iter(std::iter::empty())).unwrap_err(),
+            super::Error::UnexpectedEndOfStream
+        );
     }
 
     #[test]
@@ -582,7 +581,8 @@ mod tests {
         let data = assembler::assemble("MOV %ra %ra").unwrap();
 
         super::disassemble_alias(super::disassemble_blob_iter(
-            data.into_iter().chain(common::test::UnrechableIterator::new()),
+            data.into_iter()
+                .chain(common::test::UnrechableIterator::new()),
         ))
         .unwrap();
     }
