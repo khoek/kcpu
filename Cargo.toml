@@ -3,18 +3,23 @@ name = "kcpu"
 version = "0.1.0"
 authors = ["Keeley Hoek <keeley@hoek.io>"]
 edition = "2018"
-# FIXME why does this have to be manually specified?
 default-run = "kcpu"
 
 [profile.release]
-# FIXME make a real "bench" asm directory and optimize these again
 debug = true
 opt-level = 3
-# lto = true
+lto = true
 codegen-units = 1
 
 [features]
 big_tests = []
+
+[[bench]]
+name = "suites"
+harness = false
+
+[dev-dependencies]
+criterion = "0.3.2"
 
 [dependencies]
 bitflags = "1.2.1"
