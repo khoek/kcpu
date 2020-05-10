@@ -132,9 +132,7 @@ impl<'a> Instance<'a> {
         State::Running
     }
 
-    pub fn ustep(&mut self) {
-        let then = std::time::Instant::now();
-
+    fn ustep_untimed(&mut self) {
         self.total_clocks += 1;
 
         if self.ctl.cbits[CBit::Halted] {
@@ -169,13 +167,11 @@ impl<'a> Instance<'a> {
                 self.ioc.offclock_pulse(&self.ctl);
             }
         }
-
-        self.real_ns_elapsed += then.elapsed().as_nanos();
     }
 
     /// Returns `true` if the VM ran for `max_clock`s, or
     /// `false` if it was interrupted for another reason.
-    pub fn run(&mut self, max_clocks: Option<u64>) -> bool {
+    fn run_untimed(&mut self, max_clocks: Option<u64>) -> bool {
         let mut clocks = 0;
         while !self.ctl.cbits[CBit::Halted] {
             if let Some(max_clocks) = max_clocks {
@@ -184,11 +180,20 @@ impl<'a> Instance<'a> {
                 }
             }
 
-            self.ustep();
+            self.ustep_untimed();
             clocks += 1;
         }
 
         false
+    }
+
+    /// Returns `true` if the VM ran for `max_clock`s, or
+    /// `false` if it was interrupted for another reason.
+    pub fn run(&mut self, max_clocks: Option<u64>) -> bool {
+        let then = std::time::Instant::now();
+        let ret = self.run_untimed(max_clocks);
+        self.real_ns_elapsed += then.elapsed().as_nanos();
+        ret
     }
 
     pub fn resume(&mut self) {
