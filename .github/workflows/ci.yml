@@ -4,7 +4,7 @@ name: CI
 
 jobs:
   ci:
-    name: Build, Archive, and Test (${{ matrix.os }}/rust-${{ matrix.rust }})
+    name: ${{ matrix.os }}/rust-${{ matrix.rust }}
     runs-on: ${{ matrix.os }}
 
     strategy:
