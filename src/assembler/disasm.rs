@@ -566,13 +566,14 @@ impl<'a> SteppingDisassembler<'a> {
 
 #[cfg(test)]
 mod tests {
+    use super::*;
     use crate::{assembler, common};
 
     #[test]
     fn does_read_at_all() {
         assert_eq!(
-            super::disassemble_alias(super::disassemble_blob_iter(std::iter::empty())).unwrap_err(),
-            super::Error::UnexpectedEndOfStream
+            disassemble_alias(disassemble_blob_iter(std::iter::empty())).unwrap_err(),
+            Error::UnexpectedEndOfStream
         );
     }
 
@@ -580,7 +581,7 @@ mod tests {
     fn does_not_read_too_far() {
         let data = assembler::assemble("MOV %ra %ra").unwrap();
 
-        super::disassemble_alias(super::disassemble_blob_iter(
+        disassemble_alias(disassemble_blob_iter(
             data.into_iter()
                 .chain(common::test::UnrechableIterator::new()),
         ))
