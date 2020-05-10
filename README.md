@@ -1,4 +1,6 @@
-# kCPU Assembler and Virtual Machine ![Continuous integration](https://github.com/khoek/kcpu/workflows/Continuous%20integration/badge.svg)
+# kCPU Assembler and Virtual Machine
+
+![CI](https://github.com/khoek/kcpu/workflows/CI/badge.svg)
 
 An assembler and hardware-simulating virtual machine for my CPU architecture `kCPU`.
 
