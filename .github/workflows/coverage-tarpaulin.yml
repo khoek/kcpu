@@ -1,11 +1,12 @@
 on: [push, pull_request]
 
-name: Code coverage with tarpaulin
+name: Code coverage (tarpaulin)
 
 jobs:
   tarpaulin:
     name: Run tarpaulin
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v2
