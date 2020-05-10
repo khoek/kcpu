@@ -1,6 +1,6 @@
 # kCPU Assembler and Virtual Machine
 
-![CI](https://github.com/khoek/kcpu/workflows/CI/badge.svg)
+[![CI](https://github.com/khoek/kcpu/workflows/CI/badge.svg)](https://github.com/khoek/kcpu/actions?query=workflow%3ACI)
 
 An assembler and hardware-simulating virtual machine for my CPU architecture `kCPU`.
 
