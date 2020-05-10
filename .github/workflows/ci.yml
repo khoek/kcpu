@@ -41,6 +41,7 @@ jobs:
       - name: Upload target archive
         uses: actions/upload-artifact@v2
         with:
+          name: kcpu-rust-${{ matrix.rust }}-target-${{ matrix.os }}
           path: kcpu-rust-${{ matrix.rust }}-target-${{ matrix.os }}.tar.gz
 
       - name: Test crate
