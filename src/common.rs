@@ -30,3 +30,28 @@ pub fn unwrap_at_most_one<T>(mut it: impl Iterator<Item = T>) -> Option<T> {
 pub fn unwrap_singleton<T>(it: impl Iterator<Item = T>) -> T {
     unwrap_at_most_one(it).unwrap()
 }
+
+#[cfg(test)]
+pub mod test {
+    use std::marker::PhantomData;
+
+    pub struct UnrechableIterator<T> {
+        _marker: PhantomData<T>,
+    }
+
+    impl<T> UnrechableIterator<T> {
+        pub fn new() -> Self {
+            Self {
+                _marker: PhantomData,
+            }
+        }
+    }
+
+    impl<T> Iterator for UnrechableIterator<T> {
+        type Item = T;
+
+        fn next(&mut self) -> Option<Self::Item> {
+            unreachable!("iterator exhausted!")
+        }
+    }
+}

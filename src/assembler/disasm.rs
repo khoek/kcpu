@@ -15,7 +15,7 @@ use crate::{
 use enum_map::EnumMap;
 use std::{cmp::Ordering, collections::VecDeque, fmt::Display};
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 pub enum Error {
     InvalidOpcode(Word),
     UnexpectedEndOfStream,
@@ -114,6 +114,19 @@ pub fn disassemble_blob<'a>(
     }
 
     Ok(DisassembledBlob { blob, idef, args })
+}
+
+pub fn disassemble_blob_iter<'a>(
+    it: impl Iterator<Item = Word>,
+) -> impl Iterator<Item = Result<DisassembledBlob<'a>, Error>> {
+    let mut it = it.peekable();
+    std::iter::from_fn(move || {
+        if it.peek().is_none() {
+            None
+        } else {
+            Some(disassemble_blob(&mut it))
+        }
+    })
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -507,20 +520,12 @@ impl<'a> SteppingDisassembler<'a> {
         first_blob: Option<DisassembledBlob<'a>>,
         it: impl Iterator<Item = Word>,
     ) -> Result<Context<'a>, Error> {
-        let mut it = it.peekable();
-
         // Recompute the current disassembly context, assuming that the first word from `it`
         // is the beginning of an `Alias`.
         let blobs_it = first_blob
             .map(Ok)
             .into_iter()
-            .chain(std::iter::from_fn(move || {
-                if it.peek().is_none() {
-                    None
-                } else {
-                    Some(disassemble_blob(&mut it))
-                }
-            }));
+            .chain(disassemble_blob_iter(it));
 
         let (alias, blobs) = disassemble_alias(blobs_it)?;
         Ok(Context::new(alias, blobs))
@@ -561,6 +566,27 @@ impl<'a> SteppingDisassembler<'a> {
 
 #[cfg(test)]
 mod tests {
+    use crate::{assembler, common};
+
+    #[test]
+    // #[should_panic(expected = "reason")]
+    fn does_read_at_all() {
+        assert_eq!(super::disassemble_alias(super::disassemble_blob_iter(
+            // common::test::UnrechableIterator::new(),
+            std::iter::empty()
+        )).unwrap_err(), super::Error::UnexpectedEndOfStream);
+    }
+
+    #[test]
+    fn does_not_read_too_far() {
+        let data = assembler::assemble("MOV %ra %ra").unwrap();
+
+        super::disassemble_alias(super::disassemble_blob_iter(
+            data.into_iter().chain(common::test::UnrechableIterator::new()),
+        ))
+        .unwrap();
+    }
+
     // RUSTFIX How do we test `SteppingDisassembler` in particular? Some small inline binaries would actually be possible.
     #[test]
     fn it_works() {
