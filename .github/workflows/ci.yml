@@ -1,10 +1,10 @@
-on: [push, pull_request]
-
 name: CI
+
+on: [push, pull_request]
 
 jobs:
   ci:
-    name: ${{ matrix.rust }}/${{ matrix.os }}
+    name: Build ${{ matrix.rust }}/${{ matrix.os }}
     runs-on: ${{ matrix.os }}
 
     strategy:
@@ -14,36 +14,36 @@ jobs:
         os: [ubuntu-latest, macos-latest, windows-latest]
 
     steps:
-      - name: checkout
+      - name: Checkout repository
         uses: actions/checkout@v2
 
-      - name: fetch toolchain
+      - name: Install toolchain
         uses: actions-rs/toolchain@v1
         with:
           profile: minimal
           toolchain: ${{ matrix.rust }}
           override: true
 
-      - name: build crate
+      - name: Build crate
         uses: actions-rs/cargo@v1
         with:
           command: build
           args: --release --all-features
 
-      - name: build target archive (windows)
+      - name: Build target archive (windows)
         if: runner.os == 'Windows'
         run: tar -C target\\release -czf kcpu-rust-${{ matrix.rust }}-target-${{ matrix.os }}.tar.gz libkcpu.rlib kcpu.exe kasm.exe kcpu-vm.exe
 
-      - name: build target archive (non-windows)
+      - name: Build target archive (non-windows)
         if: runner.os != 'Windows'
         run: tar -C target/release -czf kcpu-rust-${{ matrix.rust }}-target-${{ matrix.os }}.tar.gz libkcpu.rlib kcpu kasm kcpu-vm
 
-      - name: upload target archive
+      - name: Upload target archive
         uses: actions/upload-artifact@v2
         with:
           path: kcpu-rust-${{ matrix.rust }}-target-${{ matrix.os }}.tar.gz
 
-      - name: test crate
+      - name: Test crate
         uses: actions-rs/cargo@v1
         with:
           command: test
