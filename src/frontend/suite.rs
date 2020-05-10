@@ -149,6 +149,9 @@ fn run_units(name: &str, max_clocks: Option<u64>, units: &[UnitSrc]) -> bool {
     println!("Running suite: '{}' ({} units)", name, units.len());
     println!("{:-<line_len$}", "", line_len = name_pad + 45);
 
+    // RUSTFIX have a notion of "SynchronousRunner" and "ParallelRunner", the former printing
+    // each test unit's name while its in progress, the latter printing whole lines as soon as
+    // results come in.
     let passes = units
         .iter()
         .enumerate()
