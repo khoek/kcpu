@@ -10,7 +10,7 @@ jobs:
         os:
           - ubuntu-latest
           - macOS-latest
-         # - windows-latest  Disabled for now, caused stack overflow.
+          - windows-latest
 
     steps:
       - uses: actions/checkout@v2
@@ -26,7 +26,7 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: test
-          args: --all --all-features
+          args: --all
         env:
           CARGO_INCREMENTAL: 0
           RUSTFLAGS: "-Zprofile -Ccodegen-units=1 -Cinline-threshold=0 -Clink-dead-code -Coverflow-checks=off -Cpanic=abort -Zpanic_abort_tests"
