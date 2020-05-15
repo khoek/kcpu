@@ -44,7 +44,7 @@ impl Display for Pic {
 
 impl Pic {
     pub fn new() -> Self {
-        Pic {
+        Self {
             aint_prev: false,
             irq_mask: 0,
             irq_serv: 0,

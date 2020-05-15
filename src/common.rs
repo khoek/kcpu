@@ -36,7 +36,7 @@ pub mod test {
     use std::marker::PhantomData;
 
     pub struct UnrechableIterator<T> {
-        _marker: PhantomData<T>,
+        _marker: PhantomData<fn() -> T>,
     }
 
     impl<T> UnrechableIterator<T> {

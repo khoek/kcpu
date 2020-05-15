@@ -13,12 +13,14 @@ pub type Byte = u8;
 pub type Word = u16;
 
 pub const BYTE_WIDTH: usize = 8;
+pub const WORD_WIDTH: usize = 16;
+pub const WORD_MAX: Word = 0xFFFF;
 
 pub const fn byte_flip(v: Word) -> Word {
     ((v & 0x00FF) << BYTE_WIDTH) | ((v & 0xFF00) >> BYTE_WIDTH)
 }
 
-pub fn bytes_to_words_into_buff(buff: &mut Vec<Word>, bytes: Vec<Byte>) -> Option<()> {
+pub fn bytes_to_words_into_buff(buff: &mut [Word], bytes: &[Byte]) -> Option<()> {
     for (idx, ch) in bytes.chunks(2).enumerate() {
         buff[idx] = std::primitive::u16::from_le_bytes(ch.try_into().ok()?)
     }
@@ -27,7 +29,7 @@ pub fn bytes_to_words_into_buff(buff: &mut Vec<Word>, bytes: Vec<Byte>) -> Optio
 
 // RUSTFIX make this const when possible
 // Returns none if the data has bad parity.
-pub fn bytes_to_words(bytes: Vec<Byte>) -> Option<Vec<Word>> {
+pub fn bytes_to_words(bytes: &[Byte]) -> Option<Vec<Word>> {
     let mut buff = vec![0; bytes.len() / 2];
     bytes_to_words_into_buff(&mut buff, bytes).map(|_| buff)
 }

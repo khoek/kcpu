@@ -24,6 +24,8 @@ pub enum Error {
     AmbiguousAliasSpecificity(String, String),
 }
 
+impl<'a> std::error::Error for Error {}
+
 impl<'a> Display for Error {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
@@ -449,7 +451,7 @@ pub fn family_reverse_lookup(alias: &Alias) -> &Family {
         .expect("Alias is not in any families!")
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Context<'a> {
     family: &'a str,
     alias: DisassembledAlias<'a>,
@@ -482,13 +484,15 @@ impl<'a> Display for Context<'a> {
 
 impl<'a> Context<'a> {
     fn new(alias: DisassembledAlias<'a>, blobs: Vec<DisassembledBlob<'a>>) -> Self {
-        Context {
+        let mut ctx = Context {
             family: &family_reverse_lookup(alias.alias).name,
             alias,
             inst_count: blobs.len(),
             blob_queue: VecDeque::from(blobs),
             current_blob: None,
-        }
+        };
+        ctx.advance_blob_queue();
+        ctx
     }
 
     pub fn current_blob(&self) -> Option<&DisassembledBlob<'a>> {
@@ -537,7 +541,6 @@ impl<'a> SteppingDisassembler<'a> {
         self.context.advance_blob_queue();
         if self.context.current_blob().is_none() {
             self.context = SteppingDisassembler::compute_context(Some(actual_blob.clone()), it)?;
-            self.context.advance_blob_queue();
         }
 
         // Check that the current blob matches the expected on from the top of the `blob_queue`.

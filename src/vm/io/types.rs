@@ -3,7 +3,7 @@ use crate::spec::types::hw::*;
 use std::cell::RefCell;
 use std::{fmt::Display, rc::Rc};
 
-pub(in crate::vm::io) type HalfcycleCount = u32;
+pub(in crate::vm::io) type HalfcycleCount = usize;
 
 #[derive(Clone, Copy)]
 pub enum ClockedSignals {

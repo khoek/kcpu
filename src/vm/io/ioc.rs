@@ -1,6 +1,6 @@
 use super::super::{interface, types::*};
 use super::dev::test::{jumpers::Jumpers, slow_ints::SlowInts, slow_regs::SlowRegs};
-use super::dev::{pic::Pic, probe::Probe, uid::Uid};
+use super::dev::{pic::Pic, probe::Probe, uid::Uid, video::Video};
 use super::{
     manager::{Command, Manager},
     types::*,
@@ -11,6 +11,7 @@ use std::fmt::Display;
 pub struct Ioc<'a> {
     manager: Manager<'a>,
     pic: Handle<Pic>,
+    video: Handle<Video>,
 }
 
 impl<'a> Display for Ioc<'a> {
@@ -25,19 +26,18 @@ impl<'a> Display for Ioc<'a> {
 impl<'a> Ioc<'a> {
     pub fn new(log_level: &'a LogLevel) -> Self {
         let mut manager = Manager::new(log_level);
-        let pic = manager.add_device(Pic::new());
 
         manager.add_device(Uid::new());
 
-        // // FIXME implement external memory?
-        // // io_manager.register_io(id_external_memory);
+        let pic = manager.add_device(Pic::new());
+        let video = manager.add_device(Video::new());
 
-        // io_manager.register_io(id_video);
-        // // devices.push_back(<a serial thing? :D>); (this one would be disabled by default.)
+        // RUSTFIX FIXME implement serial module
+        // RUSTFIX FIXME implement external memory module? (I guess not?)
 
+        // Add test devices
         manager.add_device(Jumpers::new(pic.clone()));
         manager.add_device(SlowInts::new(pic.clone()));
-
         for delay in 0..5 as HalfcycleCount {
             manager.add_device(SlowRegs::new(delay));
         }
@@ -45,11 +45,19 @@ impl<'a> Ioc<'a> {
         // RUSTFIX unfortunately for now, must be last.
         manager.add_device(Probe::new(manager.registered_ports()));
 
-        Ioc { manager, pic }
+        Ioc {
+            manager,
+            pic,
+            video,
+        }
     }
 
     pub fn pic(&self) -> &dyn interface::Pic {
         &self.pic
+    }
+
+    pub fn video(&self) -> &dyn interface::Video {
+        &self.video
     }
 
     pub fn clock_outputs(&mut self, ui: UInst, s: &mut BusState, ctl: &dyn interface::Ctl) {

@@ -15,7 +15,7 @@ pub struct Jumpers {
 
 impl Jumpers {
     pub fn new(pic: Handle<Pic>) -> Self {
-        Jumpers { pic, flags: 0 }
+        Self { pic, flags: 0 }
     }
 }
 

@@ -11,7 +11,7 @@ pub struct Probe {
 
 impl Probe {
     pub fn new(ports: Vec<Word>) -> Self {
-        Probe {
+        Self {
             target_port: 0,
             ports,
         }

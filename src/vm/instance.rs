@@ -10,7 +10,7 @@ use strum_macros::Display;
 pub mod debug {
     use crate::spec::types::hw::UCVal;
 
-    #[derive(Debug, PartialEq, Eq)]
+    #[derive(Debug, PartialEq, Eq, Clone, Copy)]
     pub enum ExecPhase {
         TrueInst(UCVal),
         Load(UCVal),
@@ -19,7 +19,7 @@ pub mod debug {
     }
 
     impl ExecPhase {
-        pub fn is_first_uop(&self) -> bool {
+        pub fn is_first_uop(self) -> bool {
             match self {
                 ExecPhase::TrueInst(0) => true,
                 ExecPhase::Load(0) => true,
@@ -39,7 +39,10 @@ pub enum State {
 }
 
 pub struct Instance<'a> {
+    // RUSTFIX remove `LogLevel` here.
     log_level: &'a LogLevel,
+
+    // RUSTFIX remove both of these? have `run` return the number of clocks actually executed?
     total_clocks: u64,
     real_ns_elapsed: u128,
 
@@ -80,7 +83,7 @@ impl<'a> Display for Instance<'a> {
 }
 
 impl<'a> Instance<'a> {
-    pub fn new(log_level: &'a LogLevel, bios: mem::Bank, prog: mem::Bank) -> Self {
+    pub fn new(log_level: &'a LogLevel, bios_bin: &[u8], prog_bin: &[u8]) -> Self {
         Self {
             log_level,
             total_clocks: 0,
@@ -88,7 +91,7 @@ impl<'a> Instance<'a> {
 
             ctl: ctl::Ctl::new(&log_level),
             reg: reg::Reg::new(&log_level),
-            mem: mem::Mem::new(&log_level, bios, prog),
+            mem: mem::Mem::new(&log_level, bios_bin, prog_bin),
             alu: alu::Alu::new(&log_level),
             ioc: io::Ioc::new(&log_level),
         }
@@ -100,6 +103,10 @@ impl<'a> Instance<'a> {
 
     pub fn real_ns_elapsed(&self) -> u128 {
         self.real_ns_elapsed
+    }
+
+    pub fn video(&self) -> &dyn interface::Video {
+        self.ioc.video()
     }
 
     pub fn debug_exec_phase(&self) -> debug::ExecPhase {
@@ -118,6 +125,10 @@ impl<'a> Instance<'a> {
         }
 
         debug::ExecPhase::TrueInst(uc)
+    }
+
+    pub fn iter_at_ip(&self) -> impl Iterator<Item = Word> + '_ {
+        self.mem.iter_at(false, self.ctl.regs[SReg::IP])
     }
 
     pub fn state(&self) -> State {
@@ -203,17 +214,5 @@ impl<'a> Instance<'a> {
 
         self.ctl.cbits[CBit::Halted] = false;
         self.ctl.cbits[CBit::Aborted] = false;
-    }
-
-    pub fn is_halted(&self) -> bool {
-        self.ctl.cbits[CBit::Halted]
-    }
-
-    pub fn is_aborted(&self) -> bool {
-        self.ctl.cbits[CBit::Aborted]
-    }
-
-    pub fn iter_at_ip(&self) -> impl Iterator<Item = Word> + '_ {
-        self.mem.iter_at(false, self.ctl.regs[SReg::IP])
     }
 }

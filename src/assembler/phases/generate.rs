@@ -119,7 +119,7 @@ impl Statement {
     }
 
     fn generate_raw_bytes(bytes: Vec<Byte>) -> Result<Vec<BinaryElement>, Error> {
-        Statement::generate_raw_words(hw::bytes_to_words(bytes).ok_or(Error::BadDataParity)?)
+        Statement::generate_raw_words(hw::bytes_to_words(&bytes).ok_or(Error::BadDataParity)?)
     }
 
     fn generate_raw_string(string: String) -> Result<Vec<BinaryElement>, Error> {

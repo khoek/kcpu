@@ -10,7 +10,7 @@ pub struct SlowRegs {
 
 impl SlowRegs {
     pub fn new(delay: HalfcycleCount) -> Self {
-        SlowRegs { delay, reg: 0 }
+        Self { delay, reg: 0 }
     }
 }
 

@@ -1,8 +1,5 @@
 use criterion::{criterion_group, criterion_main, Criterion};
-use kcpu::frontend::{
-    assemble,
-    run::execute::{self, AbortAction, Config, Verbosity},
-};
+use kcpu::cli::run::execute::{self, AbortAction, Config, Verbosity};
 use std::path::PathBuf;
 
 fn suite_test_primes(c: &mut Criterion) {

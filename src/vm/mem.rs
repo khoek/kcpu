@@ -37,7 +37,7 @@ pub struct Bank {
 }
 
 impl Bank {
-    pub fn new(typ: BankType, src: Vec<u8>) -> Self {
+    pub fn new(typ: BankType, src: &[u8]) -> Self {
         if src.len() > 2 * typ.size() {
             panic!("overflow");
         }
@@ -106,13 +106,10 @@ impl<'a> Display for Mem<'a> {
 }
 
 impl<'a> Mem<'a> {
-    pub fn new(log_level: &'a LogLevel, bios: Bank, prog: Bank) -> Self {
-        // RUSTFIX make this nicer once we get const generics
+    pub fn new(log_level: &'a LogLevel, bios_bin: &[u8], prog_bin: &[u8]) -> Self {
         let mut banks = EnumMap::new();
-        assert_eq!(bios.typ, BankType::Bios);
-        assert_eq!(prog.typ, BankType::Prog);
-        banks[BankType::Bios] = Some(bios);
-        banks[BankType::Prog] = Some(prog);
+        banks[BankType::Bios] = Some(Bank::new(BankType::Bios, bios_bin));
+        banks[BankType::Prog] = Some(Bank::new(BankType::Prog, prog_bin));
         Mem {
             log_level,
             prefix: [0, 0],

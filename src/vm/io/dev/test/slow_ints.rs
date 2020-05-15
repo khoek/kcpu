@@ -17,7 +17,7 @@ impl SlowInts {
     const INT_NUM: u8 = 3;
 
     pub fn new(pic: Handle<Pic>) -> Self {
-        SlowInts { pic, count: [0, 0] }
+        Self { pic, count: [0, 0] }
     }
 
     fn process_halfcycle_register(&mut self, num: usize, int_num: u8) {

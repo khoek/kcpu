@@ -1,4 +1,4 @@
-use kcpu::frontend::command;
+use kcpu::cli::command;
 use structopt::StructOpt;
 
 fn main() {

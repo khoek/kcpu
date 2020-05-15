@@ -8,7 +8,7 @@ pub struct Uid {}
 
 impl Uid {
     pub fn new() -> Self {
-        Uid {}
+        Self {}
     }
 }
 

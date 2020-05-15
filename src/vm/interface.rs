@@ -1,4 +1,5 @@
 use crate::spec::types::hw::*;
+use std::cell::Ref;
 
 /*
     Rust elegantly captures the "out" and "in" functions of these traits
@@ -60,4 +61,11 @@ pub trait Pic {
     fn is_pnmi_active(&self) -> bool;
 
     fn assert(&self, irq: PicIrq);
+}
+
+pub const VIDEO_WIDTH: usize = 160;
+pub const VIDEO_HEIGHT: usize = 120;
+
+pub trait Video {
+    fn vram(&self) -> Ref<[Word]>;
 }
