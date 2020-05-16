@@ -158,7 +158,7 @@ impl TraitInteractor for DebugInteractor {
         }
 
         // Note that this is the condition *being passed to the backend*, not neccesarily
-        // the mode in which we are in the debugger frontend.
+        // the mode in which we are in in the debugger frontend.
         Some(Command::Step(BreakOn::UInst))
     }
 }
