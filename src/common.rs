@@ -35,15 +35,11 @@ pub fn unwrap_singleton<T>(it: impl Iterator<Item = T>) -> T {
 pub mod test {
     use std::marker::PhantomData;
 
-    pub struct UnrechableIterator<T> {
-        _marker: PhantomData<fn() -> T>,
-    }
+    pub struct UnrechableIterator<T>(PhantomData<fn() -> T>);
 
     impl<T> UnrechableIterator<T> {
         pub fn new() -> Self {
-            Self {
-                _marker: PhantomData,
-            }
+            Self(PhantomData)
         }
     }
 
