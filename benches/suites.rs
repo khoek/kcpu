@@ -1,26 +1,26 @@
-use criterion::{criterion_group, criterion_main, Criterion};
-use kcpu::cli::run::execute::{self, AbortAction, Config, Verbosity};
+use criterion::{criterion_group, criterion_main, BatchSize, Criterion};
+use kcpu::{
+    cli::command,
+    exec::{
+        event_loop::headless, interactor::noninteractive, pipeline, poller, types::PipelineBuilder,
+    },
+};
 use std::path::PathBuf;
 
 fn suite_test_primes(c: &mut Criterion) {
     // RUSTFIX proper error handling, instead of just calling `unwrap()`.
-    let prog_bin = assemble::assemble_path(&PathBuf::from("asm/test/primes.ks")).unwrap();
+    let prog_bin = command::assemble_path(&PathBuf::from("asm/test/primes.ks")).unwrap();
 
     c.bench_function("sample", |b| {
-        b.iter(|| {
-            execute::execute(
-                Config {
-                    headless: true,
-                    max_clocks: None,
-                    abort_action: AbortAction::Stop,
-
-                    verbosity: Verbosity::Silent,
-                    print_marginals: false,
-                },
-                None,
-                Some(&prog_bin),
-            )
-        })
+        b.iter_batched(
+            || {
+                pipeline::Run::new(None, None, noninteractive::Interactor)
+                    .build()
+                    .runner(poller::BlockingFactory, headless::EventLoop)
+            },
+            |runner| runner.run_with_binaries(None, Some(&prog_bin)).unwrap(),
+            BatchSize::SmallInput,
+        )
     });
 }
 

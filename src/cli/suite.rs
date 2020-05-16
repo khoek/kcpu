@@ -46,6 +46,7 @@ impl UnitSrc {
 
 impl UnitBin {
     fn execute(self, max_clocks: Option<u64>) -> Snapshot {
+        // RUSTFIX proper error handling!
         pipeline::Run::new(None, max_clocks, noninteractive::Interactor)
             .build()
             .runner(poller::BlockingFactory, headless::EventLoop)

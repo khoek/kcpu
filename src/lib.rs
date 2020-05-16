@@ -1,7 +1,7 @@
 // RUSTFIX remove this
 #![allow(clippy::identity_op)]
 
-pub(crate) mod assets;
+pub mod assets;
 pub(crate) mod common;
 
 pub mod spec;

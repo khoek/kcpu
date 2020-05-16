@@ -1,4 +1,7 @@
-use kcpu::frontend::{assets, command, suite};
+use kcpu::{
+    assets,
+    cli::{command, suite},
+};
 
 #[test]
 fn run_suite_test() -> Result<(), kcpu::assembler::Error> {
