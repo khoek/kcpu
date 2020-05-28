@@ -9,6 +9,8 @@ pub trait Interactor {
 
     /// Returns `None` if the run should be stopped.
     fn handle(&mut self, state: &Self::State) -> Option<Self::Action>;
+
+    fn teardown(self);
 }
 
 pub trait Engine {
@@ -75,5 +77,9 @@ impl<E: Engine, I: Interactor<State = E::Response, Action = E::Action>> Frontend
         };
 
         Ok(self.engine.report(resp))
+    }
+
+    fn teardown(self) {
+        self.interactor.teardown();
     }
 }

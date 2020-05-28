@@ -124,5 +124,9 @@ pub mod vram_access {
             let mon = self.0.process(resp)?;
             Ok((mon, vram.expect("No vram!")))
         }
+
+        fn teardown(self) {
+            self.0.teardown()
+        }
     }
 }

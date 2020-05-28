@@ -31,7 +31,7 @@ pub mod debug {
     }
 }
 
-#[derive(Debug, Display, PartialEq, Eq)]
+#[derive(Debug, Display, PartialEq, Eq, Clone, Copy)]
 pub enum State {
     Running,
     Halted,

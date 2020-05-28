@@ -57,7 +57,7 @@ impl<B: Backend> Blocking<B> {
 }
 
 impl<B: Backend> Poller<B> for Blocking<B> {
-    fn recv(&mut self) -> Result<B::Response, PollerError<B>> {
+    fn recv(&mut self) -> Result<B::Response, PollerError<B::Error>> {
         if self.rsps.is_empty() {
             self.pump_one();
         }
@@ -69,7 +69,7 @@ impl<B: Backend> Poller<B> for Blocking<B> {
         }
     }
 
-    fn try_recv(&mut self) -> Result<Option<B::Response>, PollerError<B>> {
+    fn try_recv(&mut self) -> Result<Option<B::Response>, PollerError<B::Error>> {
         self.recv().map(Some)
     }
 }
@@ -146,7 +146,7 @@ impl<B: Backend + 'static, S: TaskSpawner> PollerFactory<B> for AsyncFactory<S> 
 }
 
 impl<B: Backend> Poller<B> for Async<B> {
-    fn recv(&mut self) -> Result<B::Response, PollerError<B>> {
+    fn recv(&mut self) -> Result<B::Response, PollerError<B::Error>> {
         match self.rsps.recv() {
             Err(RecvError) => Err(PollerError::Shutdown),
             Ok(Err(error)) => Err(PollerError::Backend(error)),
@@ -154,7 +154,7 @@ impl<B: Backend> Poller<B> for Async<B> {
         }
     }
 
-    fn try_recv(&mut self) -> Result<Option<B::Response>, PollerError<B>> {
+    fn try_recv(&mut self) -> Result<Option<B::Response>, PollerError<B::Error>> {
         match self.rsps.try_recv() {
             Err(TryRecvError::Disconnected) => Err(PollerError::Shutdown),
             Err(TryRecvError::Empty) => Ok(None),

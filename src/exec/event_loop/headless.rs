@@ -4,25 +4,29 @@ use crate::exec::types::{
 
 pub struct EventLoop;
 
-impl<T> TraitEventLoop<T> for EventLoop {
-    type Monitor = T;
+impl<Monitor> TraitEventLoop<Monitor> for EventLoop {
+    type Monitor = Monitor;
 
-    fn run<B: Backend, F: Frontend<T, Response = B::Response>, P: Poller<B>>(
-        &mut self,
+    fn run<B: Backend, F: Frontend<Monitor, Response = B::Response>, P: Poller<B>>(
+        self,
         mut poller: P,
         mut frontend: F,
-    ) -> Result<T, B::Error> {
-        let mut last_snap: Option<T> = None;
+    ) -> Result<Monitor, PollerError<B::Error>> {
+        let mut last_monitor: Option<Monitor> = None;
+
         loop {
             match poller.recv() {
-                Err(PollerError::Shutdown) => return Ok(last_snap.unwrap()),
-                Err(PollerError::Backend(b)) => return Err(b),
+                Err(PollerError::Shutdown) => break,
+                Err(err) => Err(err)?,
                 Ok(rsp) => match frontend.process(rsp) {
-                    Err(FrontendError::Shutdown) => return Ok(last_snap.unwrap()),
+                    Err(FrontendError::Shutdown) => break,
                     Err(FrontendError::Nothing) => (),
-                    Ok(snap) => last_snap = Some(snap),
+                    Ok(monitor) => last_monitor = Some(monitor),
                 },
             }
         }
+
+        frontend.teardown();
+        return last_monitor.ok_or(PollerError::Shutdown);
     }
 }

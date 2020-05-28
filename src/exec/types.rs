@@ -1,11 +1,12 @@
 use crate::{assets, spec::types::hw::Word, vm};
+use std::fmt::Display;
 use std::marker::PhantomData;
 use std::sync::mpsc::SendError;
 
 // RUSTFIX remove all of the `Vec` stuff from the pollers
 
 // RUSTFIX relocate?
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Snapshot {
     pub state: vm::State,
     pub timeout: bool,
@@ -30,12 +31,11 @@ impl Snapshot {
 
 // RUSTFIX relocate?
 #[derive(Debug)]
-pub struct Vram(Box<[Word]>);
+pub struct Vram(pub Box<[Word]>);
 
 impl Vram {
     pub fn new<Ref: AsRef<[Word]>>(vram: Ref) -> Self {
-        // RUSTFIX implement check!
-        // assert!(vram.len() == VRAM_LEN);
+        assert!(vram.as_ref().len() == 2 * vm::VIDEO_WIDTH * vm::VIDEO_HEIGHT);
         Vram(Box::from(vram.as_ref()))
     }
 }
@@ -112,8 +112,8 @@ where
     pub fn runner<'a, Output, E: EventLoop<Output, Monitor = Monitor>, PF: PollerFactory<B>>(
         self,
         poller_factory: PF,
-        mut event_loop: E,
-    ) -> Runner<'a, Output, B::Error>
+        event_loop: E,
+    ) -> Runner<'a, Output, PollerError<B::Error>>
     where
         F: 'a,
         E: 'a,
@@ -123,7 +123,9 @@ where
         let backend_new = self.backend_new;
         let mut frontend = self.frontend;
         Runner::new(move |vm_new: Box<dyn VmNewFn>| {
-            let (commander, poller) = poller_factory.poller(|| backend_new(vm_new()))?;
+            let (commander, poller) = poller_factory
+                .poller(|| backend_new(vm_new()))
+                .map_err(PollerError::Backend)?;
             // RUSTFIX make this impossible to call twice!!
             // RUSTFIX proper error handling!!!
             frontend
@@ -133,9 +135,6 @@ where
         })
     }
 }
-
-// RUSTFIX remove this
-static LOGLEVEL: crate::vm::LogLevel = crate::vm::LogLevel { internals: false };
 
 pub trait VmNewFn: FnOnce() -> vm::Instance<'static> + Send + 'static {}
 
@@ -154,6 +153,9 @@ impl<'a, Output, Error, T: FnOnce(Box<dyn VmNewFn>) -> Result<Output, Error> + '
 pub struct Runner<'a, Output: 'a, Error: 'a> {
     event_loop_run: Box<dyn EventLoopRunnerFn<'a, Output, Error>>,
 }
+
+// RUSTFIX remove this
+static LOGLEVEL: crate::vm::LogLevel = crate::vm::LogLevel { internals: false };
 
 impl<'a, Output: 'a, Error: 'a> Runner<'a, Output, Error> {
     pub fn new(evt_loop_run: impl EventLoopRunnerFn<'a, Output, Error>) -> Self {
@@ -199,10 +201,10 @@ pub trait EventLoop<Output> {
     type Monitor;
 
     fn run<B: Backend, F: Frontend<Self::Monitor, Response = B::Response>, P: Poller<B>>(
-        &mut self,
+        self,
         poller: P,
         frontend: F,
-    ) -> Result<Output, B::Error>;
+    ) -> Result<Output, PollerError<B::Error>>;
 }
 
 pub trait Frontend<Monitor> {
@@ -213,6 +215,10 @@ pub trait Frontend<Monitor> {
     fn startup(&mut self, cmds: Box<dyn Commander<Self::Command>>) -> Result<(), FrontendError>;
 
     fn process(&mut self, resp: Self::Response) -> Result<Monitor, FrontendError>;
+
+    // RUSTFIX this is silly---startup isn't called by the event loop, but process+teardown are...
+    // I think we also shouldn't have `teardown`---remove it!
+    fn teardown(self);
 }
 
 #[derive(Debug)]
@@ -248,15 +254,27 @@ pub trait PollerFactory<B: Backend> {
 }
 
 pub trait Poller<B: Backend> {
-    fn recv(&mut self) -> Result<B::Response, PollerError<B>>;
+    fn recv(&mut self) -> Result<B::Response, PollerError<B::Error>>;
 
-    fn try_recv(&mut self) -> Result<Option<B::Response>, PollerError<B>>;
+    fn try_recv(&mut self) -> Result<Option<B::Response>, PollerError<B::Error>>;
 }
 
-pub enum PollerError<B: Backend> {
+#[derive(Debug)]
+pub enum PollerError<BackendError> {
     Shutdown,
-    Backend(B::Error),
+    Backend(BackendError),
 }
+
+impl<BackendError: std::error::Error> Display for PollerError<BackendError> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+        match self {
+            PollerError::Shutdown => write!(f, "Shutdown"),
+            PollerError::Backend(err) => write!(f, "Backend({})", err),
+        }
+    }
+}
+
+impl<BackendError: std::error::Error> std::error::Error for PollerError<BackendError> {}
 
 impl<T> From<SendError<T>> for FrontendError {
     fn from(_: SendError<T>) -> Self {

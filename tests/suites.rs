@@ -1,6 +1,6 @@
 use kcpu::{
     assets,
-    cli::{command, suite},
+    cli::suite,
 };
 
 #[test]
@@ -9,7 +9,7 @@ fn run_suite_test() -> Result<(), kcpu::assembler::Error> {
         &std::ffi::OsString::from("test"),
         &assets::default_suite_dir(),
         None,
-        command::ClockLimit::default().into_option()
+        Some(50_000_000)
     )?);
     Ok(())
 }
@@ -21,7 +21,7 @@ fn run_suite_bench() -> Result<(), kcpu::assembler::Error> {
         &std::ffi::OsString::from("bench"),
         &assets::default_suite_dir(),
         None,
-        command::ClockLimit::default().into_option()
+        Some(50_000_000)
     )?);
     Ok(())
 }

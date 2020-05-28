@@ -25,7 +25,15 @@ fn print_end_marginal(snap: &Snapshot) {
     );
 }
 
-pub struct RunInteractor;
+pub struct RunInteractor {
+    last: Option<Snapshot>,
+}
+
+impl RunInteractor {
+    pub fn new() -> Self {
+        Self { last: None }
+    }
+}
 
 impl TraitInteractor for RunInteractor {
     type State = Snapshot;
@@ -36,11 +44,14 @@ impl TraitInteractor for RunInteractor {
     }
 
     fn handle(&mut self, snap: &Snapshot) -> Option<()> {
-        if snap.state != vm::State::Running {
-            print_end_marginal(snap);
-        }
-
+        // RUSTFIX this copy is crazy... see below
+        self.last = Some(snap.clone());
         Some(())
+    }
+
+    fn teardown(self) {
+        // RUSTFIX Tracking this is a silly hack...
+        self.last.as_ref().map(print_end_marginal);
     }
 }
 
@@ -160,5 +171,9 @@ impl TraitInteractor for DebugInteractor {
         // Note that this is the condition *being passed to the backend*, not neccesarily
         // the mode in which we are in in the debugger frontend.
         Some(Command::Step(BreakOn::UInst))
+    }
+
+    fn teardown(self) {
+        // RUSTFIX FIXME, print the end marginal using the last snapshot we saw...
     }
 }

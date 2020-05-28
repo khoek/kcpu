@@ -5,7 +5,7 @@ use crate::exec::{
     interactor::console,
     pipeline::{self, debug::BreakOn},
     poller,
-    types::{Backend, PipelineBuilder, Runner, Snapshot},
+    types::{Backend, PipelineBuilder, PollerError, Runner, Snapshot},
 };
 use crate::{assembler, assets};
 use std::ffi::OsString;
@@ -16,13 +16,10 @@ use std::{
 };
 use structopt::StructOpt;
 
-#[cfg(windows)]
 pub fn terminal_init() {
+    #[cfg(windows)]
     ansi_term::enable_ansi_support().expect("Could enable terminal ANSI support");
 }
-
-#[cfg(not(windows))]
-pub fn terminal_init() {}
 
 pub fn assemble_path(path: &Path) -> Result<Vec<u8>, assembler::Error> {
     // RUSTFIX proper IO error handling
@@ -137,12 +134,6 @@ impl FromStr for ClockLimit {
     }
 }
 
-impl Default for ClockLimit {
-    fn default() -> Self {
-        ClockLimit(Some(50_000_000))
-    }
-}
-
 impl ClockLimit {
     pub fn into_option(self) -> Option<u64> {
         self.0
@@ -210,7 +201,7 @@ pub fn suite(cmd: SubcommandSuite) -> ! {
             .suite_root_dir
             .unwrap_or_else(assets::default_suite_dir),
         cmd.opts.only.as_ref(),
-        cmd.opts.max_clocks.unwrap_or_default().into_option(),
+        cmd.opts.max_clocks.unwrap_or(ClockLimit(Some(50_000_000))).into_option(),
     )
     .unwrap();
 
@@ -240,9 +231,10 @@ fn run_prog_with_opts(
         build_runner(
             opts.headless,
             pipeline::Run::new(
-                None,
-                opts.max_clocks.unwrap_or_default().into_option(),
-                console::RunInteractor,
+                // RUSTFIX use a calibrated quantum!
+                Some(100000),
+                opts.max_clocks.unwrap_or(ClockLimit(None)).into_option(),
+                console::RunInteractor::new(),
             ),
         )
         .map_err(|_| unreachable!())
@@ -251,7 +243,10 @@ fn run_prog_with_opts(
     Ok(runner.run_with_binaries(bios_bin, Some(&prog_bin))?)
 }
 
-fn build_runner<'a, B, PB>(run_headless: bool, builder: PB) -> Runner<'a, Snapshot, B::Error>
+fn build_runner<'a, B, PB>(
+    run_headless: bool,
+    builder: PB,
+) -> Runner<'a, Snapshot, PollerError<B::Error>>
 where
     // RUSTFIX a `'static` on `B` has crept in here, where it doesn't need to be.
     B: Backend + vram_access::Provider + 'static,
@@ -264,7 +259,7 @@ where
             .adapt(adaptor::VramAccess)
             .runner(
                 poller::AsyncFactory::new(poller::ThreadSpawner),
-                webgpu::EventLoop,
+                webgpu::EventLoop::new(),
             )
     }
 }

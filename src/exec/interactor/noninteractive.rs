@@ -12,4 +12,6 @@ impl TraitInteractor for Interactor {
     fn handle(&mut self, _: &Snapshot) -> Option<()> {
         Some(())
     }
+
+    fn teardown(self) {}
 }
